@@ -19,12 +19,14 @@ export default function BottomNav() {
   useEffect(() => {
     if (!user) return
     const check = async () => {
-      const { count } = await supabase
-        .from('orders')
-        .select('id', { count: 'exact', head: true })
-        .eq('seller_user_id', user.id)
-        .eq('status', 'pending')
-      setPendingOrders(count || 0)
+      try {
+        const { count } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('seller_user_id', user.id)
+          .eq('status', 'pending')
+        setPendingOrders(count || 0)
+      } catch { /* silently ignore - Supabase may be briefly unavailable */ }
     }
     check()
     const interval = setInterval(check, 60000)
