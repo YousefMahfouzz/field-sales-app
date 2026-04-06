@@ -10,6 +10,7 @@ export default function PublicHomePage() {
   const [logo, setLogo] = useState(null)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
+  const [showInquiry, setShowInquiry] = useState(false)
 
   useEffect(() => {
     // Load featured products
@@ -190,14 +191,67 @@ export default function PublicHomePage() {
       </div>
 
             {/* Footer */}
-      <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'32px 24px', textAlign:'center', color:'rgba(255,255,255,0.2)', fontSize:13 }}>
-        <p style={{ marginBottom:8 }}>
-          <a href="mailto:youseftmbusiness@gmail.com" style={{ color:'rgba(255,255,255,0.4)', textDecoration:'none', fontWeight:600 }}>
-            ✉️ youseftmbusiness@gmail.com
-          </a>
+      {/* Contact CTA */}
+      <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'48px 24px', textAlign:'center' }}>
+        <p style={{ color:'rgba(255,255,255,0.4)', fontSize:14, marginBottom:20 }}>
+          Interested in carrying our products in your store?
         </p>
-        <p>© 2026 Kanz Supply · Premium Wholesale Distribution</p>
+        <button onClick={() => setShowInquiry(true)} style={{
+          padding:'16px 36px', borderRadius:14, border:'none', cursor:'pointer',
+          background:'linear-gradient(135deg,#6366f1,#2563eb)', color:'white',
+          fontWeight:800, fontSize:17, boxShadow:'0 8px 28px rgba(99,102,241,0.45)',
+          letterSpacing:'0.2px', transition:'all 0.2s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 12px 36px rgba(99,102,241,0.55)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow='0 8px 28px rgba(99,102,241,0.45)' }}>
+          ✉️ Email Us for a Price List
+        </button>
+        <p style={{ color:'rgba(255,255,255,0.2)', fontSize:12, marginTop:16 }}>
+          © 2026 Kanz Supply · Premium Wholesale Distribution
+        </p>
       </div>
+
+      {/* Inquiry popup */}
+      {showInquiry && (
+        <div onClick={() => setShowInquiry(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(8px)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#111', borderRadius:24, maxWidth:480, width:'100%', border:'1px solid rgba(255,255,255,0.12)', overflow:'hidden' }}>
+            {/* Header */}
+            <div style={{ background:'linear-gradient(135deg,#6366f1,#2563eb)', padding:'28px 28px 24px' }}>
+              <p style={{ color:'white', fontWeight:900, fontSize:22, marginBottom:6 }}>Get Our Price List</p>
+              <p style={{ color:'rgba(255,255,255,0.75)', fontSize:14, lineHeight:1.6 }}>
+                Send us your store details and we'll get back to you with our full wholesale catalog and pricing.
+              </p>
+            </div>
+            {/* Body */}
+            <div style={{ padding:'24px 28px 28px' }}>
+              <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:12, padding:'14px 16px', marginBottom:20 }}>
+                <p style={{ color:'rgba(255,255,255,0.5)', fontSize:13, lineHeight:1.7 }}>
+                  📋 <strong style={{ color:'rgba(255,255,255,0.8)' }}>Please include in your email:</strong><br/>
+                  • <strong style={{ color:'white' }}>Store name</strong><br/>
+                  • <strong style={{ color:'white' }}>Store address</strong><br/>
+                  • <strong style={{ color:'white' }}>Type of business</strong> (beauty supply, gas station, convenience store, etc.)
+                </p>
+              </div>
+              <a href="mailto:youseftmbusiness@gmail.com?subject=Price List Request&body=Store Name: %0AStore Address: %0AType of Business: %0A%0AAdditional Notes: "
+                onClick={() => setShowInquiry(false)}
+                style={{
+                  display:'block', width:'100%', padding:'15px', borderRadius:12, border:'none',
+                  background:'linear-gradient(135deg,#6366f1,#2563eb)', color:'white',
+                  fontWeight:800, fontSize:16, textAlign:'center', textDecoration:'none',
+                  boxShadow:'0 6px 20px rgba(99,102,241,0.4)', boxSizing:'border-box',
+                }}>
+                📧 Open Email App
+              </a>
+              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:12, textAlign:'center', marginTop:12 }}>
+                youseftmbusiness@gmail.com
+              </p>
+              <button onClick={() => setShowInquiry(false)} style={{ width:'100%', marginTop:8, padding:'12px', borderRadius:12, border:'1px solid rgba(255,255,255,0.12)', background:'transparent', color:'rgba(255,255,255,0.4)', fontSize:14, cursor:'pointer' }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Product modal */}
       {selected && (
