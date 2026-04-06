@@ -191,7 +191,12 @@ export default function PublicHomePage() {
 
             {/* Footer */}
       <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'32px 24px', textAlign:'center', color:'rgba(255,255,255,0.2)', fontSize:13 }}>
-        © 2026 Kanz Supply · Premium Wholesale Distribution
+        <p style={{ marginBottom:8 }}>
+          <a href="mailto:youseftmbusiness@gmail.com" style={{ color:'rgba(255,255,255,0.4)', textDecoration:'none', fontWeight:600 }}>
+            ✉️ youseftmbusiness@gmail.com
+          </a>
+        </p>
+        <p>© 2026 Kanz Supply · Premium Wholesale Distribution</p>
       </div>
 
       {/* Product modal */}
