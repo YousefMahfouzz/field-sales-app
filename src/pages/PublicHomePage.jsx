@@ -8,6 +8,7 @@ export default function PublicHomePage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const [logo, setLogo] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     // Load featured products
@@ -56,17 +57,35 @@ export default function PublicHomePage() {
         <p style={{ fontSize:'clamp(16px, 2vw, 20px)', color:'rgba(255,255,255,0.5)', maxWidth:520, margin:'0 auto 40px', lineHeight:1.7 }}>
           Top-selling wholesale products for beauty supply stores, gas stations, convenience stores and more — delivered to your door.
         </p>
-        <button onClick={() => document.getElementById('products').scrollIntoView({ behavior:'smooth' })}
-          style={{ padding:'14px 32px', borderRadius:12, border:'1px solid rgba(255,255,255,0.15)', cursor:'pointer', background:'rgba(255,255,255,0.05)', color:'white', fontWeight:600, fontSize:16 }}>
-          View Products ↓
-        </button>
+        <div style={{ maxWidth:480, margin:'0 auto', position:'relative' }}
+          onClick={() => document.getElementById('products').scrollIntoView({ behavior:'smooth' })}>
+          <span style={{ position:'absolute', left:18, top:'50%', transform:'translateY(-50%)', fontSize:18, pointerEvents:'none' }}>🔍</span>
+          <input
+            type="search"
+            placeholder="Search products..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); document.getElementById('products').scrollIntoView({ behavior:'smooth' }) }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              width:'100%', padding:'16px 20px 16px 52px',
+              borderRadius:40, border:'1.5px solid rgba(255,255,255,0.15)',
+              background:'rgba(255,255,255,0.07)', color:'white', fontSize:16,
+              outline:'none', backdropFilter:'blur(10px)',
+              boxShadow:'0 4px 24px rgba(0,0,0,0.3)',
+            }}
+          />
+        </div>
       </div>
 
       {/* Products */}
       <div id="products" style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 100px' }}>
         <div style={{ textAlign:'center', marginBottom:56 }}>
           <h2 style={{ fontSize:'clamp(28px, 4vw, 44px)', fontWeight:800, marginBottom:12, letterSpacing:'-1px' }}>Our Products</h2>
-          <p style={{ color:'rgba(255,255,255,0.4)', fontSize:16 }}>Wholesale-priced products your customers already want</p>
+          <p style={{ color:'rgba(255,255,255,0.4)', fontSize:16 }}>
+            {search
+              ? `${featured.filter(p => p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase())).length} results for "${search}"`
+              : 'Wholesale-priced products your customers already want'}
+          </p>
         </div>
 
         {loading && (
@@ -85,7 +104,9 @@ export default function PublicHomePage() {
         )}
 
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:28 }}>
-          {featured.map((product, i) => (
+          {featured
+            .filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()))
+            .map((product, i) => (
             <div key={product.id} onClick={() => setSelected(product)}
               style={{ background:'rgba(255,255,255,0.04)', borderRadius:20, border:'1px solid rgba(255,255,255,0.08)', overflow:'hidden', cursor:'pointer', transition:'all 0.3s', animation:`fadeUp 0.5s ease ${i*0.08}s both` }}
               onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.border='1px solid rgba(99,102,241,0.4)'; e.currentTarget.style.background='rgba(255,255,255,0.07)' }}
