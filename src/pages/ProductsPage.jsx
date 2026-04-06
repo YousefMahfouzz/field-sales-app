@@ -2,29 +2,53 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 
 export default function ProductsPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const { products, loading } = useProducts()
+  const { products, loading, fetchProducts } = useProducts()
   const [search, setSearch] = useState('')
   const [groupBy, setGroupBy] = useState('category')
+  const [showArchived, setShowArchived] = useState(false)
+  const [archiving, setArchiving] = useState(null)
+  const [toast, setToast] = useState('')
   const isAdmin = profile?.is_admin === true
 
-  const filtered = products.filter(p =>
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
+
+  const handleArchive = async (e, product) => {
+    e.stopPropagation()
+    if (!window.confirm(product.is_active === false
+      ? `Restore "${product.name}" to active products?`
+      : `Archive "${product.name}"? It will be hidden from your active list.`)) return
+    setArchiving(product.id)
+    try {
+      await supabase.from('products').update({ is_active: product.is_active === false }).eq('id', product.id)
+      if (fetchProducts) await fetchProducts()
+      showToast(product.is_active === false ? '✅ Restored' : '📦 Archived')
+    } catch(e) { showToast('❌ ' + e.message) }
+    finally { setArchiving(null) }
+  }
+
+  const activeProducts = products.filter(p => p.is_active !== false)
+  const archivedProducts = products.filter(p => p.is_active === false)
+  const displayProducts = showArchived ? archivedProducts : activeProducts
+
+  const filtered = displayProducts.filter(p =>
     !search || p.name.toLowerCase().includes(search.toLowerCase()) ||
     (p.brand || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.category || '').toLowerCase().includes(search.toLowerCase())
   )
 
   // Inventory value calculations using avg_cost (falls back to cost)
-  const totalCostValue  = products.reduce((s, p) => s + (p.stock_qty||0) * (p.avg_cost ?? p.cost ?? 0), 0)
-  const totalSellValue  = products.reduce((s, p) => s + (p.stock_qty||0) * (p.sell_price ?? 0), 0)
+  const totalCostValue  = activeProducts.reduce((s, p) => s + (p.stock_qty||0) * (p.avg_cost ?? p.cost ?? 0), 0)
+  const totalSellValue  = activeProducts.reduce((s, p) => s + (p.stock_qty||0) * (p.sell_price ?? 0), 0)
   const totalProfit     = totalSellValue - totalCostValue
   const profitMargin    = totalSellValue > 0 ? ((totalProfit / totalSellValue) * 100).toFixed(0) : 0
-  const inStockCount    = products.filter(p => (p.stock_qty||0) > 0).length
-  const lowStockCount   = products.filter(p => (p.stock_qty||0) > 0 && (p.stock_qty||0) <= 5).length
-  const outOfStockCount = products.filter(p => (p.stock_qty||0) <= 0).length
+  const inStockCount    = activeProducts.filter(p => (p.stock_qty||0) > 0).length
+  const lowStockCount   = activeProducts.filter(p => (p.stock_qty||0) > 0 && (p.stock_qty||0) <= 5).length
+  const outOfStockCount = activeProducts.filter(p => (p.stock_qty||0) <= 0).length
 
   // Group by category
   const grouped = {}
@@ -63,6 +87,9 @@ export default function ProductsPage() {
             {isAdmin ? '👑 Shared' : '📦 Catalog'}
           </button>
           {isAdmin && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/homepage')} style={{ fontSize:11, padding:'5px 10px' }}>🏠 Featured</button>}
+          <button onClick={() => setShowArchived(v => !v)} style={{ fontSize:11, padding:'5px 10px', borderRadius:20, border:'1.5px solid', cursor:'pointer', fontWeight:600, borderColor: showArchived ? '#f59e0b' : 'var(--border)', background: showArchived ? '#fef3c7' : 'white', color: showArchived ? '#b45309' : 'var(--text-muted)' }}>
+            📦 {showArchived ? `Archived (${archivedProducts.length})` : `Archive`}
+          </button>
         </div>
       </div>
 
@@ -192,15 +219,23 @@ export default function ProductsPage() {
                         </p>
                       </div>
 
-                      {/* Stock qty */}
+                      {/* Stock qty + archive */}
                       <div style={{ textAlign:'right', flexShrink:0 }}>
                         <div style={{
                           fontWeight:800, fontSize:20,
-                          color: product.stock_qty <= 0 ? 'var(--red)' : product.stock_qty <= 5 ? 'var(--amber)' : 'var(--green)'
+                          color: product.is_active === false ? 'var(--text-muted)' : product.stock_qty <= 0 ? 'var(--red)' : product.stock_qty <= 5 ? 'var(--amber)' : 'var(--green)'
                         }}>
-                          {product.stock_qty || 0}
+                          {product.is_active === false ? '—' : (product.stock_qty || 0)}
                         </div>
                         <div style={{ fontSize:10, color:'var(--text-muted)' }}>{product.unit}s</div>
+                        <button onClick={(e) => handleArchive(e, product)} disabled={archiving === product.id}
+                          style={{ marginTop:4, padding:'2px 8px', borderRadius:8, border:'1px solid', cursor:'pointer', fontSize:10, fontWeight:700,
+                            borderColor: product.is_active === false ? '#86efac' : '#fecaca',
+                            background: product.is_active === false ? '#f0fdf4' : '#fef2f2',
+                            color: product.is_active === false ? '#16a34a' : '#dc2626'
+                          }}>
+                          {archiving === product.id ? '...' : product.is_active === false ? '↩ Restore' : '📦 Archive'}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -210,6 +245,11 @@ export default function ProductsPage() {
           )
         })}
       </div>
+      {toast && (
+        <div style={{ position:'fixed', bottom:90, left:'50%', transform:'translateX(-50%)', background:'#1f2937', color:'white', padding:'10px 20px', borderRadius:24, fontSize:14, zIndex:1000, whiteSpace:'nowrap' }}>
+          {toast}
+        </div>
+      )}
     </div>
   )
 }

@@ -13,8 +13,8 @@ export default function PublicHomePage() {
   useEffect(() => {
     // Load featured products
     supabase.from('homepage_featured')
-      .select('id, display_order, product:products(id, name, description, image_url, images, brand, category)')
-      .eq('is_active', true).order('display_order')
+      .select('id, sort_order, product:products(id, name, description, image_url, images, brand, category)')
+      .eq('is_active', true).order('sort_order')
       .then(({ data }) => {
         setFeatured((data || []).map(f => f.product).filter(Boolean))
         setLoading(false)

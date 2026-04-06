@@ -14,7 +14,7 @@ export function useProducts() {
       .from('products')
       .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at')
       .eq('user_id', user.id)
-      .eq('is_active', true)
+      // fetch all including archived — ProductsPage filters by is_active
       .order('category')
       .order('name')
     setProducts(data || [])

@@ -19,9 +19,9 @@ export default function AdminHomepageManager() {
   const loadFeatured = useCallback(async () => {
     const { data } = await supabase
       .from('homepage_featured')
-      .select('id, product_id, display_order')
+      .select('id, product_id, sort_order')
       .eq('is_active', true)
-      .order('display_order')
+      .order('sort_order')
     setFeatured(data || [])
     setLoading(false)
   }, [])
@@ -42,13 +42,13 @@ export default function AdminHomepageManager() {
         setFeatured(prev => prev.filter(f => f.id !== existing.id))
         showToast('✅ Removed from homepage')
       } else {
-        const maxOrder = featured.length > 0 ? Math.max(...featured.map(f => f.display_order)) + 1 : 0
+        const maxOrder = featured.length > 0 ? Math.max(...featured.map(f => f.sort_order || 0)) + 1 : 0
         const { data } = await supabase.from('homepage_featured').insert([{
           product_id: product.id,
           admin_user_id: profile.id,
-          display_order: maxOrder,
+          sort_order: maxOrder,
           is_active: true,
-        }]).select('id, product_id, display_order').single()
+        }]).select('id, product_id, sort_order').single()
         if (data) setFeatured(prev => [...prev, data])
         showToast('✅ Added to homepage')
       }
@@ -63,7 +63,7 @@ export default function AdminHomepageManager() {
     ;[newFeatured[idx - 1], newFeatured[idx]] = [newFeatured[idx], newFeatured[idx - 1]]
     setFeatured(newFeatured)
     await Promise.all(newFeatured.map((f, i) =>
-      supabase.from('homepage_featured').update({ display_order: i }).eq('id', f.id)
+      supabase.from('homepage_featured').update({ sort_order: i }).eq('id', f.id)
     ))
   }
 
@@ -74,7 +74,7 @@ export default function AdminHomepageManager() {
     ;[newFeatured[idx], newFeatured[idx + 1]] = [newFeatured[idx + 1], newFeatured[idx]]
     setFeatured(newFeatured)
     await Promise.all(newFeatured.map((f, i) =>
-      supabase.from('homepage_featured').update({ display_order: i }).eq('id', f.id)
+      supabase.from('homepage_featured').update({ sort_order: i }).eq('id', f.id)
     ))
   }
 
