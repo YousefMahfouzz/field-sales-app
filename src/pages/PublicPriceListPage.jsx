@@ -17,9 +17,20 @@ export default function PublicPriceListPage() {
 
   useEffect(() => {
     const load = async () => {
+      // userId param could be a UUID or a username — resolve to actual user_id
+      let resolvedUserId = userId
+      const isUUID = /^[0-9a-f-]{36}$/.test(userId)
+      if (!isUUID) {
+        // It's a username — look up the profile
+        const { data: prof } = await supabase.from('profiles')
+          .select('id').eq('username', userId).single()
+        if (!prof) { setLoading(false); return }
+        resolvedUserId = prof.id
+      }
+
       // Get the price list
       const { data: listData } = await supabase.from('price_lists')
-        .select('*').eq('user_id', userId).eq('slug', slug).single()
+        .select('*').eq('user_id', resolvedUserId).eq('slug', slug).single()
       if (!listData) { setLoading(false); return }
       setList(listData)
 
@@ -27,12 +38,12 @@ export default function PublicPriceListPage() {
       const { data: itemsData } = await supabase.from('price_list_items')
         .select('*, products(id, name, brand, description, category, unit, image_url, images, price_min, price_max)')
         .eq('price_list_id', listData.id)
-        .order('sort_order')
+        .order('display_order')
       setItems((itemsData || []).filter(i => i.products))
 
       // Get seller profile
       const { data: profileData } = await supabase.from('profiles')
-        .select('display_name, username').eq('id', userId).single()
+        .select('display_name, username').eq('id', resolvedUserId).single()
       setProfile(profileData)
       setLoading(false)
     }

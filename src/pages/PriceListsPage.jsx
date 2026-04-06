@@ -26,7 +26,8 @@ export default function PriceListsPage() {
   useEffect(() => { loadLists() }, [loadLists])
 
   const createList = async (name, niche) => {
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36)
+    const rand = Math.random().toString(36).slice(2, 7)
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + rand
     const { data, error } = await supabase.from('price_lists').insert([{
       user_id: user.id, name, slug, niche, is_active: true
     }]).select().single()
@@ -45,7 +46,7 @@ export default function PriceListsPage() {
   }
 
   const shareList = (list) => {
-    const url = `${window.location.origin}/pl/${user?.id}/${list.slug}`
+    const url = `${window.location.origin}/pl/${profile?.username || user?.id}/${list.slug}`
     if (navigator.share) navigator.share({ title: list.name + ' — Kanz Supply', url })
     else { navigator.clipboard.writeText(url); alert('Link copied!\n\n' + url) }
   }
@@ -91,7 +92,7 @@ export default function PriceListsPage() {
                   {list.niche?.charAt(0).toUpperCase() + list.niche?.slice(1).replace('_',' ')} · {list.is_active ? '🟢 Active' : '⚫ Hidden'}
                 </p>
                 <p style={{ fontSize:11, color:'var(--blue)', marginTop:4, wordBreak:'break-all' }}>
-                  /pl/{user?.id?.slice(0,8)}.../{list.slug}
+                  /pl/{profile?.username}/{list.slug}
                 </p>
               </div>
             </div>
@@ -99,7 +100,7 @@ export default function PriceListsPage() {
               <button onClick={() => { setEditingList(list); setView('edit') }}
                 className="btn btn-primary btn-sm" style={{ flex:1 }}>✏️ Edit Products</button>
               <button onClick={() => shareList(list)} className="btn btn-ghost btn-sm">🔗 Share</button>
-              <button onClick={() => window.open(`/pl/${user?.id}/${list.slug}`, '_blank')} className="btn btn-ghost btn-sm">👁️ View</button>
+              <button onClick={() => window.open(`/pl/${profile?.username || user?.id}/${list.slug}`, '_blank')} className="btn btn-ghost btn-sm">👁️ View</button>
               <button onClick={() => deleteList(list.id)} className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }}>🗑️</button>
             </div>
           </div>
@@ -160,7 +161,7 @@ function CreateListModal({ onCreate, onClose }) {
 // ── Price List Editor ─────────────────────────────────────────────
 function PriceListEditor({ list, products, onBack, onShare }) {
   const { user } = useAuth()
-  const [items, setItems] = useState([]) // { product_id, custom_price, sort_order }
+  const [items, setItems] = useState([]) // { product_id, custom_price, display_order }
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(null)
@@ -170,7 +171,7 @@ function PriceListEditor({ list, products, onBack, onShare }) {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
   useEffect(() => {
-    supabase.from('price_list_items').select('*').eq('price_list_id', list.id).order('sort_order')
+    supabase.from('price_list_items').select('*').eq('price_list_id', list.id).order('display_order')
       .then(({ data }) => { setItems(data || []); setLoading(false) })
   }, [list.id])
 
@@ -188,7 +189,7 @@ function PriceListEditor({ list, products, onBack, onShare }) {
           price_list_id: list.id,
           product_id: product.id,
           custom_price: product.sell_price,
-          sort_order: items.length,
+          display_order: items.length,
         }]).select().single()
         if (data) setItems(prev => [...prev, data])
       }
@@ -214,7 +215,7 @@ function PriceListEditor({ list, products, onBack, onShare }) {
     grouped[cat].push(p)
   })
 
-  const priceListUrl = `${window.location.origin}/pl/${user?.id}/${list.slug}`
+  const priceListUrl = `${window.location.origin}/pl/${user?.id}/${list.slug}` // permanent — slug never changes
 
   return (
     <div>
