@@ -44,25 +44,25 @@ export default function ProductsPage() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Products</h1>
-        <div style={{ display:'flex', gap:8 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/shared-catalog')} style={{ fontSize:12 }}>
-            {isAdmin ? '👑 Shared' : '📦 Catalog'}
-          </button>
+      <div className="page-header" style={{ flexDirection:'column', alignItems:'stretch', gap:8, padding:'10px 16px' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <h1>Products</h1>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>
+        </div>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
           <button className="btn btn-ghost btn-sm" onClick={() => {
             const url = profile?.username
               ? `${window.location.origin}/u/${profile.username}/pricelist`
               : `${window.location.origin}/pricelist`
             const a = document.createElement('a')
-            a.href = url
-            a.target = '_blank'
-            a.rel = 'noopener noreferrer'
-            a.click()
-          }} style={{ fontSize:12 }}>👁️ View</button>
-          <button className="btn btn-ghost btn-sm" onClick={shareList} style={{ fontSize:12 }}>🔗 Share</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/price-lists')} style={{ fontSize:12 }}>📋 Lists</button>
-          <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>
+            a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.click()
+          }} style={{ fontSize:11, padding:'5px 10px' }}>👁️ View</button>
+          <button className="btn btn-ghost btn-sm" onClick={shareList} style={{ fontSize:11, padding:'5px 10px' }}>🔗 Share</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/price-lists')} style={{ fontSize:11, padding:'5px 10px' }}>📋 Lists</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/shared-catalog')} style={{ fontSize:11, padding:'5px 10px' }}>
+            {isAdmin ? '👑 Shared' : '📦 Catalog'}
+          </button>
+          {isAdmin && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/homepage')} style={{ fontSize:11, padding:'5px 10px' }}>🏠 Featured</button>}
         </div>
       </div>
 

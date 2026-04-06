@@ -205,18 +205,35 @@ export default function CustomerDetailPage() {
           return (
             <div key={v.id} className="card" style={{ marginBottom: 8, padding: '10px 14px' }}>
               <div className="flex justify-between items-center">
-                <div>
+                <div style={{ flex:1 }}>
                   <p style={{ fontWeight: 600, fontSize: 14 }}>
                     {v.was_visited ? '✅ Visited' : '📞 Follow-up'}
                     {v.had_sale ? ' · 💰 Sale' : ''}
                   </p>
                   <p className="text-xs text-muted">{new Date(v.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
                 </div>
-                {saleTotal > 0 && (
-                  <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 15 }}>${saleTotal.toFixed(0)}</span>
-                )}
+                <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                  {saleTotal > 0 && (
+                    <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 15 }}>${saleTotal.toFixed(0)}</span>
+                  )}
+                  <button onClick={async () => {
+                    if (!window.confirm('Delete this visit record?')) return
+                    await supabase.from('visits').update({ deleted_at: new Date().toISOString() }).eq('id', v.id)
+                    setVisits(prev => prev.filter(x => x.id !== v.id))
+                  }} style={{ padding:'3px 8px', borderRadius:8, border:'1px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer' }}>🗑️</button>
+                </div>
               </div>
               {v.notes && <p className="text-xs text-muted" style={{ marginTop: 6 }}>{v.notes}</p>}
+              {v.sale_items?.length > 0 && (
+                <div style={{ marginTop:6, paddingTop:6, borderTop:'1px solid var(--border)' }}>
+                  {v.sale_items.map((item, i) => (
+                    <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--text-muted)' }}>
+                      <span>{item.product_name} × {item.qty}</span>
+                      <span>${(item.qty * item.unit_price).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )
         })}

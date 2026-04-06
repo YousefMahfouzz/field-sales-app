@@ -129,8 +129,8 @@ export default function AnalyticsPage() {
 
       // Stock purchased this month
       const [monthStock, allStock] = await Promise.all([
-        supabase.from('purchases').select('total_cost').eq('user_id', user.id).gte('purchased_at', ms+'T00:00:00'),
-        supabase.from('purchases').select('total_cost').eq('user_id', user.id),
+        supabase.from('stock_movements').select('total_cost').eq('user_id', user.id).eq('type','in').gte('created_at', ms+'T00:00:00'),
+        supabase.from('stock_movements').select('total_cost').eq('user_id', user.id).eq('type','in'),
       ])
 
       const calc = (rows) => ({
@@ -323,9 +323,9 @@ export default function AnalyticsPage() {
                 {stockData.rows.slice(0,20).map((r,i) => (
                   <div key={i} style={{ display:'flex', alignItems:'center', padding:'9px 14px', background:'white', borderRadius:10, marginBottom:6, border:'1px solid var(--border)' }}>
                     <div style={{ flex:1 }}>
-                      <p style={{ fontWeight:700, fontSize:13 }}>{r.product_name || 'Unknown'}</p>
+                      <p style={{ fontWeight:700, fontSize:13 }}>{r.products?.name || r.note || 'Unknown'}</p>
                       <p style={{ fontSize:11, color:'var(--text-muted)' }}>
-                        {r.qty} units · {new Date(r.purchased_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+                        {r.qty} units · {new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
                       </p>
                     </div>
                     <div style={{ textAlign:'right' }}>

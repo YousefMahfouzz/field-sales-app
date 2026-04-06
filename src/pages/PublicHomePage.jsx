@@ -25,7 +25,7 @@ export default function PublicHomePage() {
   }, [])
 
   return (
-    <div style={{ minHeight:'100vh', background:'#0a0a0a', color:'white', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:'#0a0a0a', color:'white', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', width:'100%', overflowX:'hidden' }}>
 
       {/* Nav — Login only in corner */}
       <nav style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, padding:'0 24px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(10,10,10,0.85)', backdropFilter:'blur(20px)', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
@@ -47,11 +47,11 @@ export default function PublicHomePage() {
       </nav>
 
       {/* Hero — no login button here, just scroll to products */}
-      <div style={{ paddingTop:140, paddingBottom:80, textAlign:'center', padding:'140px 24px 80px' }}>
+      <div style={{ padding:'clamp(100px,12vh,160px) clamp(16px,5vw,80px) clamp(40px,6vh,80px)', textAlign:'center' }}>
         <div style={{ display:'inline-block', padding:'6px 16px', borderRadius:20, background:'rgba(99,102,241,0.15)', border:'1px solid rgba(99,102,241,0.3)', marginBottom:24, fontSize:13, color:'#a5b4fc', fontWeight:600, letterSpacing:'0.5px' }}>
           WHOLESALE DISTRIBUTION
         </div>
-        <h1 style={{ fontSize:'clamp(36px, 6vw, 72px)', fontWeight:900, lineHeight:1.1, marginBottom:20, letterSpacing:'-2px', background:'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.6) 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
+        <h1 style={{ fontSize:'clamp(28px, 5vw, 72px)', fontWeight:900, lineHeight:1.1, marginBottom:20, letterSpacing:'-2px', background:'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.6) 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
           Premium Products.<br/>Stocked for Your Store.
         </h1>
         <p style={{ fontSize:'clamp(16px, 2vw, 20px)', color:'rgba(255,255,255,0.5)', maxWidth:520, margin:'0 auto 40px', lineHeight:1.7 }}>
@@ -78,7 +78,7 @@ export default function PublicHomePage() {
       </div>
 
       {/* Products */}
-      <div id="products" style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 100px' }}>
+      <div id="products" style={{ maxWidth:1400, margin:'0 auto', padding:'0 clamp(12px,4vw,48px) 100px' }}>
         <div style={{ textAlign:'center', marginBottom:56 }}>
           <h2 style={{ fontSize:'clamp(28px, 4vw, 44px)', fontWeight:800, marginBottom:12, letterSpacing:'-1px' }}>Our Products</h2>
           <p style={{ color:'rgba(255,255,255,0.4)', fontSize:16 }}>
@@ -103,7 +103,7 @@ export default function PublicHomePage() {
           </div>
         )}
 
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:28 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap:'clamp(12px,2vw,28px)' }}>
           {featured
             .filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()))
             .map((product, i) => (
