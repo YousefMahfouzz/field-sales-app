@@ -161,10 +161,7 @@ export default function SettingsPage() {
           <p className="section-header">Account</p>
           <p className="text-xs text-muted" style={{ marginBottom:12 }}>{user?.email}</p>
 
-          {wideMode !== undefined && profile?.is_admin && (
-            <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/store')} style={{ marginBottom:10, color:'#7c3aed', borderColor:'#7c3aed' }}>
-              🏪 Store Manager
-            </button>
+          {profile?.is_admin && (
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/inventory')} style={{ marginBottom:10, color:'#dc2626', borderColor:'#dc2626' }}>
               👑 View User Inventories
             </button>
