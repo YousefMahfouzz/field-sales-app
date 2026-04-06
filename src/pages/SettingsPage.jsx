@@ -163,6 +163,9 @@ export default function SettingsPage() {
 
           {profile?.is_admin && (<>
             <p style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Admin Tools</p>
+            <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/settings')} style={{ marginBottom:8, color:'#7c3aed', borderColor:'#7c3aed' }}>
+              ⚙️ Invite Codes & Logo
+            </button>
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/homepage')} style={{ marginBottom:8, color:'#6366f1', borderColor:'#6366f1' }}>
               🌐 Manage Homepage
             </button>
