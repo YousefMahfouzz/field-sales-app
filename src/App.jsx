@@ -19,6 +19,7 @@ import CompressImagesPage from './pages/CompressImagesPage'
 import BackupPage from './pages/BackupPage'
 import SharedCatalogPage from './pages/SharedCatalogPage'
 import AdminInventoryPage from './pages/AdminInventoryPage'
+import AnalyticsPage from './pages/AnalyticsPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import PublicHomePage from './pages/PublicHomePage'
 import AdminHomepageManager from './pages/AdminHomepageManager'
@@ -99,6 +100,7 @@ function AppRoutes() {
           <Route path="/backup" element={<PrivateRoute><BackupPage /></PrivateRoute>} />
           <Route path="/shared-catalog" element={<PrivateRoute><SharedCatalogPage /></PrivateRoute>} />
           <Route path="/admin/inventory" element={<PrivateRoute><AdminInventoryPage /></PrivateRoute>} />
+        <Route path="/analytics" element={<PrivateRoute><AnalyticsPage /></PrivateRoute>} />
         <Route path="/admin/settings" element={<PrivateRoute><AdminSettingsPage /></PrivateRoute>} />
           <Route path="/admin/homepage" element={<PrivateRoute><AdminHomepageManager /></PrivateRoute>} />
           <Route path="/admin/price-lists" element={<PrivateRoute><PriceListsManagerPage /></PrivateRoute>} />

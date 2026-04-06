@@ -215,12 +215,22 @@ export default function DashboardPage() {
       const sales  = v.filter(x => x.had_sale)
       const rev    = sales.reduce((s, x) => s + (x.sale_amount || 0), 0)
       const cst    = sales.reduce((s, x) => s + (x.cost || 0), 0)
+      // Also pull today's revenue from sale_items (more accurate)
+      const { data: todaySales } = await supabase
+        .from('sale_items').select('total_price,total_profit')
+        .eq('user_id', user.id)
+        .gte('created_at', today + 'T00:00:00')
+        .lte('created_at', today + 'T23:59:59')
+      const todayRev  = (todaySales||[]).reduce((s,i) => s+(i.total_price||0), 0)
+      const todayProf = (todaySales||[]).reduce((s,i) => s+(i.total_profit||0), 0)
       setStats({
-        todayVisits: todayV.length,
-        weekVisits:  v.length,
-        weekSales:   sales.length,
-        weekRevenue: rev,
-        weekProfit:  rev - cst,
+        todayVisits:  todayV.length,
+        todayRevenue: todayRev,
+        todayProfit:  todayProf,
+        weekVisits:   v.length,
+        weekSales:    sales.length,
+        weekRevenue:  rev,
+        weekProfit:   rev - cst,
       })
       setRecentVisits(v.slice(0, 6))
 
@@ -336,7 +346,20 @@ export default function DashboardPage() {
           )}
 
           {/* Today */}
-          <p className="section-header">Today</p>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+            <p className="section-header" style={{ margin:0 }}>Today</p>
+            <button onClick={() => navigate('/analytics')} style={{ fontSize:12, color:'var(--blue)', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📊 Analytics →</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+            <div style={{ background:'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius:12, padding:'12px 14px' }}>
+              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Revenue Today</p>
+              <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayRevenue??0).toFixed(2)}`}</p>
+            </div>
+            <div style={{ background:'linear-gradient(135deg,#14532d,#16a34a)', borderRadius:12, padding:'12px 14px' }}>
+              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Profit Today</p>
+              <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayProfit??0).toFixed(2)}`}</p>
+            </div>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
             <Metric icon="🚶" label="Visits" value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
             <Metric icon="📍" label="Added" value={addedToday.length} color="#7c3aed" />
@@ -387,7 +410,7 @@ export default function DashboardPage() {
               { label: '📍 Add Customer', to: '/customers/new' },
               { label: '📦 Record Purchase', to: '/purchases' },
               { label: '📋 View Orders', to: '/orders' },
-              { label: '🗺️ Open Map', to: '/map' },
+              { label: '📊 Analytics', to: '/analytics' },
             ].map(a => (
               <button key={a.to} onClick={() => navigate(a.to)} style={{
                 padding: '13px', borderRadius: 12, border: '1.5px solid var(--border)',
