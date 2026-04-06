@@ -19,16 +19,22 @@ import CompressImagesPage from './pages/CompressImagesPage'
 import BackupPage from './pages/BackupPage'
 import SharedCatalogPage from './pages/SharedCatalogPage'
 import AdminInventoryPage from './pages/AdminInventoryPage'
-import HomepagePage from './pages/HomepagePage'
+import PublicHomePage from './pages/PublicHomePage'
+import AdminHomepageManager from './pages/AdminHomepageManager'
+import PriceListsManagerPage from './pages/PriceListsManagerPage'
 import NicheLandingPage from './pages/NicheLandingPage'
-import AdminStorePage from './pages/AdminStorePage'
-// import LandingPage from './pages/LandingPage' -- replaced by HomepagePage
 // import AdminLandingPage from './pages/AdminLandingPage' -- replaced
 import PriceListsPage from './pages/PriceListsPage'
-import PublicPriceListPage from './pages/PublicPriceListPage'
 import OrdersPage from './pages/OrdersPage'
 import PurchasesPage from './pages/PurchasesPage'
 import BottomNav from './components/BottomNav'
+
+// Routes to public homepage if not logged in, app dashboard if logged in
+function PublicOrApp() {
+  const { user, loading } = useAuth()
+  if (loading) return <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',fontSize:24 }}>⏳</div>
+  return user ? <DashboardPage /> : <PublicHomePage />
+}
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -67,38 +73,35 @@ function AppRoutes() {
 
   return (
     <>
-      <Routes>
-        <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
-        <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <HomepagePage />} />
-        <Route path="/admin/landing" element={<PrivateRoute><AdminStorePage /></PrivateRoute>} />
-        <Route path="/store/:slug" element={<NicheLandingPage />} />
-        <Route path="/admin/store" element={<PrivateRoute><AdminStorePage /></PrivateRoute>} />
-        <Route path="/price-lists" element={<PrivateRoute><PriceListsPage /></PrivateRoute>} />
-        <Route path="/pl/:userId/:slug" element={<PublicPriceListPage />} />
-        <Route path="/customers" element={<PrivateRoute><CustomersPage /></PrivateRoute>} />
-        <Route path="/customers/:id" element={<PrivateRoute><CustomerDetailPage /></PrivateRoute>} />
-        <Route path="/customers/:id/edit" element={<PrivateRoute><AddEditCustomerPage /></PrivateRoute>} />
-        <Route path="/customers/new" element={<PrivateRoute><AddEditCustomerPage /></PrivateRoute>} />
-        <Route path="/map" element={<PrivateRoute><MapPage /></PrivateRoute>} />
-        <Route path="/route" element={<PrivateRoute><RoutePlannerPage /></PrivateRoute>} />
-        <Route path="/visit/:customerId" element={<PrivateRoute><VisitLogPage /></PrivateRoute>} />
-        <Route path="/products" element={<PrivateRoute><ProductsPage /></PrivateRoute>} />
-        <Route path="/products/new" element={<PrivateRoute><AddEditProductPage /></PrivateRoute>} />
-        <Route path="/products/:id" element={<PrivateRoute><ProductDetailPage /></PrivateRoute>} />
-        <Route path="/products/:id/edit" element={<PrivateRoute><AddEditProductPage /></PrivateRoute>} />
-        <Route path="/purchases" element={<PrivateRoute><PurchasesPage /></PrivateRoute>} />
-        <Route path="/orders" element={<PrivateRoute><OrdersPage /></PrivateRoute>} />
-        <Route path="/territory" element={<PrivateRoute><TerritoryPage /></PrivateRoute>} />
-        <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
-        <Route path="/compress-images" element={<PrivateRoute><CompressImagesPage /></PrivateRoute>} />
-        <Route path="/backup" element={<PrivateRoute><BackupPage /></PrivateRoute>} />
-        <Route path="/shared-catalog" element={<PrivateRoute><SharedCatalogPage /></PrivateRoute>} />
-        <Route path="/admin/inventory" element={<PrivateRoute><AdminInventoryPage /></PrivateRoute>} />
-        <Route path="/pricelist" element={<PriceListPage />} />
-        <Route path="/u/:username/pricelist" element={<PriceListPage />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+              <Routes>
+          <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
+          <Route path="/" element={<PublicOrApp />} />
+          <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+          <Route path="/customers" element={<PrivateRoute><CustomersPage /></PrivateRoute>} />
+          <Route path="/customers/:id" element={<PrivateRoute><CustomerDetailPage /></PrivateRoute>} />
+          <Route path="/customers/:id/edit" element={<PrivateRoute><AddEditCustomerPage /></PrivateRoute>} />
+          <Route path="/customers/new" element={<PrivateRoute><AddEditCustomerPage /></PrivateRoute>} />
+          <Route path="/map" element={<PrivateRoute><MapPage /></PrivateRoute>} />
+          <Route path="/route" element={<PrivateRoute><RoutePlannerPage /></PrivateRoute>} />
+          <Route path="/visit/:customerId" element={<PrivateRoute><VisitLogPage /></PrivateRoute>} />
+          <Route path="/products" element={<PrivateRoute><ProductsPage /></PrivateRoute>} />
+          <Route path="/products/:id" element={<PrivateRoute><ProductDetailPage /></PrivateRoute>} />
+          <Route path="/products/new" element={<PrivateRoute><AddEditProductPage /></PrivateRoute>} />
+          <Route path="/products/:id/edit" element={<PrivateRoute><AddEditProductPage /></PrivateRoute>} />
+          <Route path="/territory" element={<PrivateRoute><TerritoryPage /></PrivateRoute>} />
+          <Route path="/u/:username/pricelist" element={<PriceListPage />} />
+          <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+          <Route path="/compress" element={<PrivateRoute><CompressImagesPage /></PrivateRoute>} />
+          <Route path="/orders" element={<PrivateRoute><OrdersPage /></PrivateRoute>} />
+          <Route path="/purchases" element={<PrivateRoute><PurchasesPage /></PrivateRoute>} />
+          <Route path="/backup" element={<PrivateRoute><BackupPage /></PrivateRoute>} />
+          <Route path="/shared-catalog" element={<PrivateRoute><SharedCatalogPage /></PrivateRoute>} />
+          <Route path="/admin/inventory" element={<PrivateRoute><AdminInventoryPage /></PrivateRoute>} />
+          <Route path="/admin/homepage" element={<PrivateRoute><AdminHomepageManager /></PrivateRoute>} />
+          <Route path="/admin/price-lists" element={<PrivateRoute><PriceListsManagerPage /></PrivateRoute>} />
+          <Route path="/list/:slug" element={<NicheLandingPage />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
       {user && !isPricelist && <BottomNav />}
     </>
   )

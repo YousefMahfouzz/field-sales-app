@@ -5,179 +5,114 @@ import { supabase } from '../lib/supabase'
 export default function NicheLandingPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
-  const [niche, setNiche] = useState(null)
+  const [list, setList] = useState(null)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [cart, setCart] = useState({})
-  const [orderForm, setOrderForm] = useState({ name: '', phone: '', address: '', notes: '' })
-  const [showOrder, setShowOrder] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [search, setSearch] = useState('')
+  const [notFound, setNotFound] = useState(false)
+  const [selected, setSelected] = useState(null)
 
   useEffect(() => {
     const load = async () => {
-      const { data: n } = await supabase.from('niche_lists').select('*').eq('slug', slug).single()
-      if (!n) { setLoading(false); return }
-      setNiche(n)
-      const { data: listItems } = await supabase
-        .from('niche_list_items')
-        .select('*, product:product_id(id,name,brand,description,image_url,images,category,unit,sell_price,price_min,price_max)')
-        .eq('niche_list_id', n.id)
-        .eq('is_active', true)
-        .order('sort_order')
-      setItems(listItems || [])
+      // Get the price list
+      const { data: listData } = await supabase
+        .from('price_lists').select('*').eq('slug', slug).eq('is_public', true).eq('is_active', true).single()
+      if (!listData) { setNotFound(true); setLoading(false); return }
+      setList(listData)
+
+      // Get items with product details
+      const { data: itemData } = await supabase
+        .from('price_list_items')
+        .select(`*, product:products(id, name, description, image_url, images, brand, category, unit)`)
+        .eq('price_list_id', listData.id).eq('is_active', true).order('display_order')
+      setItems((itemData || []).filter(i => i.product))
       setLoading(false)
     }
     load()
   }, [slug])
 
-  const cartTotal = Object.values(cart).reduce((s, { item, qty }) => s + qty * (item.custom_price ?? item.product?.sell_price ?? 0), 0)
-  const cartCount = Object.values(cart).reduce((s, { qty }) => s + qty, 0)
-
-  const setQty = (itemId, qty, item) => {
-    if (qty <= 0) { setCart(p => { const n = {...p}; delete n[itemId]; return n }); return }
-    setCart(p => ({ ...p, [itemId]: { item, qty } }))
-  }
-
-  const submitOrder = async () => {
-    if (!orderForm.name || !orderForm.phone) return
-    setSubmitting(true)
-    try {
-      const orderItems = Object.values(cart).map(({ item, qty }) => ({
-        product_id: item.product?.id,
-        name: item.product?.name,
-        qty,
-        unit_price: item.custom_price ?? item.product?.sell_price ?? 0,
-        subtotal: qty * (item.custom_price ?? item.product?.sell_price ?? 0),
-      }))
-      await supabase.from('orders').insert([{
-        customer_name: orderForm.name,
-        phone: orderForm.phone,
-        address: orderForm.address,
-        notes: `[${niche.name}] ${orderForm.notes}`,
-        items: orderItems,
-        total_amount: cartTotal,
-        seller_user_id: niche.admin_user_id,
-        seller_username: 'joe',
-        status: 'pending',
-      }])
-      setSubmitted(true)
-      setCart({})
-    } catch (e) { alert('Could not submit: ' + e.message) }
-    finally { setSubmitting(false) }
-  }
-
-  const color = niche?.theme_color || '#7c3aed'
-  const filtered = items.filter(item =>
-    !search ||
-    item.product?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    item.product?.brand?.toLowerCase().includes(search.toLowerCase()) ||
-    item.product?.category?.toLowerCase().includes(search.toLowerCase())
+  if (loading) return (
+    <div style={{ minHeight:'100vh', background:'#0a0a0a', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ color:'rgba(255,255,255,0.4)', fontSize:16 }}>Loading...</div>
+    </div>
   )
 
+  if (notFound) return (
+    <div style={{ minHeight:'100vh', background:'#0a0a0a', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'white', fontFamily:'system-ui' }}>
+      <div style={{ fontSize:56, marginBottom:16 }}>🔍</div>
+      <p style={{ fontSize:20, fontWeight:700, marginBottom:8 }}>Price list not found</p>
+      <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:24 }}>This link may have expired or been made private.</p>
+      <button onClick={() => navigate('/')} style={{ padding:'12px 28px', borderRadius:12, background:'white', color:'black', fontWeight:700, border:'none', cursor:'pointer' }}>Go Home</button>
+    </div>
+  )
+
+  const color = list.banner_color || '#2563eb'
   const grouped = {}
-  filtered.forEach(item => {
-    const cat = item.product?.category || 'Other'
+  items.forEach(item => {
+    const cat = item.product.category || 'Products'
     if (!grouped[cat]) grouped[cat] = []
     grouped[cat].push(item)
   })
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>Loading...</div>
-    </div>
-  )
-
-  if (!niche) return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 48 }}>🔍</div>
-      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 18 }}>Price list not found</p>
-      <button onClick={() => navigate('/')} style={{ padding: '10px 24px', borderRadius: 20, background: 'white', color: '#0a0a0a', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Go Home</button>
-    </div>
-  )
-
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', minHeight: '100vh', background: '#0a0a0a', color: 'white' }}>
-
+    <div style={{ minHeight:'100vh', background:'#0a0a0a', color:'white', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       {/* Nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg,#7c3aed,#2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🛒</div>
-          <span style={{ fontWeight: 800, fontSize: 16 }}>Kanz Supply</span>
-        </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {cartCount > 0 && (
-            <button onClick={() => setShowOrder(true)} style={{ padding: '8px 18px', borderRadius: 20, border: 'none', background: color, color: 'white', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              🛒 {cartCount} · ${cartTotal.toFixed(2)}
-            </button>
-          )}
-          <button onClick={() => navigate('/login')} style={{ padding: '8px 18px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Login</button>
-        </div>
+      <nav style={{ position:'sticky', top:0, zIndex:100, padding:'0 24px', height:60, display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(10,10,10,0.9)', backdropFilter:'blur(20px)', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+        <button onClick={() => navigate('/')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', color:'white', cursor:'pointer' }}>
+          <div style={{ width:28, height:28, background:`linear-gradient(135deg, ${color}, ${color}88)`, borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>🛒</div>
+          <span style={{ fontWeight:800, fontSize:16 }}>Kanz Supply</span>
+        </button>
+        <button onClick={() => navigate('/login')} style={{ padding:'8px 20px', borderRadius:20, border:'none', cursor:'pointer', background:color, color:'white', fontWeight:700, fontSize:13 }}>Login →</button>
       </nav>
 
-      {/* Hero */}
-      <section style={{ paddingTop: 120, paddingBottom: 60, paddingLeft: 24, paddingRight: 24, textAlign: 'center', background: `radial-gradient(ellipse 70% 50% at 50% 0%, ${color}20 0%, transparent 70%)` }}>
-        <div style={{ display: 'inline-block', padding: '6px 16px', borderRadius: 24, background: `${color}22`, border: `1px solid ${color}44`, fontSize: 13, fontWeight: 600, color, marginBottom: 20 }}>
-          {niche.name}
+      {/* Hero banner */}
+      <div style={{ padding:'60px 24px 48px', background:`linear-gradient(180deg, ${color}22 0%, transparent 100%)`, borderBottom:`1px solid ${color}22` }}>
+        <div style={{ maxWidth:700, margin:'0 auto', textAlign:'center' }}>
+          <div style={{ display:'inline-block', padding:'5px 14px', borderRadius:16, background:`${color}25`, border:`1px solid ${color}55`, fontSize:12, color:color, fontWeight:700, letterSpacing:'0.5px', marginBottom:18, textTransform:'uppercase' }}>
+            {list.niche || 'Wholesale Price List'}
+          </div>
+          <h1 style={{ fontSize:'clamp(28px, 5vw, 52px)', fontWeight:900, lineHeight:1.1, marginBottom:16, letterSpacing:'-1.5px' }}>{list.name}</h1>
+          {list.description && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:17, lineHeight:1.7, maxWidth:520, margin:'0 auto 28px' }}>{list.description}</p>}
+          <button onClick={() => navigate('/login')} style={{ padding:'13px 32px', borderRadius:12, border:'none', cursor:'pointer', background:color, color:'white', fontWeight:700, fontSize:15, boxShadow:`0 8px 24px ${color}44` }}>
+            Login to Order →
+          </button>
         </div>
-        <h1 style={{ fontSize: 'clamp(32px,5vw,60px)', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: 16 }}>
-          {niche.hero_title || niche.name}
-        </h1>
-        <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.55)', maxWidth: 500, margin: '0 auto 40px', lineHeight: 1.6 }}>
-          {niche.hero_subtitle || niche.description}
-        </p>
-      </section>
+      </div>
 
       {/* Products */}
-      <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px' }}>
-        {/* Search */}
-        <div style={{ position: 'relative', marginBottom: 40, maxWidth: 480, margin: '0 auto 40px' }}>
-          <span style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', opacity: 0.4, fontSize: 16 }}>🔍</span>
-          <input type="search" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{ width: '100%', padding: '14px 18px 14px 48px', borderRadius: 28, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: 15, outline: 'none', boxSizing: 'border-box' }} />
-        </div>
-
-        {items.length === 0 && !loading && (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'rgba(255,255,255,0.3)' }}>
-            <div style={{ fontSize: 44, marginBottom: 12 }}>📭</div>
-            <p>No products in this price list yet</p>
-          </div>
-        )}
-
+      <div style={{ maxWidth:1100, margin:'0 auto', padding:'48px 24px 80px' }}>
         {Object.entries(grouped).map(([cat, catItems]) => (
-          <div key={cat} style={{ marginBottom: 48 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{cat}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-              {catItems.map(item => {
-                const p = item.product
-                const price = item.custom_price ?? p?.sell_price ?? 0
-                const qty = cart[item.id]?.qty || 0
+          <div key={cat} style={{ marginBottom:48 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+              <h2 style={{ fontSize:20, fontWeight:800 }}>{cat}</h2>
+              <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.08)' }} />
+              <span style={{ fontSize:12, color:'rgba(255,255,255,0.3)' }}>{catItems.length} products</span>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:20 }}>
+              {catItems.map(({ item, product }, i) => {
+                const hasPrice = item.custom_price > 0
+                const hasRange = item.custom_price_min > 0 && item.custom_price_max > 0
                 return (
-                  <div key={item.id} style={{ borderRadius: 18, overflow: 'hidden', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', transition: 'all 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = `${color}44`}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
+                  <div key={item.id} onClick={() => setSelected({ item, product })}
+                    style={{ background:'rgba(255,255,255,0.04)', borderRadius:18, border:'1px solid rgba(255,255,255,0.07)', overflow:'hidden', cursor:'pointer', transition:'all 0.25s' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.borderColor=`${color}55` }}
+                    onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.07)' }}
                   >
-                    {/* Image */}
-                    <div style={{ aspectRatio: '1', overflow: 'hidden', background: 'rgba(255,255,255,0.03)' }}>
-                      {p?.image_url ? <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, opacity: 0.2 }}>📦</div>}
+                    <div style={{ width:'100%', paddingTop:'60%', position:'relative', background:'rgba(255,255,255,0.03)' }}>
+                      {product.image_url
+                        ? <img src={product.image_url} alt={product.name} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} loading="lazy" />
+                        : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>📦</div>
+                      }
                     </div>
-                    <div style={{ padding: '14px 16px 16px' }}>
-                      <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 2, lineHeight: 1.3 }}>{p?.name}</p>
-                      {p?.brand && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>{p.brand}</p>}
-                      {item.custom_description && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5, marginBottom: 10, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.custom_description}</p>}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-                        <p style={{ fontWeight: 900, fontSize: 18, color }}>${price.toFixed(2)}</p>
-                        {qty === 0 ? (
-                          <button onClick={() => setQty(item.id, 1, item)} style={{ padding: '7px 16px', borderRadius: 20, border: 'none', background: color, color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add</button>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-                            <button onClick={() => setQty(item.id, qty - 1, item)} style={{ width: 30, height: 30, borderRadius: '8px 0 0 8px', border: `1px solid ${color}`, background: 'transparent', color, fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>−</button>
-                            <div style={{ width: 36, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${color}`, borderLeft: 'none', borderRight: 'none', fontWeight: 700, fontSize: 14 }}>{qty}</div>
-                            <button onClick={() => setQty(item.id, qty + 1, item)} style={{ width: 30, height: 30, borderRadius: '0 8px 8px 0', border: `1px solid ${color}`, background: color, color: 'white', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>+</button>
-                          </div>
-                        )}
+                    <div style={{ padding:'16px 18px 20px' }}>
+                      {product.brand && <p style={{ fontSize:10, color:`${color}cc`, fontWeight:700, letterSpacing:'1px', textTransform:'uppercase', marginBottom:5 }}>{product.brand}</p>}
+                      <p style={{ fontWeight:800, fontSize:16, marginBottom:8, lineHeight:1.3 }}>{product.name}</p>
+                      {product.description && <p style={{ fontSize:12, color:'rgba(255,255,255,0.4)', lineHeight:1.5, marginBottom:10, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{product.description}</p>}
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+                        {hasPrice
+                          ? <span style={{ fontWeight:800, fontSize:17, color:color }}>${item.custom_price}/{product.unit || 'unit'}</span>
+                          : <span style={{ fontSize:12, color:'rgba(255,255,255,0.3)' }}>Login for pricing</span>
+                        }
+                        {hasRange && <span style={{ fontSize:11, background:`${color}20`, color:color, borderRadius:10, padding:'2px 8px', fontWeight:700 }}>${item.custom_price_min}–${item.custom_price_max}</span>}
                       </div>
                     </div>
                   </div>
@@ -186,58 +121,60 @@ export default function NicheLandingPage() {
             </div>
           </div>
         ))}
-      </section>
+      </div>
 
-      {/* Order Modal */}
-      {showOrder && (
-        <div onClick={() => setShowOrder(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 500, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(8px)' }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#111', borderRadius: '24px 24px 0 0', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '28px 24px 40px', border: '1px solid rgba(255,255,255,0.1)' }}>
-            {submitted ? (
-              <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
-                <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Order Received!</h2>
-                <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>We'll be in touch shortly to confirm your order.</p>
-                <button onClick={() => { setShowOrder(false); setSubmitted(false) }} style={{ padding: '12px 32px', borderRadius: 24, border: 'none', background: color, color: 'white', fontWeight: 700, cursor: 'pointer' }}>Done</button>
+      {/* CTA */}
+      <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'60px 24px', textAlign:'center' }}>
+        <h2 style={{ fontSize:28, fontWeight:800, marginBottom:12 }}>Ready to place an order?</h2>
+        <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:28 }}>Log in to access wholesale pricing and submit your order.</p>
+        <button onClick={() => navigate('/login')} style={{ padding:'15px 36px', borderRadius:12, border:'none', cursor:'pointer', background:color, color:'white', fontWeight:700, fontSize:16, boxShadow:`0 8px 28px ${color}44` }}>
+          Login to Order →
+        </button>
+      </div>
+
+      <div style={{ borderTop:'1px solid rgba(255,255,255,0.05)', padding:'24px', textAlign:'center', color:'rgba(255,255,255,0.2)', fontSize:12 }}>
+        © 2026 Kanz Supply
+      </div>
+
+      {/* Product modal */}
+      {selected && (
+        <div onClick={() => setSelected(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:24, backdropFilter:'blur(10px)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#111', borderRadius:24, maxWidth:540, width:'100%', overflow:'hidden', border:'1px solid rgba(255,255,255,0.1)', maxHeight:'90vh', overflowY:'auto' }}>
+            {selected.product.image_url && (
+              <div style={{ width:'100%', paddingTop:'50%', position:'relative' }}>
+                <img src={selected.product.image_url} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />
               </div>
-            ) : <>
-              <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>Request Order</h2>
-              {/* Cart summary */}
-              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: '14px 16px', marginBottom: 20 }}>
-                {Object.values(cart).map(({ item, qty }) => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 14, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <span>{item.product?.name} × {qty}</span>
-                    <span style={{ fontWeight: 700, color }}>${(qty * (item.custom_price ?? item.product?.sell_price ?? 0)).toFixed(2)}</span>
-                  </div>
-                ))}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontWeight: 800, fontSize: 16 }}>
-                  <span>Total</span>
-                  <span style={{ color }}>${cartTotal.toFixed(2)}</span>
+            )}
+            <div style={{ padding:26 }}>
+              {selected.product.brand && <p style={{ fontSize:11, color:color, fontWeight:700, letterSpacing:'1px', textTransform:'uppercase', marginBottom:8 }}>{selected.product.brand}</p>}
+              <h2 style={{ fontSize:24, fontWeight:900, marginBottom:10 }}>{selected.product.name}</h2>
+              {selected.product.description && <p style={{ color:'rgba(255,255,255,0.6)', lineHeight:1.7, marginBottom:18, fontSize:14 }}>{selected.product.description}</p>}
+              {(selected.item.custom_price > 0 || (selected.item.custom_price_min > 0 && selected.item.custom_price_max > 0)) && (
+                <div style={{ background:'rgba(255,255,255,0.06)', borderRadius:12, padding:'14px 18px', marginBottom:18, display:'flex', gap:20, flexWrap:'wrap' }}>
+                  {selected.item.custom_price > 0 && (
+                    <div>
+                      <p style={{ fontSize:11, color:'rgba(255,255,255,0.4)', marginBottom:2 }}>Wholesale Price</p>
+                      <p style={{ fontWeight:900, fontSize:22, color:color }}>${selected.item.custom_price}<span style={{ fontSize:13, color:'rgba(255,255,255,0.4)' }}>/{selected.product.unit || 'unit'}</span></p>
+                    </div>
+                  )}
+                  {selected.item.custom_price_min > 0 && (
+                    <div>
+                      <p style={{ fontSize:11, color:'rgba(255,255,255,0.4)', marginBottom:2 }}>Retail Range</p>
+                      <p style={{ fontWeight:800, fontSize:17 }}>${selected.item.custom_price_min} – ${selected.item.custom_price_max}</p>
+                    </div>
+                  )}
                 </div>
+              )}
+              <div style={{ display:'flex', gap:10 }}>
+                <button onClick={() => navigate('/login')} style={{ flex:1, padding:'13px', borderRadius:10, border:'none', cursor:'pointer', background:color, color:'white', fontWeight:700, fontSize:15 }}>Order Now →</button>
+                <button onClick={() => setSelected(null)} style={{ padding:'13px 18px', borderRadius:10, border:'1px solid rgba(255,255,255,0.15)', cursor:'pointer', background:'transparent', color:'white', fontWeight:600 }}>✕</button>
               </div>
-              {[['name','Your Name *'],['phone','Phone *'],['address','Business Address'],['notes','Notes']].map(([field, label]) => (
-                <div key={field} style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6, fontWeight: 600 }}>{label}</label>
-                  <input value={orderForm[field]} onChange={e => setOrderForm(p => ({...p,[field]:e.target.value}))}
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: 'white', fontSize: 15, outline: 'none', boxSizing: 'border-box' }} />
-                </div>
-              ))}
-              <button onClick={submitOrder} disabled={!orderForm.name || !orderForm.phone || submitting}
-                style={{ width: '100%', marginTop: 8, padding: '14px', borderRadius: 16, border: 'none', background: !orderForm.name || !orderForm.phone ? 'rgba(255,255,255,0.1)' : color, color: 'white', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>
-                {submitting ? 'Submitting...' : 'Submit Order Request'}
-              </button>
-            </>}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Sticky cart bar */}
-      {cartCount > 0 && !showOrder && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}>
-          <button onClick={() => setShowOrder(true)} style={{ padding: '14px 32px', borderRadius: 32, border: 'none', background: color, color: 'white', fontWeight: 700, fontSize: 15, cursor: 'pointer', boxShadow: `0 8px 32px ${color}66`, display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap' }}>
-            🛒 {cartCount} item{cartCount > 1 ? 's' : ''} · ${cartTotal.toFixed(2)} · Request Order →
-          </button>
-        </div>
-      )}
+      <style>{`* { box-sizing: border-box }`}</style>
     </div>
   )
 }

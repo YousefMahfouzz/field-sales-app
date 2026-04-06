@@ -161,11 +161,18 @@ export default function SettingsPage() {
           <p className="section-header">Account</p>
           <p className="text-xs text-muted" style={{ marginBottom:12 }}>{user?.email}</p>
 
-          {profile?.is_admin && (
+          {profile?.is_admin && (<>
+            <p style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Admin Tools</p>
+            <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/homepage')} style={{ marginBottom:8, color:'#6366f1', borderColor:'#6366f1' }}>
+              🌐 Manage Homepage
+            </button>
+            <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/price-lists')} style={{ marginBottom:8, color:'#2563eb', borderColor:'#2563eb' }}>
+              🏷️ Manage Price Lists
+            </button>
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/inventory')} style={{ marginBottom:10, color:'#dc2626', borderColor:'#dc2626' }}>
               👑 View User Inventories
             </button>
-          )}
+          </>)}
 
           <button className="btn btn-ghost btn-full" onClick={() => navigate('/backup')} style={{ marginBottom:10 }}>
             💾 Backup & Restore Data
