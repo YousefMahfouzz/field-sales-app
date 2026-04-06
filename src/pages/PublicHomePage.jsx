@@ -9,6 +9,7 @@ export default function PublicHomePage() {
   const [selected, setSelected] = useState(null)
   const [logo, setLogo] = useState(null)
   const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState('All')
 
   useEffect(() => {
     // Load featured products
@@ -79,7 +80,7 @@ export default function PublicHomePage() {
 
       {/* Products */}
       <div id="products" style={{ maxWidth:1400, margin:'0 auto', padding:'0 clamp(12px,4vw,48px) 100px' }}>
-        <div style={{ textAlign:'center', marginBottom:56 }}>
+        <div style={{ textAlign:'center', marginBottom:32 }}>
           <h2 style={{ fontSize:'clamp(28px, 4vw, 44px)', fontWeight:800, marginBottom:12, letterSpacing:'-1px' }}>Our Products</h2>
           <p style={{ color:'rgba(255,255,255,0.4)', fontSize:16 }}>
             {search
@@ -88,14 +89,35 @@ export default function PublicHomePage() {
           </p>
         </div>
 
+        {/* Category filter pills */}
+        {!loading && featured.length > 0 && (() => {
+          const cats = ['All', ...new Set(featured.map(p => p.category).filter(Boolean))]
+          if (cats.length <= 2) return null
+          return (
+            <div style={{ display:'flex', gap:8, overflowX:'auto', scrollbarWidth:'none', marginBottom:40, paddingBottom:4, justifyContent:'center', flexWrap:'wrap' }}>
+              {cats.map(cat => (
+                <button key={cat} onClick={() => setActiveCategory(cat)} style={{
+                  padding:'7px 18px', borderRadius:24, border:'1.5px solid', cursor:'pointer',
+                  fontSize:13, fontWeight:600, flexShrink:0, transition:'all 0.15s',
+                  borderColor: activeCategory===cat ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.15)',
+                  background: activeCategory===cat ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  color: activeCategory===cat ? 'white' : 'rgba(255,255,255,0.45)',
+                }}>{cat}</button>
+              ))}
+            </div>
+          )
+        })()}
+
+        {/* Loading skeletons */}
         {loading && (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:24 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(280px,100%), 1fr))', gap:'clamp(12px,2vw,28px)' }}>
             {[1,2,3,4,5,6].map(i => (
               <div key={i} style={{ background:'rgba(255,255,255,0.04)', borderRadius:20, height:360, animation:'pulse 1.5s infinite' }} />
             ))}
           </div>
         )}
 
+        {/* Empty state */}
         {!loading && featured.length === 0 && (
           <div style={{ textAlign:'center', padding:'80px 20px', color:'rgba(255,255,255,0.3)' }}>
             <div style={{ fontSize:48, marginBottom:16 }}>📦</div>
@@ -103,37 +125,71 @@ export default function PublicHomePage() {
           </div>
         )}
 
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap:'clamp(12px,2vw,28px)' }}>
-          {featured
-            .filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()))
-            .map((product, i) => (
-            <div key={product.id} onClick={() => setSelected(product)}
-              style={{ background:'rgba(255,255,255,0.04)', borderRadius:20, border:'1px solid rgba(255,255,255,0.08)', overflow:'hidden', cursor:'pointer', transition:'all 0.3s', animation:`fadeUp 0.5s ease ${i*0.08}s both` }}
-              onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.border='1px solid rgba(99,102,241,0.4)'; e.currentTarget.style.background='rgba(255,255,255,0.07)' }}
-              onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.border='1px solid rgba(255,255,255,0.08)'; e.currentTarget.style.background='rgba(255,255,255,0.04)' }}>
-              <div style={{ width:'100%', paddingTop:'65%', position:'relative', background:'rgba(255,255,255,0.03)', overflow:'hidden' }}>
-                {product.image_url
-                  ? <img src={product.image_url} alt={product.name} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} loading="lazy" />
-                  : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:56 }}>
-                      {product.category?.includes('Hair') ? '💇' : product.category?.includes('Lighter') ? '🔥' : product.category?.includes('Incense') ? '🕯️' : product.category?.includes('Honey') ? '🍯' : product.category?.includes('Fragrance') ? '✨' : '📦'}
+        {/* Products grouped by category */}
+        {!loading && featured.length > 0 && (() => {
+          const filteredAll = featured.filter(p =>
+            (!search ||
+              p.name?.toLowerCase().includes(search.toLowerCase()) ||
+              p.brand?.toLowerCase().includes(search.toLowerCase()) ||
+              p.category?.toLowerCase().includes(search.toLowerCase())
+            ) &&
+            (activeCategory === 'All' || p.category === activeCategory)
+          )
+          const usedCats = activeCategory !== 'All'
+            ? [activeCategory]
+            : [...new Set(filteredAll.map(p => p.category || 'Other'))]
+
+          return usedCats.map(cat => {
+            const catProducts = filteredAll.filter(p => (p.category || 'Other') === cat)
+            if (!catProducts.length) return null
+            return (
+              <div key={cat} style={{ marginBottom:56 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:28 }}>
+                  <div style={{ height:1, flex:1, background:'rgba(255,255,255,0.1)' }} />
+                  <h3 style={{ fontSize:'clamp(13px,1.8vw,16px)', fontWeight:800, color:'rgba(255,255,255,0.6)', letterSpacing:'0.08em', textTransform:'uppercase', whiteSpace:'nowrap' }}>{cat}</h3>
+                  <div style={{ height:1, flex:1, background:'rgba(255,255,255,0.1)' }} />
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(280px,100%), 1fr))', gap:'clamp(12px,2vw,28px)' }}>
+                  {catProducts.map((product, i) => (
+                    <div
+                      key={product.id}
+                      onClick={() => setSelected(product)}
+                      style={{
+                        background:'rgba(255,255,255,0.04)', borderRadius:20,
+                        border:'1px solid rgba(255,255,255,0.08)', overflow:'hidden',
+                        cursor:'pointer', transition:'all 0.3s',
+                        animation: `fadeUp 0.5s ease ${i*0.06}s both`,
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.border='1px solid rgba(99,102,241,0.4)'; e.currentTarget.style.background='rgba(255,255,255,0.07)' }}
+                      onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.border='1px solid rgba(255,255,255,0.08)'; e.currentTarget.style.background='rgba(255,255,255,0.04)' }}
+                    >
+                      <div style={{ width:'100%', paddingTop:'65%', position:'relative', background:'rgba(255,255,255,0.03)', overflow:'hidden' }}>
+                        {product.image_url
+                          ? <img src={product.image_url} alt={product.name} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} loading="lazy" />
+                          : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:56 }}>
+                              {product.category?.includes('Hair') ? '💇' : product.category?.includes('Lighter') ? '🔥' : product.category?.includes('Incense') ? '🕯️' : product.category?.includes('Honey') ? '🍯' : product.category?.includes('Fragrance') ? '✨' : '📦'}
+                            </div>
+                        }
+                      </div>
+                      <div style={{ padding:'20px 22px 24px' }}>
+                        {product.brand && <p style={{ fontSize:11, color:'rgba(99,102,241,0.8)', fontWeight:700, letterSpacing:'1px', textTransform:'uppercase', marginBottom:6 }}>{product.brand}</p>}
+                        <h3 style={{ fontSize:18, fontWeight:800, marginBottom:8, color:'white', lineHeight:1.3 }}>{product.name}</h3>
+                        {product.description && <p style={{ fontSize:13, color:'rgba(255,255,255,0.45)', lineHeight:1.6, display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{product.description}</p>}
+                        <div style={{ marginTop:16, display:'flex', alignItems:'center', gap:8 }}>
+                          <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.06)' }} />
+                          <span style={{ fontSize:12, color:'rgba(255,255,255,0.25)', whiteSpace:'nowrap' }}>Contact rep for pricing →</span>
+                        </div>
+                      </div>
                     </div>
-                }
-              </div>
-              <div style={{ padding:'20px 22px 24px' }}>
-                {product.brand && <p style={{ fontSize:11, color:'rgba(99,102,241,0.8)', fontWeight:700, letterSpacing:'1px', textTransform:'uppercase', marginBottom:6 }}>{product.brand}</p>}
-                <h3 style={{ fontSize:18, fontWeight:800, marginBottom:8, color:'white', lineHeight:1.3 }}>{product.name}</h3>
-                {product.description && <p style={{ fontSize:13, color:'rgba(255,255,255,0.45)', lineHeight:1.6, display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{product.description}</p>}
-                <div style={{ marginTop:16, display:'flex', alignItems:'center', gap:8 }}>
-                  <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.06)' }} />
-                  <span style={{ fontSize:12, color:'rgba(255,255,255,0.25)', whiteSpace:'nowrap' }}>Login for pricing →</span>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            )
+          })
+        })()}
       </div>
 
-      {/* Footer */}
+            {/* Footer */}
       <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'32px 24px', textAlign:'center', color:'rgba(255,255,255,0.2)', fontSize:13 }}>
         © 2026 Kanz Supply · Premium Wholesale Distribution
       </div>
@@ -152,7 +208,7 @@ export default function PublicHomePage() {
               <h2 style={{ fontSize:26, fontWeight:900, marginBottom:12, color:'white' }}>{selected.name}</h2>
               {selected.description && <p style={{ color:'rgba(255,255,255,0.6)', lineHeight:1.7, marginBottom:20 }}>{selected.description}</p>}
               <div style={{ background:'rgba(255,255,255,0.05)', borderRadius:12, padding:'14px 18px', marginBottom:20, border:'1px solid rgba(255,255,255,0.08)' }}>
-                <p style={{ color:'rgba(255,255,255,0.4)', fontSize:13 }}>💡 Contact your Kanz Supply rep to place an order for this product.</p>
+                <p style={{ color:'rgba(255,255,255,0.4)', fontSize:13 }}>💡 Contact your Kanz Supply rep for pricing and to place an order.</p>
               </div>
               <button onClick={() => setSelected(null)} style={{ width:'100%', padding:'13px', borderRadius:10, border:'1px solid rgba(255,255,255,0.15)', cursor:'pointer', background:'transparent', color:'white', fontWeight:600, fontSize:15 }}>Close</button>
             </div>
