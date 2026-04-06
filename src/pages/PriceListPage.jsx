@@ -397,6 +397,59 @@ export default function PriceListPage() {
 
   const displayName = profile?.display_name || profile?.username || ''
 
+  // ── Inject per-user manifest so "Add to Home Screen" opens THIS page ──
+  useEffect(() => {
+    if (!username) return
+    const pageUrl = `${window.location.origin}/u/${username}/pricelist`
+    const manifestData = {
+      name: displayName ? `${displayName} — Price List` : 'Kanz Supply Price List',
+      short_name: displayName || 'Price List',
+      description: `Browse ${displayName || username}'s products and request an order.`,
+      start_url: `/u/${username}/pricelist`,
+      scope: `/u/${username}/`,
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: '#f8fafc',
+      theme_color: '#2563eb',
+      icons: [
+        { src: `${window.location.origin}/pwa-192x192.png`, sizes: '192x192', type: 'image/png' },
+        { src: `${window.location.origin}/pwa-512x512.png`, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      ],
+    }
+    const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/manifest+json' })
+    const url = URL.createObjectURL(blob)
+
+    // Remove any existing manifest link and inject our user-specific one
+    document.querySelectorAll('link[rel="manifest"]').forEach(el => el.remove())
+    const link = document.createElement('link')
+    link.rel = 'manifest'
+    link.href = url
+    document.head.appendChild(link)
+
+    // Also update page title and apple meta for this user
+    document.title = displayName ? `${displayName} — Price List` : 'Kanz Supply'
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]')
+    if (appleTitle) appleTitle.content = displayName || 'Price List'
+
+    // Update og:url so sharing shows the right link
+    const ogUrl = document.querySelector('meta[property="og:url"]')
+    if (ogUrl) ogUrl.content = pageUrl
+    const ogTitle = document.querySelector('meta[property="og:title"]')
+    if (ogTitle) ogTitle.content = manifestData.name
+
+    return () => {
+      URL.revokeObjectURL(url)
+      // Restore original manifest on unmount
+      document.querySelectorAll('link[rel="manifest"]').forEach(el => el.remove())
+      const orig = document.createElement('link')
+      orig.rel = 'manifest'
+      orig.href = '/manifest.webmanifest'
+      document.head.appendChild(orig)
+      document.title = 'Kanz Supply'
+    }
+  }, [username, displayName])
+
+
   if (notFound) return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: 32 }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>😕</div>

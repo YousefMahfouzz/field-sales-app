@@ -3,12 +3,18 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.html [QSA,L]
 
+# Fix MIME types — required for ES modules (type="module")
+AddType application/javascript .js .mjs
+AddType text/css .css
+AddType application/json .json
+AddType application/manifest+json .webmanifest
+
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"
   Header always set X-XSS-Protection "1; mode=block"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-  <FilesMatch "\.(js|css|png|jpg|jpeg|webp|svg|ico)$">
+  <FilesMatch "\.(js|mjs|css|png|jpg|jpeg|webp|svg|ico)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
   <FilesMatch "\.html$">

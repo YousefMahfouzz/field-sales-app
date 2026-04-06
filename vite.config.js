@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Field Sales',
-        short_name: 'FieldSales',
-        description: 'Field sales & inventory management',
+        name: 'Kanz Supply',
+        short_name: 'KanzSupply',
+        description: 'Kanz Supply — Field Sales & Price List',
         theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',
@@ -23,14 +23,11 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Pre-cache all app assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
-        // Skip large seed data files from precache
         globIgnores: ['**/seedData*.js'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/u\//],
         runtimeCaching: [
-          // Supabase API: NetworkFirst (try network, fall back to cache)
           {
             urlPattern: /^https:\/\/.*supabase\.co\/rest\/.*/i,
             handler: 'NetworkFirst',
@@ -41,7 +38,6 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Supabase Storage (images): CacheFirst — images don't change often
           {
             urlPattern: /^https:\/\/.*supabase\.co\/storage\/.*/i,
             handler: 'CacheFirst',
@@ -51,7 +47,6 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Google Maps: StaleWhileRevalidate
           {
             urlPattern: /^https:\/\/maps\.googleapis\.com\/.*/i,
             handler: 'StaleWhileRevalidate',
@@ -67,7 +62,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Split large chunks for better performance
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'maps': ['@googlemaps/js-api-loader'],
@@ -75,7 +69,6 @@ export default defineConfig({
         },
       },
     },
-    // Enable minification optimizations
     minify: 'terser',
     terserOptions: {
       compress: { drop_console: true, drop_debugger: true },

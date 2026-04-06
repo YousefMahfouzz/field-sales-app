@@ -14,7 +14,7 @@ function isExcluded(name) {
 const STATUS_COLORS = {
   active: '#16a34a',
   priority: '#d97706',
-  follow_up: '#2563eb',
+  follow_up: '#0891b2',
   avoid: '#dc2626',
   do_not_visit: '#6b7280',
 }
@@ -44,6 +44,7 @@ export default function MapPage() {
   const [poiVisible, setPoiVisible] = useState(false)
   const poiMarkersRef = useRef([])
   const [mapError, setMapError] = useState('')
+  const currentLocMarker = useRef(null)
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -67,7 +68,23 @@ export default function MapPage() {
       // Trigger resize so map knows its actual pixel dimensions
       window.google.maps.event.trigger(mapInstance.current, 'resize')
       navigator.geolocation?.getCurrentPosition((pos) => {
-        mapInstance.current.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        const { latitude: lat, longitude: lng } = pos.coords
+        mapInstance.current.setCenter({ lat, lng })
+        // Blue dot for current location
+        currentLocMarker.current = new window.google.maps.Marker({
+          position: { lat, lng },
+          map: mapInstance.current,
+          title: 'You are here',
+          zIndex: 999,
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#2563eb',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+          },
+        })
       })
     }).catch(() => setMapError('Failed to load Google Maps.'))
   }, [])
@@ -108,7 +125,7 @@ export default function MapPage() {
       const { latitude: lat, longitude: lng } = pos.coords
       setCapturedLocation({ lat, lng })
       mapInstance.current?.panTo({ lat, lng })
-      const nearby = findNearbyCustomers(customers, lat, lng, 20)
+      const nearby = findNearbyCustomers(customers, lat, lng, 250)
       if (nearby.length > 0) setNearbyCustomers(nearby)
       else navigate(`/customers/new?lat=${lat}&lng=${lng}`)
     } catch {
@@ -118,38 +135,60 @@ export default function MapPage() {
     }
   }
 
+  const [searchRadius, setSearchRadius] = useState(3000) // meters, default 3km
+  const [searchCenter, setSearchCenter] = useState(null) // tapped point or current location
+  const searchCircleRef = useRef(null) // circle showing search radius
+
   const clearPoiMarkers = useCallback(() => {
     poiMarkersRef.current.forEach(m => m.setMap(null))
     poiMarkersRef.current = []
     setPoiVisible(false)
+    setPoiMarkers([])
+    if (searchCircleRef.current) { searchCircleRef.current.setMap(null); searchCircleRef.current = null }
   }, [])
 
-  const handleFindNearby = async () => {
-    if (poiVisible) { clearPoiMarkers(); return }
+  // Search for POIs around a given lat/lng
+  const searchPOIsAt = useCallback(async (lat, lng) => {
     if (!mapInstance.current) return
     setPoiLoading(true)
+    clearPoiMarkers()
+
     try {
-      const pos = await getCurrentPosition()
-      const { latitude: lat, longitude: lng } = pos.coords
+      setSearchCenter({ lat, lng })
       mapInstance.current.panTo({ lat, lng })
-      mapInstance.current.setZoom(15)
+
+      // Draw a circle showing the search radius
+      if (searchCircleRef.current) searchCircleRef.current.setMap(null)
+      searchCircleRef.current = new window.google.maps.Circle({
+        center: { lat, lng },
+        radius: searchRadius,
+        map: mapInstance.current,
+        strokeColor: '#2563eb',
+        strokeOpacity: 0.6,
+        strokeWeight: 2,
+        fillColor: '#2563eb',
+        fillOpacity: 0.06,
+      })
+
+      // Auto-zoom to fit the circle
+      mapInstance.current.fitBounds(searchCircleRef.current.getBounds())
 
       const types = [
-        { type: 'gas_station', label: '⛽', color: '#f59e0b' },
-        { type: 'beauty_salon', label: '💄', color: '#ec4899' },
+        { type: 'gas_station',     label: '⛽', color: '#f59e0b' },
+        { type: 'convenience_store', label: '🏪', color: '#7c3aed' },
+        { type: 'beauty_salon',    label: '💄', color: '#ec4899' },
       ]
-      const newMarkers = []
 
-      // Use PlacesService (CORS-safe) instead of REST fetch (CORS-blocked)
       const mapDiv = document.createElement('div')
-      const tempMap = new window.google.maps.Map(mapDiv, { center: { lat, lng }, zoom: 15 })
+      const tempMap = new window.google.maps.Map(mapDiv, { center: { lat, lng }, zoom: 14 })
       const service = new window.google.maps.places.PlacesService(tempMap)
+      const newMarkers = []
 
       await Promise.all(types.map(({ type, label, color }) =>
         new Promise(resolve => {
-          service.nearbySearch({ location: { lat, lng }, radius: 1500, type }, (places, status) => {
+          service.nearbySearch({ location: { lat, lng }, radius: searchRadius, type }, (places, status) => {
             if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
-              for (const place of places.slice(0, 10)) {
+              for (const place of places.slice(0, 20)) {
                 if (isExcluded(place.name)) continue
                 const marker = new window.google.maps.Marker({
                   position: place.geometry.location,
@@ -157,64 +196,115 @@ export default function MapPage() {
                   title: place.name,
                   icon: {
                     path: window.google.maps.SymbolPath.CIRCLE,
-                    scale: 10,
-                    fillColor: color, fillOpacity: 0.9,
-                    strokeColor: 'white', strokeWeight: 2,
+                    scale: 11,
+                    fillColor: color, fillOpacity: 0.95,
+                    strokeColor: 'white', strokeWeight: 2.5,
                   },
-                  label: { text: label, fontSize: '14px' },
-                  zIndex: 5,
+                  label: { text: label, fontSize: '13px' },
+                  zIndex: 10,
                 })
                 const infoWindow = new window.google.maps.InfoWindow({
-                  content: `<div style="font-family:sans-serif;padding:4px 2px;max-width:200px"><strong style="font-size:14px">${place.name}</strong><br/><span style="color:#64748b;font-size:12px">${place.vicinity || ''}</span>${place.rating ? `<br/><span style="font-size:12px">⭐ ${place.rating}</span>` : ''}</div>`,
+                  content: `<div style="font-family:sans-serif;padding:6px 4px;max-width:220px">
+                    <strong style="font-size:14px">${place.name}</strong><br/>
+                    <span style="color:#64748b;font-size:12px">${place.vicinity || ''}</span>
+                    ${place.rating ? `<br/><span style="font-size:12px">⭐ ${place.rating}</span>` : ''}
+                    <br/><button onclick="window.open('https://www.google.com/maps/search/?q=${encodeURIComponent(place.name)}')" 
+                      style="margin-top:6px;padding:4px 10px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer;font-size:12px">
+                      View on Maps
+                    </button>
+                  </div>`,
                 })
                 marker.addListener('click', () => infoWindow.open(mapInstance.current, marker))
                 poiMarkersRef.current.push(marker)
-                newMarkers.push({ name: place.name, type })
+                newMarkers.push({ name: place.name, type, label })
               }
             }
             resolve()
           })
         })
       ))
+
       setPoiMarkers(newMarkers)
       setPoiVisible(true)
-    } catch { alert('Could not get location.') }
-    finally { setPoiLoading(false) }
+
+      if (newMarkers.length === 0) {
+        alert(`No gas stations, convenience stores or beauty salons found within ${searchRadius >= 1000 ? (searchRadius/1000).toFixed(1)+'km' : searchRadius+'m'}. Try a larger radius.`)
+        clearPoiMarkers()
+      }
+    } catch (e) {
+      alert('Search failed: ' + e.message)
+    } finally {
+      setPoiLoading(false)
+    }
+  }, [searchRadius, clearPoiMarkers])
+
+  const handleFindNearby = async () => {
+    if (poiVisible) { clearPoiMarkers(); return }
+    if (!mapInstance.current) return
+    // Use map center — already on your location, no GPS hang
+    const center = mapInstance.current.getCenter()
+    if (!center) {
+      try {
+        const pos = await getCurrentPosition()
+        await searchPOIsAt(pos.coords.latitude, pos.coords.longitude)
+      } catch { alert('Could not get location.') }
+    } else {
+      await searchPOIsAt(center.lat(), center.lng())
+    }
   }
+
+
 
   return (
     <div style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
-      {/* Header — fixed at top, measured height ~110px */}
+      {/* Header */}
       <div id="map-header" style={{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
         background: 'white', borderBottom: '1px solid var(--border)',
-        padding: '12px 16px 10px',
+        padding: '10px 16px 8px',
       }}>
-        <div className="flex justify-between items-center" style={{ marginBottom: 8 }}>
+        <div className="flex justify-between items-center" style={{ marginBottom: 6 }}>
           <h1 style={{ fontSize: 18 }}>Map</h1>
-          <span className="text-sm text-muted">{customers.length} customers</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Radius selector */}
+            <select value={searchRadius} onChange={e => { setSearchRadius(Number(e.target.value)); if(poiVisible) clearPoiMarkers() }}
+              style={{ fontSize: 12, padding: '4px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'white', fontWeight: 600 }}>
+              <option value={1000}>1 km</option>
+              <option value={2000}>2 km</option>
+              <option value={3000}>3 km</option>
+              <option value={5000}>5 km</option>
+              <option value={8000}>8 km</option>
+              <option value={16000}>10 mi</option>
+            </select>
+            <span className="text-sm text-muted">{customers.length} customers</span>
+          </div>
         </div>
 
         {/* Status filter */}
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
           {['all', 'active', 'priority', 'follow_up', 'avoid'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              style={{
-                flexShrink: 0, padding: '5px 12px', borderRadius: 20,
-                border: '1.5px solid',
-                borderColor: statusFilter === s ? 'var(--blue)' : 'var(--border)',
-                background: statusFilter === s ? 'var(--blue)' : 'white',
-                color: statusFilter === s ? 'white' : 'var(--text)',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 4,
-              }}
-            >
+            <button key={s} onClick={() => setStatusFilter(s)} style={{
+              flexShrink: 0, padding: '5px 12px', borderRadius: 20,
+              border: '1.5px solid',
+              borderColor: statusFilter === s ? 'var(--blue)' : 'var(--border)',
+              background: statusFilter === s ? 'var(--blue)' : 'white',
+              color: statusFilter === s ? 'white' : 'var(--text)',
+              fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}>
               {s !== 'all' && STATUS_ICONS[s]} {s === 'all' ? 'All' : s.replace('_', ' ')}
             </button>
           ))}
         </div>
+
+        {/* Hint when POIs visible */}
+        {poiVisible && (
+          <div style={{ marginTop: 6, fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>
+            ⛽ {poiMarkers.filter(p=>p.type==='gas_station').length} gas &nbsp;
+            🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length} convenience &nbsp;
+            💄 {poiMarkers.filter(p=>p.type==='beauty_salon').length} beauty
+          </div>
+        )}
       </div>
 
       {/* Map — fills the space BELOW the header using absolute inset */}
@@ -229,11 +319,8 @@ export default function MapPage() {
           ref={mapRef}
           style={{
             position: 'absolute',
-            top: 110,     /* matches header height */
-            left: 0,
-            right: 0,
-            bottom: 0,    /* fills to bottom of screen */
-            width: '100%',
+            top: 120,
+            left: 0, right: 0, bottom: 0, width: '100%',
           }}
         />
       )}
@@ -243,22 +330,27 @@ export default function MapPage() {
         {gpsLoading ? '📡...' : '📍 Add Customer Here'}
       </button>
 
-      {/* FAB: Find Nearby POI */}
+      {/* FAB: Find Nearby POI — sits above nav bar */}
       <button
         onClick={handleFindNearby}
         disabled={poiLoading}
         style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 20,
-          padding: '11px 18px', borderRadius: 28, border: 'none', cursor: 'pointer',
-          fontSize: 14, fontWeight: 700,
-          background: poiVisible ? '#7c3aed' : 'white',
-          color: poiVisible ? 'white' : '#374151',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+          position: 'fixed',
+          bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 60px)',
+          right: 16,
+          zIndex: 100,
+          padding: '11px 16px', borderRadius: 28, border: 'none', cursor: 'pointer',
+          fontSize: 13, fontWeight: 700,
+          background: poiVisible ? '#7c3aed' : '#2563eb',
+          color: 'white',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
           display: 'flex', alignItems: 'center', gap: 6,
           transition: 'all 0.2s',
+          whiteSpace: 'nowrap',
+          opacity: poiLoading ? 0.7 : 1,
         }}
       >
-        {poiLoading ? '🔍 Searching...' : poiVisible ? `⛽💄 Hide (${poiMarkersRef.current.length})` : '⛽💄 Find Nearby'}
+        {poiLoading ? '🔍 Searching...' : poiVisible ? `✕ Clear (${poiMarkersRef.current.length})` : '⛽🏪💄 Find Nearby'}
       </button>
 
       {/* Customer popup */}

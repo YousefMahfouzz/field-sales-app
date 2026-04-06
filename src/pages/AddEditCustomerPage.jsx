@@ -4,8 +4,8 @@ import { useCustomers } from '../hooks/useCustomers'
 import { useProducts } from '../hooks/useProducts'
 import { useVisits } from '../hooks/useVisits'
 import { useAuth } from '../hooks/useAuth'
-import { getCurrentPosition } from '../lib/geo'
-import { loadGoogleMaps } from '../lib/mapsLoader'
+import { getCurrentPosition, reverseGeocodeArea } from '../lib/geo'
+import { loadGoogleMaps, loadPlaces } from '../lib/mapsLoader'
 import { supabase } from '../lib/supabase'
 import ProductSelector from '../components/ProductSelector'
 
@@ -21,7 +21,7 @@ function EditCustomerForm({ customer, onSave, onCancel }) {
     area: customer.area || '',
     status: customer.status || 'active',
     next_visit_date: customer.next_visit_date || '',
-    visit_frequency_days: customer.visit_frequency_days || 14,
+    visit_frequency_days: customer.visit_frequency_days || 30,
     wants_next: customer.wants_next || '',
     notes: customer.notes || '',
     decision_maker: customer.decision_maker || '',
@@ -41,7 +41,7 @@ function EditCustomerForm({ customer, onSave, onCancel }) {
     try {
       await onSave({
         ...form,
-        visit_frequency_days: parseInt(form.visit_frequency_days) || 14,
+        visit_frequency_days: parseInt(form.visit_frequency_days) || 30,
         tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         rating: form.rating ? parseInt(form.rating) : null,
         lat: customer.lat, lng: customer.lng,
@@ -83,7 +83,18 @@ function EditCustomerForm({ customer, onSave, onCancel }) {
       </div>
       <div className="form-group">
         <label className="form-label">Best time to visit</label>
-        <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder="e.g. Weekdays 10am–2pm, avoid Mondays" />
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:8 }}>
+          {['Mornings (8–12)','Afternoons (12–4)','Evenings (4–7)','Weekdays','Weekends','Mon–Fri 9–5','Anytime'].map(t => (
+            <button key={t} type="button" onClick={() => setForm(f => ({ ...f, best_time: f.best_time === t ? '' : t }))}
+              style={{ padding:'7px 13px', borderRadius:20, fontSize:13, cursor:'pointer', fontWeight:500,
+                background: form.best_time === t ? 'var(--blue)' : 'var(--gray-light)',
+                color: form.best_time === t ? 'white' : 'var(--text)',
+                border: `1.5px solid ${form.best_time === t ? 'var(--blue)' : 'var(--border)'}` }}>
+              {t}
+            </button>
+          ))}
+        </div>
+        <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder="Or type custom time..." style={{ fontSize:14 }} />
       </div>
       <div className="form-group">
         <label className="form-label">Extra schedule notes</label>
@@ -226,46 +237,65 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
   const EXCLUDED = ['circle k', 'circlek']
   const isExcl = name => EXCLUDED.some(b => (name||'').toLowerCase().replace(/\s/g,'').includes(b))
 
+  // Preload Google Maps as soon as wizard mounts so it's ready when user taps GPS
+  useEffect(() => { loadGoogleMaps() }, [])
+
   // Stable fetchNearbyPOI with useCallback
   const fetchNearbyPOI = useCallback(async (lat, lng) => {
     setNearbyLoading(true)
     setNearbyList([])
     try {
-      await loadGoogleMaps()
-      if (!window.google?.maps?.places) { setNearbyLoading(false); setStep(s => s === 0 ? 2 : s); return }
+      // loadPlaces ensures PlacesService is truly ready (waits up to 5s)
+      const ok = await loadPlaces()
+      if (!ok) { setStep(2); return }
 
       const mapDiv = document.createElement('div')
       const tempMap = new window.google.maps.Map(mapDiv, { center: { lat, lng }, zoom: 15 })
       const service = new window.google.maps.places.PlacesService(tempMap)
       const types = ['convenience_store', 'gas_station', 'beauty_salon']
       const ORDER = { convenience_store: 0, gas_station: 1, beauty_salon: 2 }
-      const all = []
-      let remaining = types.length
 
-      await new Promise(resolve => {
-        types.forEach(type => {
-          service.nearbySearch({ location: { lat, lng }, radius: 200, type }, (places, status) => {
-            if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
-              for (const p of places.slice(0, 4)) {
-                if (isExcl(p.name)) continue
-                if (all.find(x => x.name === p.name)) continue
-                const dlat = lat - p.geometry.location.lat()
-                const dlng = lng - p.geometry.location.lng()
-                all.push({ name: p.name, address: p.vicinity, type, dist: Math.round(Math.sqrt(dlat*dlat+dlng*dlng)*111000), rating: p.rating })
+      // Search helper — try tight radius first, widen if nothing found
+      const searchWithRadius = async (radius) => {
+        const all = []
+        let remaining = types.length
+        await new Promise(resolve => {
+          const timeout = setTimeout(resolve, 10000)
+          types.forEach(type => {
+            service.nearbySearch({ location: { lat, lng }, radius, type }, (places, status) => {
+              const OK = window.google.maps.places.PlacesServiceStatus.OK
+              if (status === OK && places) {
+                for (const p of places.slice(0, 5)) {
+                  if (isExcl(p.name)) continue
+                  if (all.find(x => x.name === p.name)) continue
+                  const dlat = lat - p.geometry.location.lat()
+                  const dlng = lng - p.geometry.location.lng()
+                  all.push({
+                    name: p.name, address: p.vicinity, type,
+                    dist: Math.round(Math.sqrt(dlat*dlat + dlng*dlng) * 111000),
+                    rating: p.rating
+                  })
+                }
               }
-            }
-            if (--remaining === 0) resolve()
+              if (--remaining === 0) { clearTimeout(timeout); resolve() }
+            })
           })
         })
-      })
+        return all
+      }
 
-      all.sort((a, b) => (ORDER[a.type]-ORDER[b.type]) || (a.dist-b.dist))
+      let all = await searchWithRadius(100)
+      if (all.length === 0) all = await searchWithRadius(500)
+
+      all.sort((a, b) => (ORDER[a.type] - ORDER[b.type]) || (a.dist - b.dist))
       setNearbyList(all)
       setNearbyIdx(0)
-      // Advance to step 1 if we found nearby, else step 2 (manual)
       setStep(all.length > 0 ? 1 : 2)
-    } catch { setStep(2) }
-    finally { setNearbyLoading(false) }
+    } catch {
+      setStep(2)
+    } finally {
+      setNearbyLoading(false)
+    }
   }, []) // stable ref
 
   // Auto-trigger when GPS comes from URL params (Map → Add Customer Here)
@@ -274,7 +304,10 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
     if (lat && lng) {
       const latN = parseFloat(lat), lngN = parseFloat(lng)
       setForm(f => ({ ...f, lat, lng }))
-      // Go directly to loading state then fetch
+      // Auto-fill area from URL GPS
+      reverseGeocodeArea(latN, lngN).then(area => {
+        if (area) setForm(f => ({ ...f, area: f.area || area }))
+      })
       setNearbyLoading(true)
       fetchNearbyPOI(latN, lngN)
     }
@@ -288,6 +321,10 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
       const lat = pos.coords.latitude.toFixed(7)
       const lng = pos.coords.longitude.toFixed(7)
       setForm(f => ({ ...f, lat, lng }))
+      // Auto-fill area from GPS — run in parallel with POI fetch
+      reverseGeocodeArea(parseFloat(lat), parseFloat(lng)).then(area => {
+        if (area) setForm(f => ({ ...f, area: f.area || area }))
+      })
       await fetchNearbyPOI(parseFloat(lat), parseFloat(lng))
     } catch { alert('Could not get location. Please enable location access.') }
     finally { setGpsLoading(false) }
@@ -324,14 +361,14 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
       let next_visit_date = null
       if (callbackDate) next_visit_date = callbackDate
       else if (saleOutcome !== 'avoid') {
-        const d = new Date(); d.setDate(d.getDate()+14); next_visit_date = d.toISOString().split('T')[0]
+        const d = new Date(); d.setDate(d.getDate()+30); next_visit_date = d.toISOString().split('T')[0]
       }
       const payload = {
         business_name: form.business_name,
         full_name: form.decision_maker || form.business_name,
         phone: form.phone, address: form.address, area: form.area,
         lat: parseFloat(form.lat), lng: parseFloat(form.lng),
-        status, next_visit_date, visit_frequency_days: 14,
+        status, next_visit_date, visit_frequency_days: 30,
         decision_maker: form.decision_maker, best_time: form.best_time,
         notes: [form.notes, callbackNote].filter(Boolean).join('\n'),
         sale_amount: hasSale ? totalSale : 0, cost: hasSale ? totalCost : 0,
@@ -481,14 +518,16 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
           <input className="form-input" autoFocus value={form.business_name} onChange={set('business_name')}
             placeholder="e.g. Hair Kingdom, Murphy USA" style={{ fontSize:17,padding:'14px 16px' }} />
         </div>
-        {/* If no GPS yet, show GPS button */}
-        {!form.lat && (
-          <div className="form-group">
-            <button type="button" className="btn btn-ghost btn-full" onClick={handleGPS} disabled={gpsLoading}>
-              {gpsLoading ? '📡...' : '📍 Also pin my location'}
-            </button>
-          </div>
-        )}
+        {/* Location status + relocate */}
+        <div style={{ background: form.lat ? 'var(--green-light)' : 'var(--amber-light)', borderRadius:10, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+          <p style={{ fontSize:13, color: form.lat ? 'var(--green)' : 'var(--amber)', fontWeight:600 }}>
+            {form.lat ? '📍 Location pinned' : '⚠️ No location yet'}
+          </p>
+          <button type="button" onClick={handleGPS} disabled={gpsLoading}
+            style={{ fontSize:12, padding:'6px 12px', borderRadius:8, border:'1px solid', borderColor: form.lat ? 'var(--green)' : 'var(--amber)', background:'white', cursor:'pointer', fontWeight:600, color: form.lat ? 'var(--green)' : 'var(--amber)', whiteSpace:'nowrap' }}>
+            {gpsLoading ? '📡...' : form.lat ? '🔄 Relocate' : '📍 Pin Location'}
+          </button>
+        </div>
         <button className="btn btn-primary btn-full" style={{ padding:'14px',fontSize:16 }}
           onClick={() => { if (!form.business_name.trim()) { setError('Enter the store name'); return } setError(''); setStep(3) }}>
           Next →
@@ -543,7 +582,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
         <Header title="When to come back?" />
         <div style={{ padding:'0 20px' }}>
           <div style={{ display:'flex',gap:8,flexWrap:'wrap',marginBottom:14 }}>
-            {[{l:'Tomorrow',d:1},{l:'In 2 days',d:2},{l:'This week',d:4},{l:'Next week',d:7},{l:'2 weeks',d:14}].map(({l,d}) => {
+            {[{l:'Tomorrow',d:1},{l:'In 2 days',d:2},{l:'This week',d:4},{l:'Next week',d:7},{l:'2 weeks',d:14},{l:'Next month',d:30}].map(({l,d}) => {
               const dt=new Date(); dt.setDate(dt.getDate()+d); const val=dt.toISOString().split('T')[0]
               return <button key={l} onClick={() => setCallbackDate(val)} style={{
                 padding:'9px 14px',borderRadius:20,fontSize:13,cursor:'pointer',
@@ -611,8 +650,19 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
           <input className="form-input" value={form.decision_maker} onChange={set('decision_maker')} placeholder="e.g. Mike (owner), Sarah (manager)" />
         </div>
         <div className="form-group">
-          <label className="form-label">When are they there? <span className="text-muted" style={{ fontWeight:400 }}>(optional)</span></label>
-          <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder="e.g. Mon–Fri 10am–3pm" />
+          <label className="form-label">Best time to visit <span className="text-muted" style={{ fontWeight:400 }}>(optional)</span></label>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:8 }}>
+            {['Mornings (8–12)','Afternoons (12–4)','Evenings (4–7)','Weekdays','Weekends','Mon–Fri 9–5','Anytime'].map(t => (
+              <button key={t} type="button" onClick={() => setForm(f => ({ ...f, best_time: f.best_time === t ? '' : t }))}
+                style={{ padding:'7px 13px', borderRadius:20, fontSize:13, cursor:'pointer', fontWeight:500,
+                  background: form.best_time === t ? 'var(--blue)' : 'var(--gray-light)',
+                  color: form.best_time === t ? 'white' : 'var(--text)',
+                  border: `1.5px solid ${form.best_time === t ? 'var(--blue)' : 'var(--border)'}` }}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder="Or type custom time..." style={{ fontSize:14 }} />
         </div>
         <div className="form-group">
           <label className="form-label">Notes <span className="text-muted" style={{ fontWeight:400 }}>(optional)</span></label>

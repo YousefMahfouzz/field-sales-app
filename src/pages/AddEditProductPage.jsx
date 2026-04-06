@@ -6,9 +6,9 @@ import { compressImage } from '../lib/imageUtils'
 export const CATEGORIES = [
   'Wigs','Hair Extensions & Weaves','Braiding Hair','Hair Care & Treatments',
   'Styling Tools','Cosmetics & Makeup','Skin Care','Nail Care','Fragrance & Oils',
-  'Accessories','Air Fresheners','Incense & Candles','Male Enhancement',
-  'Phone Chargers & Cables','Phone Cases & Accessories','Food & Snacks',
-  'Health & Wellness','Other',
+  'Accessories','Air Fresheners','Incense & Candles','Lighters & Torch Lighters',
+  'Male Enhancement','Phone Chargers & Cables','Phone Cases & Accessories',
+  'Food & Snacks','Health & Wellness','Other',
 ]
 
 function guessCategory(name) {
@@ -25,6 +25,7 @@ function guessCategory(name) {
   if (/clip|pin|band|headband|bonnet|cap|wrap|net/.test(n)) return 'Accessories'
   if (/freshener|febreze|glade/.test(n)) return 'Air Fresheners'
   if (/incense|candle|oud|bakhoor/.test(n)) return 'Incense & Candles'
+  if (/lighter|torch|butane|zippo|bic|flame/.test(n)) return 'Lighters & Torch Lighters'
   if (/honey|royal|bull|enhancement|stamina/.test(n)) return 'Male Enhancement'
   if (/charger|usb|cable|lightning|type.c|power bank/.test(n)) return 'Phone Chargers & Cables'
   if (/case|cover|screen protector/.test(n)) return 'Phone Cases & Accessories'

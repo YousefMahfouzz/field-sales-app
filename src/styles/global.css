@@ -135,7 +135,7 @@ p { line-height: 1.5; }
 }
 .badge-active { background: var(--green-light); color: var(--green); }
 .badge-priority { background: #fef3c7; color: #92400e; }
-.badge-follow_up { background: var(--blue-light); color: var(--blue-dark); }
+.badge-follow_up { background: #cffafe; color: #0e7490; }
 .badge-avoid { background: var(--red-light); color: var(--red); }
 .badge-do_not_visit { background: #f3f4f6; color: var(--gray); }
 

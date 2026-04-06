@@ -8,7 +8,8 @@ export default function ProductsPage() {
   const navigate = useNavigate()
   const { products, loading } = useProducts()
   const [search, setSearch] = useState('')
-  const [groupBy, setGroupBy] = useState('category') // 'category' | 'none'
+  const [groupBy, setGroupBy] = useState('category')
+  const isAdmin = profile?.is_admin === true
 
   const filtered = products.filter(p =>
     !search || p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -46,13 +47,21 @@ export default function ProductsPage() {
       <div className="page-header">
         <h1>Products</h1>
         <div style={{ display:'flex', gap:8 }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/shared-catalog')} style={{ fontSize:12 }}>
+            {isAdmin ? '👑 Shared' : '📦 Catalog'}
+          </button>
           <button className="btn btn-ghost btn-sm" onClick={() => {
             const url = profile?.username
               ? `${window.location.origin}/u/${profile.username}/pricelist`
               : `${window.location.origin}/pricelist`
-            window.open(url, '_blank')
+            const a = document.createElement('a')
+            a.href = url
+            a.target = '_blank'
+            a.rel = 'noopener noreferrer'
+            a.click()
           }} style={{ fontSize:12 }}>👁️ View</button>
           <button className="btn btn-ghost btn-sm" onClick={shareList} style={{ fontSize:12 }}>🔗 Share</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/price-lists')} style={{ fontSize:12 }}>📋 Lists</button>
           <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>
         </div>
       </div>

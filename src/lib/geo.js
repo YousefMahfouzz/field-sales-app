@@ -14,7 +14,7 @@ export function getDistance(lat1, lng1, lat2, lng2) {
 }
 
 // Find customers within radius meters of a point
-export function findNearbyCustomers(customers, lat, lng, radiusMeters = 20) {
+export function findNearbyCustomers(customers, lat, lng, radiusMeters = 20000) {
   return customers.filter((c) => {
     const dist = getDistance(lat, lng, c.lat, c.lng)
     return dist <= radiusMeters
@@ -74,4 +74,54 @@ export function routeTotalDistance(route, startLat, startLng) {
     prevLng = c.lng
   }
   return (total / 1000).toFixed(1)
+}
+
+/**
+ * Reverse geocode lat/lng to get neighborhood/area name.
+ * Uses Google Maps Geocoding API (already loaded for the app).
+ * Returns the most specific named area — neighborhood first, then sublocality, then city.
+ * Examples: "East New Orleans", "Metairie", "Mid-City", "Kenner"
+ */
+export async function reverseGeocodeArea(lat, lng) {
+  try {
+    // Use Google Maps Geocoder if available
+    if (window.google?.maps?.Geocoder) {
+      const geocoder = new window.google.maps.Geocoder()
+      const result = await new Promise((resolve, reject) => {
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          if (status === 'OK' && results?.length > 0) resolve(results)
+          else reject(new Error(status))
+        })
+      })
+
+      // Priority: neighborhood > sublocality_level_1 > sublocality > locality (city)
+      const typePriority = [
+        'neighborhood',
+        'sublocality_level_1',
+        'sublocality',
+        'locality',
+        'administrative_area_level_3',
+        'administrative_area_level_2',
+      ]
+
+      for (const type of typePriority) {
+        for (const r of result) {
+          const comp = r.address_components?.find(c => c.types.includes(type))
+          if (comp) return comp.long_name
+        }
+      }
+    }
+
+    // Fallback: use free Nominatim (OpenStreetMap) reverse geocoding — no API key needed
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=14`,
+      { headers: { 'Accept-Language': 'en' } }
+    )
+    const data = await res.json()
+    const a = data.address || {}
+    // Return neighborhood > suburb > city_district > city
+    return a.neighbourhood || a.suburb || a.city_district || a.quarter || a.city || a.town || a.county || ''
+  } catch {
+    return ''
+  }
 }

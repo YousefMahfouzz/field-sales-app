@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
 const NAV = [
-  { to: '/', icon: '🏠', label: 'Home' },
+  { to: '/dashboard', icon: '🏠', label: 'Home' },
   { to: '/customers', icon: '👥', label: 'Customers' },
   { to: '/map', icon: '🗺️', label: 'Map' },
   { to: '/products', icon: '📦', label: 'Products' },
