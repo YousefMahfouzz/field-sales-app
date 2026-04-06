@@ -24,8 +24,9 @@ import PublicHomePage from './pages/PublicHomePage'
 import AdminHomepageManager from './pages/AdminHomepageManager'
 import PriceListsManagerPage from './pages/PriceListsManagerPage'
 import NicheLandingPage from './pages/NicheLandingPage'
-// import AdminLandingPage from './pages/AdminLandingPage' -- replaced
 import PriceListsPage from './pages/PriceListsPage'
+import PublicPriceListPage from './pages/PublicPriceListPage'
+// import AdminLandingPage from './pages/AdminLandingPage' -- replaced
 import OrdersPage from './pages/OrdersPage'
 import PurchasesPage from './pages/PurchasesPage'
 import BottomNav from './components/BottomNav'
@@ -102,6 +103,8 @@ function AppRoutes() {
           <Route path="/admin/homepage" element={<PrivateRoute><AdminHomepageManager /></PrivateRoute>} />
           <Route path="/admin/price-lists" element={<PrivateRoute><PriceListsManagerPage /></PrivateRoute>} />
           <Route path="/list/:slug" element={<NicheLandingPage />} />
+          <Route path="/pl/:userId/:slug" element={<PublicPriceListPage />} />
+          <Route path="/price-lists" element={<PrivateRoute><PriceListsPage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       {user && !isPricelist && <BottomNav />}
