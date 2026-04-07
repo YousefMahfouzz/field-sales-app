@@ -6,11 +6,15 @@ import CustomerCard from '../components/CustomerCard'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 
 const STATUSES = ['all', 'active', 'priority', 'follow_up', 'do_not_visit', 'avoid']
-const STATUS_LABELS = { all: 'All', active: 'Active', priority: 'Priority', follow_up: 'Follow Up', do_not_visit: 'Do Not Visit', avoid: '⛔ Avoid' }
+// STATUS_LABELS defined inside component for Arabic support
 const STATUS_COLORS = { active: '#16a34a', priority: '#d97706', follow_up: '#0891b2', avoid: '#dc2626', do_not_visit: '#6b7280' }
 
 export default function CustomersPage() {
   const navigate = useNavigate()
+  const { isArabic } = useSettings()
+  const STATUS_LABELS = isArabic
+    ? { all:'الكل', active:'نشط', priority:'أولوية', follow_up:'متابعة', do_not_visit:'لا تزور', avoid:'⛔ تجنب' }
+    : { all:'All', active:'Active', priority:'Priority', follow_up:'Follow Up', do_not_visit:'Do Not Visit', avoid:'⛔ Avoid' }
   const [searchParams] = useSearchParams()
   const { customers, loading } = useCustomers()
   const [search, setSearch] = useState('')

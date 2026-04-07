@@ -46,6 +46,54 @@ html, body {
   position: relative;
 }
 
+/* Desktop layout — wider screens get a proper centered card */
+@media (min-width: 768px) {
+  body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--gray-light);
+  }
+
+  [data-theme="dark"] body {
+    background: #0d1117 !important;
+  }
+
+  #root {
+    max-width: 480px;
+    min-height: 100vh;
+    box-shadow: 0 0 0 1px var(--border), 0 4px 24px rgba(0,0,0,0.08);
+    border-radius: 0;
+    position: relative;
+  }
+
+  /* Buttons on desktop — don't stretch full viewport */
+  .btn-full {
+    max-width: 100%;
+  }
+
+  /* Bottom nav on desktop — stays within the app card */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 480px;
+    max-width: 480px;
+  }
+}
+
+@media (min-width: 1024px) {
+  #root {
+    max-width: 500px;
+  }
+  .bottom-nav {
+    width: 500px;
+    max-width: 500px;
+  }
+}
+
 /* Price list pages need full width - override root constraint */
 body.pricelist-page #root {
   max-width: 100% !important;

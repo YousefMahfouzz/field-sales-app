@@ -2,13 +2,18 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useSettings } from '../hooks/useSettings'
 
 const STATUS_COLOR = { pending:'#f59e0b', confirmed:'#2563eb', delivered:'#16a34a', cancelled:'#dc2626' }
-const STATUS_LABEL = { pending:'⏳ Pending', confirmed:'✅ Confirmed', delivered:'📦 Delivered', cancelled:'✕ Cancelled' }
+// STATUS_LABEL is dynamic based on language
 const STATUS_BG    = { pending:'#fffbeb', confirmed:'#eff6ff', delivered:'#f0fdf4', cancelled:'#fff1f2' }
 
 export default function OrdersPage() {
   const { user } = useAuth()
+  const { isArabic } = useSettings()
+  const STATUS_LABEL = isArabic
+    ? { pending:'⏳ قيد الانتظار', confirmed:'✅ مؤكد', delivered:'📦 تم التوصيل', cancelled:'✕ ملغى' }
+    : { pending:'⏳ Pending', confirmed:'✅ Confirmed', delivered:'📦 Delivered', cancelled:'✕ Cancelled' }
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -75,9 +80,9 @@ export default function OrdersPage() {
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
           {[
-            { label: 'Total Orders', val: orders.length, color: 'var(--blue)' },
-            { label: 'Pending', val: pending.length, color: '#f59e0b' },
-            { label: 'Revenue', val: `$${totalRevenue.toFixed(0)}`, color: 'var(--green)' },
+            { label: isArabic?'إجمالي الطلبات':'Total Orders', val: orders.length, color: 'var(--blue)' },
+            { label: isArabic?'قيد الانتظار':'Pending', val: pending.length, color: '#f59e0b' },
+            { label: isArabic?'الإيرادات':'Revenue', val: `$${totalRevenue.toFixed(0)}`, color: 'var(--green)' },
           ].map(s => (
             <div key={s.label} className="card" style={{ textAlign: 'center', padding: '10px 6px' }}>
               <p style={{ fontWeight: 800, fontSize: 17, color: s.color }}>{s.val}</p>

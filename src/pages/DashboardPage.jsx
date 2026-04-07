@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useSettings } from '../hooks/useSettings'
 import { useCustomers } from '../hooks/useCustomers'
 import { supabase } from '../lib/supabase'
 
@@ -294,7 +295,7 @@ export default function DashboardPage() {
 
   const name = profile?.display_name?.split(' ')[0] || ''
   const hr = new Date().getHours()
-  const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
+  const greeting = hr < 12 ? isArabic?'صباح الخير':'Good morning' : hr < 17 ? isArabic?'مساء الخير':'Good afternoon' : isArabic?'مساء النور':'Good evening'
 
   const Metric = ({ icon, label, value, color, onClick }) => (
     <div className="card" onClick={onClick} style={{ textAlign: 'center', padding: '14px 8px', cursor: onClick ? 'pointer' : 'default' }}>
@@ -353,7 +354,7 @@ export default function DashboardPage() {
             }}>
               <span style={{ fontSize: 20 }}>⚠️</span>
               <span style={{ fontWeight: 700, fontSize: 14, flex: 1, color: 'white' }}>
-                {overdue.length} overdue visit{overdue.length > 1 ? 's' : ''}
+                {overdue.length} isArabic?'زيارة متأخرة':'overdue visit'{overdue.length > 1 ? 's' : ''}
               </span>
               <button
                 onClick={() => setShowReschedule(true)}
@@ -384,16 +385,16 @@ export default function DashboardPage() {
 
           {/* Today */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-            <p className="section-header" style={{ margin:0 }}>Today</p>
+            <p className="section-header" style={{ margin:0 }}>{isArabic ? 'اليوم' : 'Today'}</p>
             <button onClick={() => navigate('/analytics')} style={{ fontSize:12, color:'var(--blue)', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📊 Analytics →</button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
             <div style={{ background:'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius:12, padding:'12px 14px' }}>
-              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Revenue Today</p>
+              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Revenue {isArabic ? 'اليوم' : 'Today'}</p>
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayRevenue??0).toFixed(2)}`}</p>
             </div>
             <div style={{ background:'linear-gradient(135deg,#14532d,#16a34a)', borderRadius:12, padding:'12px 14px' }}>
-              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Profit Today</p>
+              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Profit {isArabic ? 'اليوم' : 'Today'}</p>
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayProfit??0).toFixed(2)}`}</p>
             </div>
           </div>
@@ -404,7 +405,7 @@ export default function DashboardPage() {
           </div>
 
           {/* This week */}
-          <p className="section-header">This Week</p>
+          <p className="section-header">{isArabic ? 'هذا الأسبوع' : 'This Week'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
             <Metric icon="📍" label="Visits" value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
             <Metric icon="💰" label="Sales" value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
@@ -413,7 +414,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Customers */}
-          <p className="section-header">Customers</p>
+          <p className="section-header">{isArabic ? 'العملاء' : 'Customers'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
             <Metric icon="👥" label="Active" value={active.length} />
             <Metric icon="📅" label="Due Today" value={dueToday.length} color="var(--blue)" />
@@ -422,7 +423,7 @@ export default function DashboardPage() {
 
           {/* Recent activity */}
           {recentVisits.length > 0 && <>
-            <p className="section-header">Recent Activity</p>
+            <p className="section-header">{isArabic ? 'النشاط الأخير' : 'Recent Activity'}</p>
             {recentVisits.map(v => (
               <div key={v.id} className="card" style={{ marginBottom: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -441,13 +442,13 @@ export default function DashboardPage() {
           </>}
 
           {/* Quick actions */}
-          <p className="section-header">Quick Actions</p>
+          <p className="section-header">{isArabic ? 'إجراءات سريعة' : 'Quick Actions'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
-              { label: '📍 Add Customer', to: '/customers/new' },
-              { label: '📦 Record Purchase', to: '/purchases' },
-              { label: '📋 View Orders', to: '/orders' },
-              { label: '📊 Analytics', to: '/analytics' },
+              { label: isArabic ? '📍 إضافة عميل' : '📍 Add Customer', to: '/customers/new' },
+              { label: isArabic ? '📦 تسجيل شراء' : '📦 Record Purchase', to: '/purchases' },
+              { label: isArabic ? '📋 عرض الطلبات' : '📋 View Orders', to: '/orders' },
+              { label: isArabic ? '📊 التحليلات' : '📊 Analytics', to: '/analytics' },
             ].map(a => (
               <button key={a.to} onClick={() => navigate(a.to)} style={{
                 padding: '13px', borderRadius: 12, border: '1.5px solid var(--border)',
@@ -458,7 +459,7 @@ export default function DashboardPage() {
         </>}
 
         {tab === 'deleted' && <>
-          <p className="section-header">Deleted Customers</p>
+          <p className="section-header">Deleted {isArabic ? 'العملاء' : 'Customers'}</p>
           <p className="text-xs text-muted" style={{ marginBottom: 12 }}>Soft-deleted — tap Restore to bring them back.</p>
           {deletedCustomers.length === 0 && (
             <div style={{ textAlign: 'center', padding: 48 }}>

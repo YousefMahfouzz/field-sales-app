@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
 import { useProducts } from '../hooks/useProducts'
 import { compressImage } from '../lib/imageUtils'
 
@@ -134,6 +136,26 @@ export default function AddEditProductPage() {
         unit: form.unit || 'unit',
       }
       let saved = isEdit ? await updateProduct(id, payload) : await addProduct(payload)
+      
+      // If adding a new product with initial stock, log it as a stock purchase
+      if (!isEdit && saved?.id && (parseInt(form.stock_qty) || 0) > 0) {
+        const qty = parseInt(form.stock_qty)
+        const unitCost = parseFloat(form.cost) || 0
+        await supabase.from('stock_movements').insert([{
+          user_id: user?.id,
+          product_id: saved.id,
+          type: 'in',
+          qty,
+          cost_per_unit: unitCost,
+          total_cost: qty * unitCost,
+          source: form.source || null,
+          note: `Initial stock — ${form.name.trim()}`,
+        }])
+        // Also set avg_cost
+        if (unitCost > 0) {
+          await supabase.from('products').update({ avg_cost: unitCost }).eq('id', saved.id)
+        }
+      }
       if (imageFile && saved?.id) await uploadProductImage(saved.id, imageFile)
       if (extraImageFiles.length > 0 && saved?.id) {
         const urls = await Promise.all(extraImageFiles.map((item, i) => uploadAdditionalImage(saved.id, item.file, i)))

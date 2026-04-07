@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import { useSettings } from '../hooks/useSettings'
 
 export default function ProductsPage() {
   const { profile } = useAuth()
@@ -13,6 +14,7 @@ export default function ProductsPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [archiving, setArchiving] = useState(null)
   const [toast, setToast] = useState('')
+  const { isArabic } = useSettings()
   const isAdmin = profile?.is_admin === true
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }

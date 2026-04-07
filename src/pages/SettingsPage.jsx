@@ -96,7 +96,7 @@ export default function SettingsPage() {
     <div>
       <div className="page-header">
         <button onClick={() => navigate(-1)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer' }}>←</button>
-        <h1>Settings</h1>
+        <h1>{isArabic ? 'الإعدادات' : 'Settings'}</h1>
         <div style={{ width:36 }} />
       </div>
 
@@ -145,7 +145,7 @@ export default function SettingsPage() {
             </div>
           )}
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? (isArabic?'جاري الحفظ...':'Saving...') : (isArabic?'حفظ التغييرات':'Save Changes')}
           </button>
         </form>
 
@@ -179,7 +179,7 @@ export default function SettingsPage() {
 
         {/* Account */}
         <div style={{ marginTop:24, paddingTop:8 }}>
-          <p className="section-header">Account</p>
+          <p className="section-header">{isArabic ? 'الحساب' : 'Account'}</p>
           <p className="text-xs text-muted" style={{ marginBottom:12 }}>{user?.email}</p>
 
           {profile?.is_admin && (<>
