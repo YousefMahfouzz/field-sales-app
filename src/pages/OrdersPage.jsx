@@ -47,7 +47,7 @@ export default function OrdersPage() {
   }
 
   const deleteOrder = async (id) => {
-    if (!window.confirm('Delete this order? This cannot be undone.')) return
+    if (!window.confirm(isArabic ? 'حذف هذا الطلب؟ لا يمكن التراجع.' : 'Delete this order? This cannot be undone.')) return
     await supabase.from('orders').delete().eq('id', id)
     setOrders(p => p.filter(o => o.id !== id))
   }
@@ -171,7 +171,7 @@ export default function OrdersPage() {
                   {/* Items list */}
                   <div style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
                     {items.length === 0 ? (
-                      <p className="text-xs text-muted">No items recorded</p>
+                      <p className="text-xs text-muted">{isArabic ? 'لا عناصر مسجلة' : 'No items recorded'}</p>
                     ) : items.map((item, i) => (
                       <div key={i} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',

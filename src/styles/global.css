@@ -46,20 +46,10 @@ html, body {
   position: relative;
 }
 
-/* Desktop — wider layout */
-@media (min-width: 768px) {
-  #root {
-    max-width: 680px;
-  }
-}
-
-@media (min-width: 1200px) {
-  #root {
-    max-width: 860px;
-  }
-}
-
-/* Desktop layout — wider screens get a proper centered card */
+/* ── DESKTOP LAYOUT ─────────────────────────────────────────────
+   Phone: 430px | Tablet (768+): 600px | Laptop (1024+): 680px | Desktop (1400+): 780px
+   App sits centered as a card on large screens
+──────────────────────────────────────────────────────────────── */
 @media (min-width: 768px) {
   body {
     display: flex;
@@ -74,36 +64,40 @@ html, body {
   }
 
   #root {
-    max-width: 480px;
+    max-width: 600px;
+    width: 100%;
     min-height: 100vh;
-    box-shadow: 0 0 0 1px var(--border), 0 4px 24px rgba(0,0,0,0.08);
-    border-radius: 0;
+    box-shadow: 0 0 0 1px var(--border), 0 4px 32px rgba(0,0,0,0.10);
     position: relative;
   }
 
-  /* Buttons on desktop — don't stretch full viewport */
-  .btn-full {
-    max-width: 100%;
-  }
-
-  /* Bottom nav on desktop — stays within the app card */
   .bottom-nav {
     position: fixed;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 480px;
-    max-width: 480px;
+    width: 600px;
+    max-width: 600px;
   }
 }
 
 @media (min-width: 1024px) {
   #root {
-    max-width: 500px;
+    max-width: 700px;
   }
   .bottom-nav {
-    width: 500px;
-    max-width: 500px;
+    width: 700px;
+    max-width: 700px;
+  }
+}
+
+@media (min-width: 1400px) {
+  #root {
+    max-width: 800px;
+  }
+  .bottom-nav {
+    width: 800px;
+    max-width: 800px;
   }
 }
 
@@ -522,9 +516,9 @@ p { line-height: 1.5; }
 /* ── RTL / ARABIC ─────────────────────────────────────────────── */
 [dir="rtl"] {
   text-align: right;
-  font-family: 'Segoe UI', 'Tahoma', -apple-system, sans-serif;
 }
 
+/* Only flip specific known RTL-safe elements — NOT .flex broadly */
 [dir="rtl"] .page-header {
   flex-direction: row-reverse;
 }
@@ -533,15 +527,20 @@ p { line-height: 1.5; }
   flex-direction: row-reverse;
 }
 
-[dir="rtl"] .flex {
-  flex-direction: row-reverse;
-}
-
 [dir="rtl"] .card {
   text-align: right;
 }
 
-/* Flip margins/paddings for RTL */
+[dir="rtl"] .form-group label {
+  display: block;
+  text-align: right;
+}
+
+[dir="rtl"] .modal-sheet {
+  text-align: right;
+}
+
+/* Flip margins for RTL */
 [dir="rtl"] .ml-auto { margin-left: 0; margin-right: auto; }
 [dir="rtl"] .mr-auto { margin-right: 0; margin-left: auto; }
 

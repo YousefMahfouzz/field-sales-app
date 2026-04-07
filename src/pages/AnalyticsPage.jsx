@@ -361,12 +361,12 @@ export default function AnalyticsPage() {
         <SectionHeader title="📦 Stock Purchases by Date Range" />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
           <div>
-            <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4, fontWeight:600 }}>From</p>
+            <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4, fontWeight:600 }}>{isArabic ? 'من' : 'From'}</p>
             <input type="date" value={stockFrom} max={stockTo} onChange={e => setStockFrom(e.target.value)}
               style={{ width:'100%', padding:'9px 12px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:14 }} />
           </div>
           <div>
-            <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4, fontWeight:600 }}>To</p>
+            <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4, fontWeight:600 }}>{isArabic ? 'إلى' : 'To'}</p>
             <input type="date" value={stockTo} min={stockFrom} max={today()} onChange={e => setStockTo(e.target.value)}
               style={{ width:'100%', padding:'9px 12px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:14 }} />
           </div>
@@ -377,7 +377,7 @@ export default function AnalyticsPage() {
           {[
             { l:isArabic ? 'هذا الأسبوع' : 'This Week',  f:startOf('week'),  t:today() },
             { l:isArabic ? 'هذا الشهر' : 'This Month', f:startOf('month'), t:today() },
-            { l:'This Year',  f:startOf('year'),  t:today() },
+            { l:isArabic ? 'هذا العام' : 'This Year',  f:startOf('year'),  t:today() },
           ].map(r => (
             <button key={r.l} onClick={() => { setStockFrom(r.f); setStockTo(r.t) }}
               style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid var(--border)', background:'white', fontSize:12, fontWeight:600, cursor:'pointer' }}>

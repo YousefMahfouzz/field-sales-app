@@ -116,15 +116,15 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <p className="section-header">Your Profile</p>
+        <p className="section-header">{isArabic ? 'ملفك الشخصي' : 'Your Profile'}</p>
         {error && <div style={{ background:'var(--red-light)', color:'var(--red)', padding:'12px 16px', borderRadius:8, marginBottom:16, fontSize:14 }}>{error}</div>}
         {saved && <div style={{ background:'var(--green-light)', color:'var(--green)', padding:'12px 16px', borderRadius:8, marginBottom:16, fontSize:14 }}>✅ Saved!</div>}
 
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Display Name</label>
-            <input className="form-input" value={form.display_name} onChange={handleNameChange} placeholder="Your full name" />
-            <p className="text-xs text-muted" style={{ marginTop:4 }}>Shown on your price list</p>
+            <input className="form-input" value={form.display_name} onChange={handleNameChange} placeholder={isArabic ? 'اسمك الكامل' : 'Your full name'} />
+            <p className="text-xs text-muted" style={{ marginTop:4 }}>{isArabic ? 'يظهر في قائمة أسعارك' : 'Shown on your price list'}</p>
           </div>
           <div className="form-group">
             <label className="form-label">Username</label>
@@ -132,7 +132,7 @@ export default function SettingsPage() {
               <span style={{ padding:'10px 12px', background:'var(--gray-light)', borderRadius:'8px 0 0 8px', border:'1px solid var(--border)', borderRight:'none', fontSize:14, color:'var(--text-muted)' }}>@</span>
               <input className="form-input" value={form.username} onChange={handleUsernameChange} placeholder="yourname" style={{ borderRadius:'0 8px 8px 0' }} />
             </div>
-            <p className="text-xs text-muted" style={{ marginTop:4 }}>Lowercase letters and numbers only</p>
+            <p className="text-xs text-muted" style={{ marginTop:4 }}>{isArabic ? 'أحرف صغيرة وأرقام فقط' : 'Lowercase letters and numbers only'}</p>
           </div>
           {priceListUrl && (
             <div style={{ background:'#f8fafc', border:'1px solid var(--border)', borderRadius:10, padding:'12px 14px', marginBottom:16 }}>
@@ -183,7 +183,7 @@ export default function SettingsPage() {
           <p className="text-xs text-muted" style={{ marginBottom:12 }}>{user?.email}</p>
 
           {profile?.is_admin && (<>
-            <p style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Admin Tools</p>
+            <p style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>{isArabic ? 'أدوات المشرف' : 'Admin Tools'}</p>
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/settings')} style={{ marginBottom:8, color:'#7c3aed', borderColor:'#7c3aed' }}>
               ⚙️ Invite Codes & Logo
             </button>

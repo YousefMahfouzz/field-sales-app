@@ -106,7 +106,7 @@ export default function CustomerDetailPage() {
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 18 }}>📅</span>
                 <div>
-                  <p style={{ fontSize: 12, color: '#78350f', fontWeight: 700 }}>Their schedule</p>
+                  <p style={{ fontSize: 12, color: '#78350f', fontWeight: 700 }}>{isArabic ? 'جدولهم' : 'Their schedule'}</p>
                   <p style={{ fontSize: 14, fontWeight: 600 }}>{customer.decision_maker_schedule}</p>
                 </div>
               </div>
@@ -169,7 +169,7 @@ export default function CustomerDetailPage() {
               <p className="text-sm" style={{ fontWeight: 600, marginTop: 2 }}>Every {customer.visit_frequency_days || 14} days</p>
             </div>
             <div>
-              <p className="text-xs text-muted">Total Visits</p>
+              <p className="text-xs text-muted">{isArabic ? 'إجمالي الزيارات' : 'Total Visits'}</p>
               <p className="text-sm" style={{ fontWeight: 600, marginTop: 2 }}>{visits.length}</p>
             </div>
           </div>
@@ -182,11 +182,11 @@ export default function CustomerDetailPage() {
             {customer.sale_amount > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div>
-                  <p className="text-xs text-muted">Revenue</p>
+                  <p className="text-xs text-muted">{isArabic ? 'الإيرادات' : 'Revenue'}</p>
                   <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--green)' }}>${(customer.sale_amount || 0).toFixed(0)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted">Cost</p>
+                  <p className="text-xs text-muted">{isArabic ? 'التكلفة' : 'Cost'}</p>
                   <p style={{ fontWeight: 700, fontSize: 16 }}>${(customer.cost || 0).toFixed(0)}</p>
                 </div>
                 <div>
@@ -197,7 +197,7 @@ export default function CustomerDetailPage() {
             )}
             {customer.bought_before && (
               <div style={{ marginBottom: 8 }}>
-                <p className="text-xs text-muted">Bought before</p>
+                <p className="text-xs text-muted">{isArabic ? 'اشترى من قبل' : 'Bought before'}</p>
                 <p className="text-sm" style={{ marginTop: 2 }}>{customer.bought_before}</p>
               </div>
             )}

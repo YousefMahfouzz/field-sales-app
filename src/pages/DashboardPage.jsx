@@ -66,16 +66,16 @@ function RescheduleModal({ overdue, onClose, onDone }) {
         {done ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-            <p style={{ fontWeight: 700, fontSize: 16 }}>Rescheduled {selected.size} customer{selected.size > 1 ? 's' : ''}!</p>
+            <p style={{ fontWeight: 700, fontSize: 16 }}>{isArabic ? 'تمت إعادة الجدولة' : 'Rescheduled'} {selected.size} customer{selected.size > 1 ? 's' : ''}!</p>
           </div>
         ) : <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ fontSize: 18 }}>Reschedule Overdue</h2>
+            <h2 style={{ fontSize: 18 }}>{isArabic ? 'إعادة جدولة المتأخرين' : 'Reschedule Overdue'}</h2>
             <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
           </div>
 
           {/* Quick date buttons */}
-          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Move visits to</p>
+          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{isArabic ? 'نقل الزيارات إلى' : 'Move visits to'}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             {quickDates.map(({ label, days }) => {
               const d = dateFor(days)
@@ -94,7 +94,7 @@ function RescheduleModal({ overdue, onClose, onDone }) {
 
           {/* Custom date picker */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)', flexShrink: 0 }}>Or pick:</span>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', flexShrink: 0 }}>{isArabic ? 'أو اختر:' : 'Or pick:'}</span>
             <input type="date" value={targetDate} min={today}
               onChange={e => setTargetDate(e.target.value)}
               style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 14 }} />
@@ -103,17 +103,17 @@ function RescheduleModal({ overdue, onClose, onDone }) {
           {/* Target date display */}
           <div style={{ background: 'var(--blue-light)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, border: '1px solid #bfdbfe' }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
-              📅 Moving selected to: {prettyDate(targetDate)}
+              📅 {isArabic ? 'نقل المحددين إلى:' : 'Moving selected to:'} {prettyDate(targetDate)}
             </p>
           </div>
 
           {/* Customer list with checkboxes */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Customers ({selected.size}/{overdue.length} selected)
+              Customers ({selected.size}/{overdue.length} {isArabic ? 'محدد)' : 'selected)'}
             </p>
             <button onClick={toggleAll} style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>
-              {selected.size === overdue.length ? 'Deselect All' : 'Select All'}
+              {selected.size === overdue.length ? isArabic ? 'إلغاء التحديد' : 'Deselect All' : isArabic ? 'تحديد الكل' : 'Select All'}
             </button>
           </div>
 
@@ -151,7 +151,7 @@ function RescheduleModal({ overdue, onClose, onDone }) {
                     </p>
                   </div>
                   {c.status === 'priority' && (
-                    <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#fef3c7', color: '#92400e', fontWeight: 700 }}>Priority</span>
+                    <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#fef3c7', color: '#92400e', fontWeight: 700 }}>{isArabic ? 'أولوية' : 'Priority'}</span>
                   )}
                 </div>
               )

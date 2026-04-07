@@ -159,9 +159,9 @@ export default function ProductsPage() {
         {!loading && filtered.length === 0 && (
           <div className="empty-state">
             <div className="empty-icon">📦</div>
-            <h3>{search ? 'No products match' : 'No products yet'}</h3>
+            <h3>{search ? 'No products match' : isArabic ? 'لا توجد منتجات بعد' : 'No products yet'}</h3>
             {!search && (
-              <button className="btn btn-primary" style={{ marginTop:16 }} onClick={() => navigate('/products/new')}>Add First Product</button>
+              <button className="btn btn-primary" style={{ marginTop:16 }} onClick={() => navigate('/products/new')}>{isArabic ? 'أضف أول منتج' : 'Add First Product'}</button>
             )}
           </div>
         )}
