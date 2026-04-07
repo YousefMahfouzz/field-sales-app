@@ -7,7 +7,7 @@ import { useSettings } from '../hooks/useSettings'
 const fmt = (n) => n >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(2)}`
 
 // ── Monthly Bar Chart ──────────────────────────────────────────
-function MonthlyChart({ data }) {
+function MonthlyChart({ data, isArabic }) {
   const max = Math.max(...data.map(d => Math.max(d.revenue, d.stockCost)), 1)
 
   return (
@@ -434,7 +434,7 @@ export default function AnalyticsPage() {
         )}
 
         {/* ── MONTHLY CHART ── */}
-        {monthlyChart.length > 0 && <MonthlyChart data={monthlyChart} />}
+        {monthlyChart.length > 0 && <MonthlyChart data={monthlyChart} isArabic={isArabic} />}
 
         {/* ── ALL TIME ── */}
         <SectionHeader title="All Time" />

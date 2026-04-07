@@ -5,7 +5,7 @@ import { useCustomers } from '../hooks/useCustomers'
 import { useVisits } from '../hooks/useVisits'
 import { StatusBadge, AreaBadge } from '../components/CustomerCard'
 
-function daysUntilVisit(dateStr) {
+function daysUntilVisit(dateStr, isArabic) {
   if (!dateStr) return null
   const today = new Date()
   today.setHours(0,0,0,0)
@@ -156,8 +156,8 @@ export default function CustomerDetailPage() {
 {customer.next_visit_date ? (
                   <span>
                     <span style={{ display:'block' }}>{new Date(customer.next_visit_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    <span style={{ fontSize:11, color: (() => { const d = daysUntilVisit(customer.next_visit_date); return d?.includes('overdue') ? 'var(--red)' : d?.includes('today') ? '#16a34a' : 'var(--blue)' })(), fontWeight:700 }}>
-                      {daysUntilVisit(customer.next_visit_date)}
+                    <span style={{ fontSize:11, color: (() => { const d = daysUntilVisit(customer.next_visit_date, isArabic); return d?.includes('overdue') ? 'var(--red)' : d?.includes('today') ? '#16a34a' : 'var(--blue)' })(), fontWeight:700 }}>
+                      {daysUntilVisit(customer.next_visit_date, isArabic)}
                     </span>
                   </span>
                 ) : '—'}

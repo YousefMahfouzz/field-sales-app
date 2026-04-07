@@ -13,7 +13,7 @@ import ProductSelector from '../components/ProductSelector'
 // ─────────────────────────────────────────────
 // EDIT MODE — regular form, all fields visible
 // ─────────────────────────────────────────────
-function EditCustomerForm({ customer, onSave, onCancel }) {
+function EditCustomerForm({ isArabic, customer, onSave, onCancel }) {
   const [form, setForm] = useState({
     full_name: customer.full_name || '',
     business_name: customer.business_name || '',
@@ -159,7 +159,7 @@ function EditCustomerForm({ customer, onSave, onCancel }) {
 // ─────────────────────────────────────────────
 // STEP INDICATOR
 // ─────────────────────────────────────────────
-function StepBar({ current, total }) {
+function StepBar({ isArabic, current, total }) {
   return (
     <div style={{ display: 'flex', gap: 5, padding: '0 20px', marginBottom: 24 }}>
       {Array.from({ length: total }).map((_, i) => (
@@ -193,10 +193,10 @@ export default function AddEditCustomerPage() {
           <h1>Edit Customer</h1>
           <div style={{ width:36 }} />
         </div>
-        <EditCustomerForm
-          customer={customer}
+        <EditCustomerForm customer={customer}
           onSave={async payload => { await updateCustomer(id, payload); navigate(`/customers/${id}`) }}
           onCancel={() => navigate(-1)}
+          isArabic={isArabic}
         />
       </div>
     )
@@ -428,7 +428,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
         <button onClick={goBack} style={{ background:'none',border:'none',fontSize:22,cursor:'pointer' }}>←</button>
         <div style={{ flex:1 }} /><div style={{ width:36 }} />
       </div>
-      <StepBar current={step} total={TOTAL} />
+      <StepBar current={step} total={TOTAL}  isArabic={isArabic} />
       <div style={{ padding:'0 20px 18px' }}>
         <h2 style={{ fontSize:22,fontWeight:800,marginBottom:4 }}>{title}</h2>
         {sub && <p className="text-sm text-muted">{sub}</p>}

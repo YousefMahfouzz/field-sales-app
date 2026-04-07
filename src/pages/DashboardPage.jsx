@@ -6,7 +6,7 @@ import { useCustomers } from '../hooks/useCustomers'
 import { supabase } from '../lib/supabase'
 
 // ── Reschedule Modal ──────────────────────────────────────────────
-function RescheduleModal({ overdue, onClose, onDone }) {
+function RescheduleModal({ overdue, onClose, onDone, isArabic }) {
   const today = new Date().toLocaleDateString('en-CA')
   const [selected, setSelected] = useState(new Set(overdue.map(c => c.id)))
   const [targetDate, setTargetDate] = useState(today)
@@ -285,7 +285,7 @@ export default function DashboardPage() {
 
   const name = profile?.display_name?.split(' ')[0] || ''
   const hr = new Date().getHours()
-  const greeting = hr < 12 ? isArabic?'صباح الخير':isArabic ? 'صباح الخير' : 'Good morning' : hr < 17 ? isArabic?'مساء الخير':isArabic ? 'مساء الخير' : 'Good afternoon' : isArabic?'مساء النور':isArabic ? 'مساء النور' : 'Good evening'
+  const greeting = hr < 12 ? (isArabic ? 'صباح الخير' : 'Good morning') : hr < 17 ? (isArabic ? 'مساء الخير' : 'Good afternoon') : (isArabic ? 'مساء النور' : 'Good evening')
 
   const Metric = ({ icon, label, value, color, onClick }) => (
     <div className="card" onClick={onClick} style={{ textAlign: 'center', padding: '14px 8px', cursor: onClick ? 'pointer' : 'default' }}>

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCustomers } from '../hooks/useCustomers'
 import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import CustomerCard from '../components/CustomerCard'
+import { useSettings } from '../hooks/useSettings'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 
 const STATUSES = ['all', 'active', 'priority', 'follow_up', 'do_not_visit', 'avoid']
@@ -14,7 +15,7 @@ export default function CustomersPage() {
   const { isArabic } = useSettings()
   const STATUS_LABELS = isArabic
     ? { all:'الكل', active:'نشط', priority:'أولوية', follow_up:'متابعة', do_not_visit:'لا تزور', avoid:'⛔ تجنب' }
-    : { all:'All', active:'Active', priority:'Priority', follow_up:isArabic ? 'متابعة' : 'Follow Up', do_not_visit:isArabic ? 'لا تزور' : 'Do Not Visit', avoid:'⛔ Avoid' }
+    : { all:'All', active:'Active', priority:'Priority', follow_up:'Follow Up', do_not_visit:'Do Not Visit', avoid:'⛔ Avoid' }
   const [searchParams] = useSearchParams()
   const { customers, loading } = useCustomers()
   const [search, setSearch] = useState('')
@@ -105,12 +106,12 @@ export default function CustomersPage() {
           <div style={{ display: 'flex', gap: 6 }}>
             {dueTodayCount > 0 && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', borderRadius: 10, padding: '2px 7px', border: '1px solid #bfdbfe' }}>
-                {dueTodayCount} isArabic ? 'مستحق اليوم' : isArabic ? 'مستحق اليوم' : 'due today'
+                {dueTodayCount} isArabic ? 'مستحق اليوم' : 'due today'
               </span>
             )}
             {overdueCount > 0 && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: '#fef2f2', borderRadius: 10, padding: '2px 7px', border: '1px solid #fca5a5' }}>
-                {overdueCount} isArabic ? 'متأخر' : isArabic ? 'متأخر' : 'overdue'
+                {overdueCount} isArabic ? 'متأخر' : 'overdue'
               </span>
             )}
           </div>

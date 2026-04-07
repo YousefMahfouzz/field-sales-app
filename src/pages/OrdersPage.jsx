@@ -13,13 +13,13 @@ export default function OrdersPage() {
   const { isArabic } = useSettings()
   const STATUS_LABEL = isArabic
     ? { pending:'⏳ قيد الانتظار', confirmed:'✅ مؤكد', delivered:'📦 تم التوصيل', cancelled:'✕ ملغى' }
-    : { pending:isArabic ? '⏳ قيد الانتظار' : '⏳ Pending', confirmed:isArabic ? '✅ مؤكد' : '✅ Confirmed', delivered:isArabic ? '📦 تم التوصيل' : '📦 Delivered', cancelled:isArabic ? '✕ ملغى' : '✕ Cancelled' }
+    : { pending:'⏳ Pending', confirmed:'✅ Confirmed', delivered:'📦 Delivered', cancelled:'✕ Cancelled' }
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [expanded, setExpanded] = useState(null)
-  const [filter, setFilter] = useState(isArabic ? 'الكل' : 'all')
+  const [filter, setFilter] = useState('all')
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
@@ -53,7 +53,7 @@ export default function OrdersPage() {
   }
 
   const pending  = orders.filter(o => o.status === 'pending')
-  const filtered = filter === isArabic ? 'الكل' : 'all' ? orders : orders.filter(o => o.status === filter)
+  const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter)
   const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (o.total_amount || 0), 0)
 
   return (
@@ -113,7 +113,7 @@ export default function OrdersPage() {
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '48px 24px' }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>📋</div>
-            <h3 style={{ marginBottom: 8 }}>No {filter !== isArabic ? 'الكل' : 'all' ? filter : ''} orders yet</h3>
+            <h3 style={{ marginBottom: 8 }}>{isArabic ? 'لا توجد طلبات بعد' : `No ${filter !== 'all' ? filter : ''} orders yet`}</h3>
             <p className="text-sm text-muted" style={{ lineHeight: 1.6, marginBottom: 20 }}>
               Orders come in when customers visit your price list and tap "Request This Order".
             </p>
