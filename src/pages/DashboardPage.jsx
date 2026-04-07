@@ -478,6 +478,7 @@ export default function DashboardPage() {
       {showReschedule && overdue.length > 0 && (
         <RescheduleModal
           overdue={overdue}
+          isArabic={isArabic}
           onClose={() => setShowReschedule(false)}
           onDone={() => { fetchCustomers(); loadStats() }}
         />
