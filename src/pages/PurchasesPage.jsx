@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useSettings } from '../hooks/useSettings'
 import { useProducts } from '../hooks/useProducts'
 import { supabase } from '../lib/supabase'
 
 export default function PurchasesPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { isArabic } = useSettings()
   const { products, fetchProducts } = useProducts()
   const [movements, setMovements] = useState([])
   const [loading, setLoading] = useState(true)
@@ -121,8 +123,8 @@ export default function PurchasesPage() {
     <div>
       <div className="page-header">
         <button onClick={() => navigate(-1)} style={{ background:'none',border:'none',fontSize:22,cursor:'pointer' }}>←</button>
-        <h1>Stock Purchases</h1>
-        <button onClick={() => setShowForm(true)} style={{ background:'var(--blue)',color:'white',border:'none',borderRadius:10,padding:'7px 14px',fontWeight:700,cursor:'pointer',fontSize:14 }}>+ Add</button>
+        <h1>{isArabic ? 'مشتريات المخزون' : 'Stock Purchases'}</h1>
+        <button onClick={() => setShowForm(true)} style={{ background:'var(--blue)',color:'white',border:'none',borderRadius:10,padding:'7px 14px',fontWeight:700,cursor:'pointer',fontSize:14 }}>{isArabic ? '+ إضافة' : '+ Add'}</button>
       </div>
 
       <div className="page" style={{ paddingTop:12 }}>
@@ -226,7 +228,7 @@ export default function PurchasesPage() {
             </div>
 
             <button className="btn btn-primary btn-full" onClick={handleSave} disabled={saving || !form.unit_cost || !form.qty}>
-              {saving ? 'Saving...' : 'Save Purchase'}
+              {saving ? 'Saving...' : isArabic ? 'حفظ الشراء' : 'Save Purchase'}
             </button>
           </div>
         </div>

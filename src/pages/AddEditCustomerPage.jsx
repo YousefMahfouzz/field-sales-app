@@ -6,6 +6,7 @@ import { useVisits } from '../hooks/useVisits'
 import { useAuth } from '../hooks/useAuth'
 import { getCurrentPosition, reverseGeocodeArea } from '../lib/geo'
 import { loadGoogleMaps, loadPlaces } from '../lib/mapsLoader'
+import { useSettings } from '../hooks/useSettings'
 import { supabase } from '../lib/supabase'
 import ProductSelector from '../components/ProductSelector'
 
@@ -174,6 +175,7 @@ function StepBar({ current, total }) {
 // NEW CUSTOMER — step by step
 // ─────────────────────────────────────────────
 export default function AddEditCustomerPage() {
+  const { isArabic } = useSettings()
   const navigate = useNavigate()
   const { id } = useParams()
   const [searchParams] = useSearchParams()
@@ -451,7 +453,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
         {!nearbyLoading && (
           <>
             <button className="btn btn-primary btn-full" onClick={handleGPS} disabled={gpsLoading} style={{ padding:'16px',fontSize:17,marginBottom:14 }}>
-              {gpsLoading ? '📡 Getting GPS...' : form.lat ? '🔄 Re-pin location' : '📍 Pin My Location'}
+              {gpsLoading ? '📡 Getting GPS...' : form.lat ? '🔄 Re-pin location' : isArabic ? '📍 تحديد موقعي' : '📍 Pin My Location'}
             </button>
             <button className="btn btn-ghost btn-full" onClick={() => setStep(2)} style={{ marginTop:4 }}>
               ✏️ Enter store name manually

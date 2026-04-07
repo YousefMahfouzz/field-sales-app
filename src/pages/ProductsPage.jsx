@@ -26,7 +26,7 @@ export default function ProductsPage() {
       : `Archive "${product.name}"? It will be hidden from your active list.`)) return
     setArchiving(product.id)
     try {
-      await supabase.from('products').update({ is_active: product.is_active === false }).eq('id', product.id)
+      await supabase.from(isArabic ? 'منتجات' : 'products').update({ is_active: product.is_active === false }).eq('id', product.id)
       if (fetchProducts) await fetchProducts()
       showToast(product.is_active === false ? '✅ Restored' : '📦 Archived')
     } catch(e) { showToast('❌ ' + e.message) }

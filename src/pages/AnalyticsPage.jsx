@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useSettings } from '../hooks/useSettings'
 
 const fmt = (n) => n >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(2)}`
 
@@ -13,7 +14,7 @@ function MonthlyChart({ data }) {
     <div className="card" style={{ padding:'16px 16px 12px', marginBottom:12 }}>
       <p style={{ fontWeight:800, fontSize:14, marginBottom:4 }}>📊 Monthly Overview — Last 6 Months</p>
       <div style={{ display:'flex', gap:4, marginBottom:8 }}>
-        {[['#2563eb','Revenue'],['#16a34a','Profit'],['#dc2626','Stock Cost']].map(([c,l]) => (
+        {[['#2563eb',isArabic ? 'الإيرادات' : 'Revenue'],['#16a34a',isArabic ? 'الربح' : 'Profit'],['#dc2626',isArabic ? 'تكلفة المخزون' : 'Stock Cost']].map(([c,l]) => (
           <div key={l} style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, color:'var(--text-muted)' }}>
             <div style={{ width:10, height:10, borderRadius:2, background:c }} />{l}
           </div>
@@ -94,6 +95,7 @@ function SectionHeader({ title }) {
 
 export default function AnalyticsPage() {
   const { user } = useAuth()
+  const { isArabic } = useSettings()
   const navigate = useNavigate()
 
   // ── Sales lookup ──
@@ -247,7 +249,7 @@ export default function AnalyticsPage() {
   useEffect(() => { loadStockCost() }, [loadStockCost])
 
   const prettyDate = (d) => {
-    if (d === today()) return 'Today'
+    if (d === today()) return isArabic ? 'اليوم' : 'Today'
     return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' })
   }
 
@@ -267,7 +269,7 @@ export default function AnalyticsPage() {
     <div>
       <div className="page-header">
         <button onClick={() => navigate(-1)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer' }}>←</button>
-        <h1>Analytics</h1>
+        <h1>{isArabic ? 'التحليلات' : 'Analytics'}</h1>
         <div style={{ width:36 }} />
       </div>
 
@@ -278,9 +280,9 @@ export default function AnalyticsPage() {
           <p style={{ color:'rgba(255,255,255,0.7)', fontSize:12, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:10 }}>Today's Performance</p>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
             {[
-              { label:'Revenue', value: loadingSummary ? '...' : fmtFull(summary?.today?.revenue||0), color:'#7dd3fc' },
-              { label:'Profit',  value: loadingSummary ? '...' : fmtFull(summary?.today?.profit||0),  color: (summary?.today?.profit||0)>=0 ? '#86efac' : '#fca5a5' },
-              { label:'Units',   value: loadingSummary ? '...' : (summary?.today?.units||0),           color:'#c4b5fd' },
+              { label:isArabic ? 'الإيرادات' : 'Revenue', value: loadingSummary ? '...' : fmtFull(summary?.today?.revenue||0), color:'#7dd3fc' },
+              { label:isArabic ? 'الربح' : 'Profit',  value: loadingSummary ? '...' : fmtFull(summary?.today?.profit||0),  color: (summary?.today?.profit||0)>=0 ? '#86efac' : '#fca5a5' },
+              { label:isArabic ? 'الوحدات' : 'Units',   value: loadingSummary ? '...' : (summary?.today?.units||0),           color:'#c4b5fd' },
             ].map(s => (
               <div key={s.label} style={{ background:'rgba(255,255,255,0.1)', borderRadius:10, padding:'10px 12px', textAlign:'center' }}>
                 <p style={{ color:s.color, fontWeight:900, fontSize:20, lineHeight:1 }}>{s.value}</p>
@@ -308,7 +310,7 @@ export default function AnalyticsPage() {
           <input type="date" value={searchDate} max={today()} onChange={e => setSearchDate(e.target.value)}
             style={{ flex:1, padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:15 }} />
           <button onClick={() => loadDay(searchDate)} className="btn btn-primary" style={{ flexShrink:0 }}>
-            {loadingDay ? '...' : 'Search'}
+            {loadingDay ? '...' : isArabic ? 'بحث' : 'Search'}
           </button>
         </div>
 
@@ -318,9 +320,9 @@ export default function AnalyticsPage() {
               <p style={{ fontWeight:800, fontSize:15, marginBottom:10 }}>{prettyDate(searchDate)}</p>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
                 {[
-                  { l:'Revenue', v:fmtFull(dayData.revenue), c:'#2563eb' },
-                  { l:'Profit',  v:fmtFull(dayData.profit),  c:dayData.profit>=0?'#16a34a':'#dc2626' },
-                  { l:'Units',   v:dayData.units,             c:'#7c3aed' },
+                  { l:isArabic ? 'الإيرادات' : 'Revenue', v:fmtFull(dayData.revenue), c:'#2563eb' },
+                  { l:isArabic ? 'الربح' : 'Profit',  v:fmtFull(dayData.profit),  c:dayData.profit>=0?'#16a34a':'#dc2626' },
+                  { l:isArabic ? 'الوحدات' : 'Units',   v:dayData.units,             c:'#7c3aed' },
                   { l:'Visits',  v:dayData.visits,            c:'#f59e0b' },
                 ].map(s => (
                   <div key={s.l} style={{ textAlign:'center' }}>
@@ -373,8 +375,8 @@ export default function AnalyticsPage() {
         {/* Quick range buttons */}
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
           {[
-            { l:'This Week',  f:startOf('week'),  t:today() },
-            { l:'This Month', f:startOf('month'), t:today() },
+            { l:isArabic ? 'هذا الأسبوع' : 'This Week',  f:startOf('week'),  t:today() },
+            { l:isArabic ? 'هذا الشهر' : 'This Month', f:startOf('month'), t:today() },
             { l:'This Year',  f:startOf('year'),  t:today() },
           ].map(r => (
             <button key={r.l} onClick={() => { setStockFrom(r.f); setStockTo(r.t) }}
@@ -383,7 +385,7 @@ export default function AnalyticsPage() {
             </button>
           ))}
           <button onClick={loadStockCost} className="btn btn-primary" style={{ padding:'6px 14px', fontSize:12, marginLeft:'auto' }}>
-            {loadingStock ? '...' : 'Apply'}
+            {loadingStock ? '...' : isArabic ? 'تطبيق' : 'Apply'}
           </button>
         </div>
 
@@ -392,9 +394,9 @@ export default function AnalyticsPage() {
             <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:12, padding:'14px 16px', marginBottom:12 }}>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
                 {[
-                  { l:'Total Paid', v:fmtFull(stockData.total), c:'#dc2626' },
-                  { l:'Units Bought', v:stockData.units, c:'#7c3aed' },
-                  { l:'Purchases', v:stockData.count, c:'#f59e0b' },
+                  { l:isArabic ? 'إجمالي المدفوع' : 'Total Paid', v:fmtFull(stockData.total), c:'#dc2626' },
+                  { l:isArabic ? 'وحدات مشتراة' : 'Units Bought', v:stockData.units, c:'#7c3aed' },
+                  { l:isArabic ? 'المشتريات' : 'Purchases', v:stockData.count, c:'#f59e0b' },
                 ].map(s => (
                   <div key={s.l} style={{ textAlign:'center' }}>
                     <p style={{ fontWeight:900, fontSize:18, color:s.c }}>{s.v}</p>

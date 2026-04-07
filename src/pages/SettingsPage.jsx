@@ -145,7 +145,7 @@ export default function SettingsPage() {
             </div>
           )}
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? (isArabic?'جاري الحفظ...':'Saving...') : (isArabic?'حفظ التغييرات':'Save Changes')}
+            {loading ? (isArabic?'جاري الحفظ...':'Saving...') : (isArabic?'حفظ التغييرات':isArabic ? 'حفظ التغييرات' : 'Save Changes')}
           </button>
         </form>
 

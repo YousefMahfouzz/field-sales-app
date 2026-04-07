@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useSettings } from '../hooks/useSettings'
 import { useCustomers } from '../hooks/useCustomers'
 import { useVisits } from '../hooks/useVisits'
 import { StatusBadge, AreaBadge } from '../components/CustomerCard'
@@ -10,15 +11,16 @@ function daysUntilVisit(dateStr) {
   today.setHours(0,0,0,0)
   const visit = new Date(dateStr + 'T00:00:00')
   const diff = Math.round((visit - today) / 86400000)
-  if (diff === 0) return 'Visit today!'
-  if (diff === 1) return 'Visit tomorrow'
-  if (diff < 0) return `${Math.abs(diff)} day${Math.abs(diff)!==1?'s':''} overdue`
-  return `Visit in ${diff} day${diff!==1?'s':''}`
+  if (diff === 0) return isArabic ? 'زيارة اليوم!' : 'Visit today!'
+  if (diff === 1) return isArabic ? 'زيارة غداً' : 'Visit tomorrow'
+  if (diff < 0) return isArabic ? `متأخر ${Math.abs(diff)} يوم` : `${Math.abs(diff)} day${Math.abs(diff)!==1?'s':''} overdue`
+  return isArabic ? `زيارة بعد ${diff} يوم` : `Visit in ${diff} day${diff!==1?'s':''}`
 }
 
 export default function CustomerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { isArabic } = useSettings()
   const { customers, deleteCustomer, updateCustomer } = useCustomers()
   const { visits, fetchVisitsForCustomer } = useVisits()
   const [showDelete, setShowDelete] = useState(false)
@@ -226,7 +228,7 @@ export default function CustomerDetailPage() {
               <div className="flex justify-between items-center">
                 <div style={{ flex:1 }}>
                   <p style={{ fontWeight: 600, fontSize: 14 }}>
-                    {v.was_visited ? '✅ Visited' : '📞 Follow-up'}
+                    {v.was_visited ? isArabic ? '✅ تمت الزيارة' : '✅ Visited' : isArabic ? '📞 متابعة' : '📞 Follow-up'}
                     {v.had_sale ? ' · 💰 Sale' : ''}
                   </p>
                   <p className="text-xs text-muted">{new Date(v.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
@@ -236,7 +238,7 @@ export default function CustomerDetailPage() {
                     <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 15 }}>${saleTotal.toFixed(0)}</span>
                   )}
                   <button onClick={async () => {
-                    if (!window.confirm('Delete this visit record?')) return
+                    if (!window.confirm(isArabic ? 'حذف سجل الزيارة؟' : 'Delete this visit record?')) return
                     await supabase.from('visits').update({ deleted_at: new Date().toISOString() }).eq('id', v.id)
                     setVisits(prev => prev.filter(x => x.id !== v.id))
                   }} style={{ padding:'3px 8px', borderRadius:8, border:'1px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer' }}>🗑️</button>

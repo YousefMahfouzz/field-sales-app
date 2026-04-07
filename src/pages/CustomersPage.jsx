@@ -105,12 +105,12 @@ export default function CustomersPage() {
           <div style={{ display: 'flex', gap: 6 }}>
             {dueTodayCount > 0 && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', borderRadius: 10, padding: '2px 7px', border: '1px solid #bfdbfe' }}>
-                {dueTodayCount} due today
+                {dueTodayCount} isArabic ? 'مستحق اليوم' : 'due today'
               </span>
             )}
             {overdueCount > 0 && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: '#fef2f2', borderRadius: 10, padding: '2px 7px', border: '1px solid #fca5a5' }}>
-                {overdueCount} overdue
+                {overdueCount} isArabic ? 'متأخر' : 'overdue'
               </span>
             )}
           </div>

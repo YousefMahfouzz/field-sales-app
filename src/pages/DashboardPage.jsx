@@ -285,7 +285,7 @@ export default function DashboardPage() {
 
   const name = profile?.display_name?.split(' ')[0] || ''
   const hr = new Date().getHours()
-  const greeting = hr < 12 ? isArabic?'صباح الخير':'Good morning' : hr < 17 ? isArabic?'مساء الخير':'Good afternoon' : isArabic?'مساء النور':'Good evening'
+  const greeting = hr < 12 ? isArabic?'صباح الخير':isArabic ? 'صباح الخير' : 'Good morning' : hr < 17 ? isArabic?'مساء الخير':isArabic ? 'مساء الخير' : 'Good afternoon' : isArabic?'مساء النور':isArabic ? 'مساء النور' : 'Good evening'
 
   const Metric = ({ icon, label, value, color, onClick }) => (
     <div className="card" onClick={onClick} style={{ textAlign: 'center', padding: '14px 8px', cursor: onClick ? 'pointer' : 'default' }}>
@@ -368,7 +368,7 @@ export default function DashboardPage() {
               padding: '12px 14px', borderRadius: 12,
             }}>
               <span style={{ fontSize: 20 }}>📅</span>
-              <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{dueToday.length} visit{dueToday.length > 1 ? 's' : ''} due today</span>
+              <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{isArabic ? `${dueToday.length} زيارة مستحقة اليوم` : `${dueToday.length} visit${dueToday.length > 1 ? 's' : ''} due today`}</span>
               <span>→</span>
             </button>
           )}
@@ -418,7 +418,7 @@ export default function DashboardPage() {
               <div key={v.id} className="card" style={{ marginBottom: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <p style={{ fontWeight: 600, fontSize: 13 }}>
-                    {v.had_sale ? '💰 Sale' : v.outcome === 'come_back' ? '📅 Follow-up' : v.outcome === 'avoid' ? '⛔ Avoided' : '🤝 Visit'}
+                    {v.had_sale ? isArabic ? '💰 بيع' : '💰 Sale' : v.outcome === 'come_back' ? isArabic ? '📅 متابعة' : '📅 Follow-up' : v.outcome === 'avoid' ? isArabic ? '⛔ تجنب' : '⛔ Avoided' : isArabic ? '🤝 زيارة' : '🤝 Visit'}
                   </p>
                   <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     {new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -450,7 +450,7 @@ export default function DashboardPage() {
 
         {tab === 'deleted' && <>
           <p className="section-header">Deleted {isArabic ? 'العملاء' : 'Customers'}</p>
-          <p className="text-xs text-muted" style={{ marginBottom: 12 }}>Soft-deleted — tap Restore to bring them back.</p>
+          <p className="text-xs text-muted" style={{ marginBottom: 12 }}>{isArabic ? 'تم الحذف — اضغط استعادة للإرجاع' : 'Soft-deleted — tap Restore to bring them back.'}</p>
           {deletedCustomers.length === 0 && (
             <div style={{ textAlign: 'center', padding: 48 }}>
               <div style={{ fontSize: 36, marginBottom: 10 }}>✅</div>

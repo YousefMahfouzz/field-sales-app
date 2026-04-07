@@ -5,9 +5,11 @@ import { useVisits } from '../hooks/useVisits'
 import { useProducts } from '../hooks/useProducts'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import { useSettings } from '../hooks/useSettings'
 import ProductSelector from '../components/ProductSelector'
 
 export default function VisitLogPage() {
+  const { isArabic } = useSettings()
   const { customerId } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -320,11 +322,11 @@ export default function VisitLogPage() {
         {/* Quick date options */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
           {[
-            { label: 'Tomorrow', days: 1 },
-            { label: 'In 2 days', days: 2 },
-            { label: 'This week', days: 3 },
-            { label: 'Next week', days: 7 },
-            { label: '2 weeks', days: 14 },
+            { label: isArabic ? 'غداً' : 'Tomorrow', days: 1 },
+            { label: isArabic ? 'بعد يومين' : 'In 2 days', days: 2 },
+            { label: isArabic ? 'هذا الأسبوع' : 'This week', days: 3 },
+            { label: isArabic ? 'الأسبوع القادم' : 'Next week', days: 7 },
+            { label: isArabic ? 'أسبوعان' : '2 weeks', days: 14 },
           ].map(({ label, days }) => {
             const d = new Date(); d.setDate(d.getDate() + days)
             const val = d.toISOString().split('T')[0]
