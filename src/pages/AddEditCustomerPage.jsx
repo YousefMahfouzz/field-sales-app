@@ -597,8 +597,8 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
             <input className="form-input" type="date" value={callbackDate} min={today} onChange={e => setCallbackDate(e.target.value)} />
           </div>
           <div className="form-group">
-            <label className="form-label">What they said</label>
-            <input className="form-input" value={callbackNote} onChange={e => setCallbackNote(e.target.value)} placeholder="e.g. Come Monday morning" />
+            <label className="form-label">Best time to visit</label>
+            <input className="form-input" value={callbackNote} onChange={e => setCallbackNote(e.target.value)} placeholder="e.g. Come Monday morning, weekdays only..." />
           </div>
           <button className="btn btn-primary btn-full" onClick={() => setStep(6)} disabled={!callbackDate} style={{ padding:'14px',fontSize:16 }}>Next →</button>
           <button className="btn btn-ghost btn-full" onClick={() => setStep(6)} style={{ marginTop:8 }}>Skip, just log</button>
@@ -666,7 +666,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
         </div>
         <div className="form-group">
           <label className="form-label">Notes <span className="text-muted" style={{ fontWeight:400 }}>(optional)</span></label>
-          <textarea className="form-textarea" value={form.notes} onChange={set('notes')} placeholder="Anything useful to remember..." style={{ minHeight:60 }} />
+          <textarea className="form-textarea" value={form.notes} onChange={set('notes')} placeholder="e.g. Needs 2 cases minimum, prefers cash..." style={{ minHeight:60 }} />
         </div>
         <div style={{ background:'var(--gray-light)',borderRadius:12,padding:'12px 14px',marginBottom:16 }}>
           <p style={{ fontWeight:700,fontSize:14,marginBottom:4 }}>{form.business_name}</p>
