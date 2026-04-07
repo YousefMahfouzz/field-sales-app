@@ -14,7 +14,7 @@ export default function CustomersPage() {
   const { isArabic } = useSettings()
   const STATUS_LABELS = isArabic
     ? { all:'الكل', active:'نشط', priority:'أولوية', follow_up:'متابعة', do_not_visit:'لا تزور', avoid:'⛔ تجنب' }
-    : { all:'All', active:'Active', priority:'Priority', follow_up:'Follow Up', do_not_visit:'Do Not Visit', avoid:'⛔ Avoid' }
+    : { all:'All', active:'Active', priority:'Priority', follow_up:isArabic ? 'متابعة' : 'Follow Up', do_not_visit:isArabic ? 'لا تزور' : 'Do Not Visit', avoid:'⛔ Avoid' }
   const [searchParams] = useSearchParams()
   const { customers, loading } = useCustomers()
   const [search, setSearch] = useState('')

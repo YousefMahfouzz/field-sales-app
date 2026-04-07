@@ -46,6 +46,19 @@ html, body {
   position: relative;
 }
 
+/* Desktop — wider layout */
+@media (min-width: 768px) {
+  #root {
+    max-width: 680px;
+  }
+}
+
+@media (min-width: 1200px) {
+  #root {
+    max-width: 860px;
+  }
+}
+
 /* Desktop layout — wider screens get a proper centered card */
 @media (min-width: 768px) {
   body {

@@ -13,7 +13,7 @@ export default function OrdersPage() {
   const { isArabic } = useSettings()
   const STATUS_LABEL = isArabic
     ? { pending:'⏳ قيد الانتظار', confirmed:'✅ مؤكد', delivered:'📦 تم التوصيل', cancelled:'✕ ملغى' }
-    : { pending:'⏳ Pending', confirmed:'✅ Confirmed', delivered:'📦 Delivered', cancelled:'✕ Cancelled' }
+    : { pending:isArabic ? '⏳ قيد الانتظار' : '⏳ Pending', confirmed:isArabic ? '✅ مؤكد' : '✅ Confirmed', delivered:isArabic ? '📦 تم التوصيل' : '📦 Delivered', cancelled:isArabic ? '✕ ملغى' : '✕ Cancelled' }
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)

@@ -53,13 +53,26 @@ const startOf = (unit) => {
   return ct.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 }
 // Convert a CT date string (YYYY-MM-DD) to UTC start/end for Supabase queries
-const ctOffset = () => {
-  const now = new Date()
-  const ct = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', hour12: false }))
-  return now.getUTCHours() - ct  // 5=CDT, 6=CST
+const ctStart = (d) => {
+  if (!d) return new Date().toISOString()
+  const isDST = new Date(`${d}T12:00:00Z`)
+    .toLocaleString('en-US', { timeZone:'America/Chicago', timeZoneName:'short' })
+    .includes('CDT')
+  const h = isDST ? 5 : 6
+  return `${d}T${String(h).padStart(2,'0')}:00:00.000Z`
 }
-const ctStart = (d) => { const h = ctOffset(); return `${d}T${String(h).padStart(2,'0')}:00:00Z` }
-const ctEnd   = (d) => { const h = ctOffset(); return `${d}T${String(h+23).padStart(2,'0')}:59:59Z` }
+const ctEnd = (d) => {
+  if (!d) return new Date().toISOString()
+  const isDST = new Date(`${d}T12:00:00Z`)
+    .toLocaleString('en-US', { timeZone:'America/Chicago', timeZoneName:'short' })
+    .includes('CDT')
+  const h = isDST ? 5 : 6
+  // End of day = next day's start - 1ms
+  const nextDay = new Date(`${d}T${String(h).padStart(2,'0')}:00:00.000Z`)
+  nextDay.setDate(nextDay.getDate() + 1)
+  nextDay.setMilliseconds(nextDay.getMilliseconds() - 1)
+  return nextDay.toISOString()
+}
 
 function StatCard({ icon, label, value, sub, color = '#2563eb', onClick }) {
   return (

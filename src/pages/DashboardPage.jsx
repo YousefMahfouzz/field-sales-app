@@ -192,37 +192,27 @@ export default function DashboardPage() {
   // CT day boundaries — compute fresh each render so day change auto-updates
   const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   const today = todayCT()
-  // CT midnight → UTC: CT is UTC-6 (CST) or UTC-5 (CDT)
-  const ctMidnightUTC = (dateStr) => {
-    // dateStr is YYYY-MM-DD in CT; convert CT midnight to UTC ISO string
-    const offset = (() => {
-      // Check if CDT (second Sun March–first Sun Nov) or CST
-      const d = new Date(dateStr + 'T00:00:00-06:00')
-      const utcStr = d.toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: false })
-      // Use Intl to get actual offset
-      const fmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', timeZoneName: 'shortOffset' })
-      const parts = fmt.formatToParts(new Date(dateStr + 'T06:00:00Z'))
-      const tz = parts.find(p => p.type === 'timeZoneName')?.value || 'GMT-5'
-      const h = parseInt(tz.replace('GMT', '')) || -5
-      return -h
-    })()
-    return new Date(dateStr + 'T00:00:00Z').toISOString().replace('00:00:00', `${String(offset).padStart(2,'0')}:00:00`).slice(0, 19) + 'Z'
-  }
-  // Simpler approach: use fixed UTC offsets — CDT = UTC-5, CST = UTC-6
-  const ctDayStart = (dateStr) => {
-    // CT midnight in UTC — try both offsets and pick the right one based on current CT offset
-    const now = new Date()
-    const ctHour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', hour12: false }))
-    const utcHour = now.getUTCHours()
-    const offset = utcHour - ctHour // will be 5 (CDT) or 6 (CST)
-    return dateStr + 'T' + String(offset).padStart(2,'0') + ':00:00Z'
-  }
-  const ctDayEnd = (dateStr) => {
-    const now = new Date()
-    const ctHour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', hour12: false }))
-    const utcHour = now.getUTCHours()
-    const offset = utcHour - ctHour
-    return dateStr + 'T' + String(23 + offset).padStart(2,'0') + ':59:59Z'
+  // Reliable CT → UTC converter using Intl API (handles DST automatically)
+  const ctMidnightToUTC = (ctDateStr) => {
+    // Parse the CT date and find midnight CT in UTC
+    const [y,m,d] = ctDateStr.split('-').map(Number)
+    // Create a date at noon CT to avoid DST edge cases, then find that day's midnight
+    const noonCT = new Date(`${ctDateStr}T18:00:00Z`) // noon CT ≈ 18:00 UTC (rough)
+    const ctDateAtNoon = noonCT.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+    // Binary search for CT midnight: find UTC time where CT date changes
+    // Simpler: use the fact that CT is either UTC-5 or UTC-6
+    // Get the actual offset by checking what UTC time corresponds to CT midnight
+    const testMidnight = new Date(`${ctDateStr}T00:00:00`)
+    // Format as if it were UTC and see what CT gives
+    const jan = new Date(`${y}-01-15T12:00:00Z`)
+    const jul = new Date(`${y}-07-15T12:00:00Z`)
+    const janOffset = -jan.toLocaleString('en-US', { timeZone: 'America/Chicago', timeZoneName: 'shortOffset' }).match(/GMT([+-]\d+)/)?.[1] || 6
+    const julOffset = -jul.toLocaleString('en-US', { timeZone: 'America/Chicago', timeZoneName: 'shortOffset' }).match(/GMT([+-]\d+)/)?.[1] || 5
+    // Check if this date is DST (summer = CDT = UTC-5) or CST (winter = UTC-6)
+    const testDate = new Date(`${ctDateStr}T12:00:00Z`)
+    const isDST = testDate.toLocaleString('en-US', { timeZone: 'America/Chicago', timeZoneName: 'short' }).includes('CDT')
+    const offsetHours = isDST ? 5 : 6
+    return `${ctDateStr}T${String(offsetHours).padStart(2,'0')}:00:00.000Z`
   }
   const weekAgo = (() => { const d = new Date(Date.now() - 7*24*60*60*1000); return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })()
 
@@ -242,7 +232,7 @@ export default function DashboardPage() {
       const { data: visits } = await supabase
         .from('visits').select('id,had_sale,sale_amount,cost,outcome,created_at')
         .eq('user_id', user.id)
-        .gte('created_at', ctDayStart(weekAgo))
+        .gte('created_at', ctMidnightToUTC(weekAgo))
         .lte('created_at', new Date().toISOString())
         .is('deleted_at', null)
         .order('created_at', { ascending: false }).limit(50)
@@ -257,7 +247,7 @@ export default function DashboardPage() {
       const { data: todaySales } = await supabase
         .from('sale_items').select('total_price,total_profit')
         .eq('user_id', user.id)
-        .gte('created_at', ctDayStart(todayStr))
+        .gte('created_at', ctMidnightToUTC(todayStr))
         .lte('created_at', new Date().toISOString())
       const todayRev  = (todaySales||[]).reduce((s,i) => s+(i.total_price||0), 0)
       const todayProf = (todaySales||[]).reduce((s,i) => s+(i.total_profit||0), 0)
@@ -399,26 +389,26 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Metric icon="🚶" label="Visits" value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
-            <Metric icon="📍" label="Added" value={addedToday.length} color="#7c3aed" />
-            <Metric icon="📋" label="Orders" value={pendingOrders} color="#f59e0b" onClick={() => navigate('/orders')} />
+            <Metric icon="🚶" label={isArabic ? 'الزيارات' : 'Visits'} value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
+            <Metric icon="📍" label={isArabic ? 'مضاف' : 'Added'} value={addedToday.length} color="#7c3aed" />
+            <Metric icon="📋" label={isArabic ? 'الطلبات' : 'Orders'} value={pendingOrders} color="#f59e0b" onClick={() => navigate('/orders')} />
           </div>
 
           {/* This week */}
           <p className="section-header">{isArabic ? 'هذا الأسبوع' : 'This Week'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            <Metric icon="📍" label="Visits" value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
-            <Metric icon="💰" label="Sales" value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
-            <Metric icon="💵" label="Revenue" value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
-            <Metric icon="📈" label="Profit" value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />
+            <Metric icon="📍" label={isArabic ? 'الزيارات' : 'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
+            <Metric icon="💰" label={isArabic ? 'المبيعات' : 'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
+            <Metric icon="💵" label={isArabic ? 'الإيرادات' : 'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
+            <Metric icon="📈" label={isArabic ? 'الربح' : 'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />
           </div>
 
           {/* Customers */}
           <p className="section-header">{isArabic ? 'العملاء' : 'Customers'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Metric icon="👥" label="Active" value={active.length} />
-            <Metric icon="📅" label="Due Today" value={dueToday.length} color="var(--blue)" />
-            <Metric icon="⚠️" label="Overdue" value={overdue.length} color="#dc2626" onClick={() => overdue.length > 0 && setShowReschedule(true)} />
+            <Metric icon="👥" label={isArabic ? 'نشط' : 'Active'} value={active.length} />
+            <Metric icon="📅" label={isArabic ? 'مستحق اليوم' : 'Due Today'} value={dueToday.length} color="var(--blue)" />
+            <Metric icon="⚠️" label={isArabic ? 'متأخر' : 'Overdue'} value={overdue.length} color="#dc2626" onClick={() => overdue.length > 0 && setShowReschedule(true)} />
           </div>
 
           {/* Recent activity */}

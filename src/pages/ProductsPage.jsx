@@ -72,7 +72,7 @@ export default function ProductsPage() {
     <div>
       <div className="page-header" style={{ flexDirection:'column', alignItems:'stretch', gap:8, padding:'10px 16px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <h1>Products</h1>
+          <h1>{isArabic ? 'المنتجات' : 'Products'}</h1>
           <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>
         </div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
