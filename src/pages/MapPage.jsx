@@ -260,7 +260,7 @@ export default function MapPage() {
       {/* Header */}
       <div id="map-header" style={{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-        background: 'white', borderBottom: '1px solid var(--border)',
+        background: 'var(--white)', borderBottom: '1px solid var(--border)',
         padding: '10px 16px 8px',
       }}>
         <div className="flex justify-between items-center" style={{ marginBottom: 6 }}>
@@ -268,7 +268,7 @@ export default function MapPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Radius selector */}
             <select value={searchRadius} onChange={e => { setSearchRadius(Number(e.target.value)); if(poiVisible) clearPoiMarkers() }}
-              style={{ fontSize: 12, padding: '4px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'white', fontWeight: 600 }}>
+              style={{ fontSize: 12, padding: '4px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--white)', color: 'var(--text)', fontWeight: 600 }}>
               <option value={1000}>1 km</option>
               <option value={2000}>2 km</option>
               <option value={3000}>3 km</option>
@@ -276,7 +276,7 @@ export default function MapPage() {
               <option value={8000}>8 km</option>
               <option value={16000}>10 mi</option>
             </select>
-            <span className="text-sm text-muted">{customers.length} customers</span>
+            <span style={{ fontSize:13, color:'var(--text-muted)' }}>{customers.length} customers</span>
           </div>
         </div>
 
@@ -287,7 +287,7 @@ export default function MapPage() {
               flexShrink: 0, padding: '5px 12px', borderRadius: 20,
               border: '1.5px solid',
               borderColor: statusFilter === s ? 'var(--blue)' : 'var(--border)',
-              background: statusFilter === s ? 'var(--blue)' : 'white',
+              background: statusFilter === s ? 'var(--blue)' : 'var(--white)',
               color: statusFilter === s ? 'white' : 'var(--text)',
               fontSize: 13, fontWeight: 500, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 4,
@@ -336,7 +336,7 @@ export default function MapPage() {
         <div style={{
           position: 'absolute', bottom: 'calc(var(--nav-height) + 90px)',
           left: 16, right: 16, zIndex: 50,
-          background: 'white', borderRadius: 16, padding: 16,
+          background: 'var(--white)', borderRadius: 16, padding: 16,
           boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
         }}>
           <div className="flex justify-between items-center" style={{ marginBottom: 8 }}>

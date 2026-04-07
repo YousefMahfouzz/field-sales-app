@@ -159,7 +159,7 @@ export default function CustomersPage() {
       {/* Sort + group toggle */}
       <div style={{ padding: '0 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-          style={{ fontSize: 13, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'white', color: 'var(--text)' }}>
+          style={{ fontSize: 13, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--white)', color: 'var(--text)' }}>
           <option value="next_visit">Next visit</option>
           <option value="name">Name</option>
           <option value="last_visit">Last visit</option>
@@ -170,7 +170,7 @@ export default function CustomersPage() {
           display: 'flex', alignItems: 'center', gap: 5,
           padding: '5px 11px', borderRadius: 8, fontSize: 13,
           border: `1.5px solid ${groupByArea ? 'var(--blue)' : 'var(--border)'}`,
-          background: groupByArea ? 'var(--blue-light)' : 'white',
+          background: groupByArea ? 'var(--blue-light)' : 'var(--white)',
           color: groupByArea ? 'var(--blue)' : 'var(--text-muted)',
           cursor: 'pointer', fontWeight: groupByArea ? 700 : 400,
         }}>
@@ -182,7 +182,7 @@ export default function CustomersPage() {
           }}>
             <span style={{
               position: 'absolute', top: 2, left: groupByArea ? 13 : 2,
-              width: 12, height: 12, borderRadius: '50%', background: 'white',
+              width: 12, height: 12, borderRadius: '50%', background: 'var(--white)',
               transition: 'left 0.2s',
             }} />
           </span>
