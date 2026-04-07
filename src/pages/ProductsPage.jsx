@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
-import { useSettings } from '../hooks/useSettings'
 
 export default function ProductsPage() {
   const { profile } = useAuth()
@@ -14,7 +13,6 @@ export default function ProductsPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [archiving, setArchiving] = useState(null)
   const [toast, setToast] = useState('')
-  const { isArabic } = useSettings()
   const isAdmin = profile?.is_admin === true
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
@@ -72,7 +70,7 @@ export default function ProductsPage() {
     <div>
       <div className="page-header" style={{ flexDirection:'column', alignItems:'stretch', gap:8, padding:'10px 16px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <h1>{isArabic ? 'المنتجات' : 'Products'}</h1>
+          <h1>{'Products'}</h1>
           <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>
         </div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
@@ -159,9 +157,9 @@ export default function ProductsPage() {
         {!loading && filtered.length === 0 && (
           <div className="empty-state">
             <div className="empty-icon">📦</div>
-            <h3>{search ? 'No products match' : isArabic ? 'لا توجد منتجات بعد' : 'No products yet'}</h3>
+            <h3>{search ? 'No products match' : 'No products yet'}</h3>
             {!search && (
-              <button className="btn btn-primary" style={{ marginTop:16 }} onClick={() => navigate('/products/new')}>{isArabic ? 'أضف أول منتج' : 'Add First Product'}</button>
+              <button className="btn btn-primary" style={{ marginTop:16 }} onClick={() => navigate('/products/new')}>{'Add First Product'}</button>
             )}
           </div>
         )}

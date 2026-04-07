@@ -6,14 +6,13 @@ import { useVisits } from '../hooks/useVisits'
 import { useAuth } from '../hooks/useAuth'
 import { getCurrentPosition } from '../lib/geo'
 import { loadGoogleMaps, loadPlaces } from '../lib/mapsLoader'
-import { useSettings } from '../hooks/useSettings'
 import { supabase } from '../lib/supabase'
 import ProductSelector from '../components/ProductSelector'
 
 // ─────────────────────────────────────────────
 // EDIT MODE — regular form, all fields visible
 // ─────────────────────────────────────────────
-function EditCustomerForm({ isArabic, customer, onSave, onCancel }) {
+function EditCustomerForm({ customer, onSave, onCancel }) {
   const [form, setForm] = useState({
     full_name: customer.full_name || '',
     business_name: customer.business_name || '',
@@ -73,13 +72,13 @@ function EditCustomerForm({ isArabic, customer, onSave, onCancel }) {
         <input className="form-input" value={form.address} onChange={set('address')} placeholder="Street address" />
       </div>
       <div className="form-group">
-        <label className="form-label">{isArabic ? 'المنطقة' : 'Area'} / Zone</label>
+        <label className="form-label">{'Area'} / Zone</label>
         <input className="form-input" value={form.area} onChange={set('area')} placeholder="e.g. Downtown, Eastside" />
       </div>
 
       <p className="section-header">🕐 Contact & Availability</p>
       <div className="form-group">
-        <label className="form-label">{isArabic ? 'صاحب القرار' : 'Decision maker'} (name + role)</label>
+        <label className="form-label">{'Decision maker'} (name + role)</label>
         <input className="form-input" value={form.decision_maker} onChange={set('decision_maker')} placeholder="e.g. Mike (owner), Sarah (manager)" />
       </div>
       <div className="form-group">
@@ -95,44 +94,44 @@ function EditCustomerForm({ isArabic, customer, onSave, onCancel }) {
             </button>
           ))}
         </div>
-        <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder={isArabic ? 'أو اكتب وقتاً مخصصاً...' : 'Or type custom time...'} style={{ fontSize:14 }} />
+        <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder={'Or type custom time...'} style={{ fontSize:14 }} />
       </div>
       <div className="form-group">
-        <label className="form-label">{isArabic ? 'ملاحظات إضافية' : 'Extra schedule notes'}</label>
+        <label className="form-label">{'Extra schedule notes'}</label>
         <input className="form-input" value={form.decision_maker_schedule} onChange={set('decision_maker_schedule')} placeholder="e.g. Off every Friday, restocks Tuesdays" />
       </div>
 
-      <p className="section-header">{isArabic ? 'إعدادات الزيارة' : 'Visit Settings'}</p>
+      <p className="section-header">{'Visit Settings'}</p>
       <div className="form-group">
-        <label className="form-label">{isArabic ? 'الحالة' : 'Status'}</label>
+        <label className="form-label">{'Status'}</label>
         <select className="form-select" value={form.status} onChange={set('status')}>
-          <option value="active">{isArabic ? 'نشط' : 'Active'}</option>
-          <option value="priority">{isArabic ? 'أولوية' : 'Priority'}</option>
-          <option value="follow_up">{isArabic ? 'يحتاج متابعة' : 'Follow Up Needed'}</option>
-          <option value="do_not_visit">{isArabic ? 'لا تزور بعد' : 'Do Not Visit Yet'}</option>
-          <option value="avoid">{isArabic ? 'تجنب' : 'Avoid'}</option>
+          <option value="active">{'Active'}</option>
+          <option value="priority">{'Priority'}</option>
+          <option value="follow_up">{'Follow Up Needed'}</option>
+          <option value="do_not_visit">{'Do Not Visit Yet'}</option>
+          <option value="avoid">{'Avoid'}</option>
         </select>
       </div>
       <div style={{ display: 'flex', gap: 12 }}>
         <div className="form-group" style={{ flex: 1 }}>
-          <label className="form-label">{isArabic ? 'الزيارة القادمة' : 'Next Visit'}</label>
+          <label className="form-label">{'Next Visit'}</label>
           <input className="form-input" type="date" value={form.next_visit_date || ''} onChange={set('next_visit_date')} />
         </div>
         <div className="form-group" style={{ flex: 1 }}>
-          <label className="form-label">{isArabic ? 'كل (أيام)' : 'Every (days)'}</label>
+          <label className="form-label">{'Every (days)'}</label>
           <input className="form-input" type="number" min="1" value={form.visit_frequency_days} onChange={set('visit_frequency_days')} />
         </div>
       </div>
       <div className="form-group">
-        <label className="form-label">{isArabic ? 'ما يريدونه في المرة القادمة' : 'What they want next time'}</label>
-        <textarea className="form-textarea" value={form.wants_next} onChange={set('wants_next')} placeholder={isArabic ? 'عناصر لإحضارها في الزيارة القادمة...' : 'Items to bring next visit...'} style={{ minHeight: 56 }} />
+        <label className="form-label">{'What they want next time'}</label>
+        <textarea className="form-textarea" value={form.wants_next} onChange={set('wants_next')} placeholder={'Items to bring next visit...'} style={{ minHeight: 56 }} />
       </div>
       <div className="form-group">
         <label className="form-label">Notes</label>
         <textarea className="form-textarea" value={form.notes} onChange={set('notes')} placeholder="Any notes..." style={{ minHeight: 56 }} />
       </div>
       <div className="form-group">
-        <label className="form-label">{isArabic ? 'العلامات' : 'Tags'}</label>
+        <label className="form-label">{'Tags'}</label>
         <input className="form-input" value={form.tags} onChange={set('tags')} placeholder="wholesale, loyal, new" />
       </div>
       <div className="form-group">
@@ -151,7 +150,7 @@ function EditCustomerForm({ isArabic, customer, onSave, onCancel }) {
       <button type="submit" className="btn btn-primary btn-full" disabled={loading} style={{ marginTop: 8 }}>
         {loading ? 'Saving...' : 'Save Changes'}
       </button>
-      <button type="button" className="btn btn-ghost btn-full" onClick={onCancel} style={{ marginTop: 10 }}>{isArabic ? 'إلغاء' : 'Cancel'}</button>
+      <button type="button" className="btn btn-ghost btn-full" onClick={onCancel} style={{ marginTop: 10 }}>{'Cancel'}</button>
     </form>
   )
 }
@@ -159,7 +158,7 @@ function EditCustomerForm({ isArabic, customer, onSave, onCancel }) {
 // ─────────────────────────────────────────────
 // STEP INDICATOR
 // ─────────────────────────────────────────────
-function StepBar({ isArabic, current, total }) {
+function StepBar({ current, total }) {
   return (
     <div style={{ display: 'flex', gap: 5, padding: '0 20px', marginBottom: 24 }}>
       {Array.from({ length: total }).map((_, i) => (
@@ -175,7 +174,6 @@ function StepBar({ isArabic, current, total }) {
 // NEW CUSTOMER — step by step
 // ─────────────────────────────────────────────
 export default function AddEditCustomerPage() {
-  const { isArabic } = useSettings()
   const navigate = useNavigate()
   const { id } = useParams()
   const [searchParams] = useSearchParams()
@@ -196,7 +194,6 @@ export default function AddEditCustomerPage() {
         <EditCustomerForm customer={customer}
           onSave={async payload => { await updateCustomer(id, payload); navigate(`/customers/${id}`) }}
           onCancel={() => navigate(-1)}
-          isArabic={isArabic}
         />
       </div>
     )
@@ -428,7 +425,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
         <button onClick={goBack} style={{ background:'none',border:'none',fontSize:22,cursor:'pointer' }}>←</button>
         <div style={{ flex:1 }} /><div style={{ width:36 }} />
       </div>
-      <StepBar current={step} total={TOTAL}  isArabic={isArabic} />
+      <StepBar current={step} total={TOTAL} />
       <div style={{ padding:'0 20px 18px' }}>
         <h2 style={{ fontSize:22,fontWeight:800,marginBottom:4 }}>{title}</h2>
         {sub && <p className="text-sm text-muted">{sub}</p>}
@@ -453,14 +450,14 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
         {!nearbyLoading && (
           <>
             <button className="btn btn-primary btn-full" onClick={handleGPS} disabled={gpsLoading} style={{ padding:'16px',fontSize:17,marginBottom:14 }}>
-              {gpsLoading ? '📡 Getting GPS...' : form.lat ? '🔄 Re-pin location' : isArabic ? '📍 تحديد موقعي' : '📍 Pin My Location'}
+              {gpsLoading ? '📡 Getting GPS...' : form.lat ? '🔄 Re-pin location' : '📍 Pin My Location'}
             </button>
             <button className="btn btn-ghost btn-full" onClick={() => setStep(2)} style={{ marginTop:4 }}>
               ✏️ Enter store name manually
             </button>
           </>
         )}
-        <button className="btn btn-ghost btn-full" onClick={() => navigate(-1)} style={{ marginTop:8,color:'var(--text-muted)' }}>{isArabic ? 'إلغاء' : 'Cancel'}</button>
+        <button className="btn btn-ghost btn-full" onClick={() => navigate(-1)} style={{ marginTop:8,color:'var(--text-muted)' }}>{'Cancel'}</button>
       </div>
     </div>
   )
@@ -641,7 +638,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
     )
   }
 
-  // ─── STEP 6: {isArabic ? 'صاحب القرار' : 'Decision maker'} + save ───
+  // ─── STEP 6: {'Decision maker'} + save ───
   if (step === 6) return (
     <div>
       <Header title="Who's the decision maker?" sub="Optional — helps you know who to ask for next time" />
@@ -664,7 +661,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
               </button>
             ))}
           </div>
-          <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder={isArabic ? 'أو اكتب وقتاً مخصصاً...' : 'Or type custom time...'} style={{ fontSize:14 }} />
+          <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder={'Or type custom time...'} style={{ fontSize:14 }} />
         </div>
         <div className="form-group">
           <label className="form-label">Best time to visit <span className="text-muted" style={{ fontWeight:400 }}>(optional)</span></label>

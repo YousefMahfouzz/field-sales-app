@@ -5,11 +5,9 @@ import { useVisits } from '../hooks/useVisits'
 import { useProducts } from '../hooks/useProducts'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
-import { useSettings } from '../hooks/useSettings'
 import ProductSelector from '../components/ProductSelector'
 
 export default function VisitLogPage() {
-  const { isArabic } = useSettings()
   const { customerId } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -152,7 +150,7 @@ export default function VisitLogPage() {
       </p>
       {saleItems.length > 0 && (
         <div className="card" style={{ width: '100%', maxWidth: 320, marginBottom: 20, background: 'var(--green-light)' }}>
-          <p className="text-xs text-muted" style={{ marginBottom: 8 }}>{isArabic ? 'ملخص البيع' : 'Sale summary'}</p>
+          <p className="text-xs text-muted" style={{ marginBottom: 8 }}>{'Sale summary'}</p>
           {saleItems.map((item, i) => (
             <div key={i} className="flex justify-between text-sm" style={{ marginBottom: 4 }}>
               <span>{item.qty}× {item.product_name}</span>
@@ -184,7 +182,7 @@ export default function VisitLogPage() {
     <div>
       <div className="page-header">
         <button onClick={() => setShowProducts(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }}>←</button>
-        <h1>{isArabic ? 'اختر منتجاً' : 'Select Product'}</h1>
+        <h1>{'Select Product'}</h1>
         <div style={{ width: 36 }} />
       </div>
       <div className="page" style={{ paddingTop: 12 }}>
@@ -258,8 +256,8 @@ export default function VisitLogPage() {
             >
               <span style={{ fontSize: 28 }}>💰</span>
               <div>
-                <p style={{ fontWeight: 700, fontSize: 15 }}>{isArabic ? 'تمت صفقة' : 'Made a sale'}</p>
-                <p className="text-sm text-muted">{isArabic ? 'سجل ما بعته' : 'Log what you sold'}</p>
+                <p style={{ fontWeight: 700, fontSize: 15 }}>{'Made a sale'}</p>
+                <p className="text-sm text-muted">{'Log what you sold'}</p>
               </div>
             </button>
           )}
@@ -322,11 +320,11 @@ export default function VisitLogPage() {
         {/* Quick date options */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
           {[
-            { label: isArabic ? 'غداً' : 'Tomorrow', days: 1 },
-            { label: isArabic ? 'بعد يومين' : 'In 2 days', days: 2 },
-            { label: isArabic ? 'هذا الأسبوع' : 'This week', days: 3 },
-            { label: isArabic ? 'الأسبوع القادم' : 'Next week', days: 7 },
-            { label: isArabic ? 'أسبوعان' : '2 weeks', days: 14 },
+            { label: 'Tomorrow', days: 1 },
+            { label: 'In 2 days', days: 2 },
+            { label: 'This week', days: 3 },
+            { label: 'Next week', days: 7 },
+            { label: '2 weeks', days: 14 },
           ].map(({ label, days }) => {
             const d = new Date(); d.setDate(d.getDate() + days)
             const val = d.toISOString().split('T')[0]
@@ -378,7 +376,7 @@ export default function VisitLogPage() {
       <div className="page-header">
         <button onClick={() => mode === 'sale' ? navigate(-1) : setStep('outcome')} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }}>←</button>
         <div style={{ flex: 1, textAlign: 'center' }}>
-          <h1 style={{ fontSize: 18 }}>{isArabic ? 'تسجيل بيع' : 'Log Sale'}</h1>
+          <h1 style={{ fontSize: 18 }}>{'Log Sale'}</h1>
           <p className="text-xs text-muted">{customer?.full_name}</p>
         </div>
         <div style={{ width: 36 }} />
@@ -407,7 +405,7 @@ export default function VisitLogPage() {
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <div style={{ flex: 1 }}>
-                <p className="text-xs text-muted" style={{ marginBottom: 3 }}>{isArabic ? 'الكمية' : 'Qty'}</p>
+                <p className="text-xs text-muted" style={{ marginBottom: 3 }}>{'Qty'}</p>
                 <input type="number" min="1" value={item.qty} onChange={e => updateQty(idx, e.target.value)}
                   style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14 }} />
               </div>
@@ -439,7 +437,7 @@ export default function VisitLogPage() {
         {saleItems.length > 0 && (
           <div style={{ background: 'var(--green-light)', borderRadius: 10, padding: '10px 14px', marginBottom: 10 }}>
             <div className="flex justify-between text-sm" style={{ marginBottom: 4 }}>
-              <span className="text-muted">{isArabic ? 'إجمالي البيع' : 'Total Sale'}</span>
+              <span className="text-muted">{'Total Sale'}</span>
               <span style={{ fontWeight: 700 }}>${totalSale.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
@@ -456,7 +454,7 @@ export default function VisitLogPage() {
         <div className="form-group">
           <label className="form-label">Notes (optional)</label>
           <textarea className="form-textarea" value={notes} onChange={e => setNotes(e.target.value)}
-            placeholder={isArabic ? 'ملاحظات عن هذا البيع...' : 'Any notes about this sale...'} style={{ minHeight: 60 }} />
+            placeholder={'Any notes about this sale...'} style={{ minHeight: 60 }} />
         </div>
 
         <button className="btn btn-primary btn-full" onClick={handleSubmit} disabled={loading || saleItems.length === 0} style={{ marginTop: 4 }}>

@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCustomers } from '../hooks/useCustomers'
 import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import CustomerCard from '../components/CustomerCard'
-import { useSettings } from '../hooks/useSettings'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 
 const STATUSES = ['all', 'active', 'priority', 'follow_up', 'do_not_visit', 'avoid']
@@ -12,8 +11,7 @@ const STATUS_COLORS = { active: '#16a34a', priority: '#d97706', follow_up: '#089
 
 export default function CustomersPage() {
   const navigate = useNavigate()
-  const { isArabic } = useSettings()
-  const STATUS_LABELS = isArabic
+  const STATUS_LABELS = false
     ? { all:'الكل', active:'نشط', priority:'أولوية', follow_up:'متابعة', do_not_visit:'لا تزور', avoid:'⛔ تجنب' }
     : { all:'All', active:'Active', priority:'Priority', follow_up:'Follow Up', do_not_visit:'Do Not Visit', avoid:'⛔ Avoid' }
   const [searchParams] = useSearchParams()
@@ -50,7 +48,7 @@ export default function CustomersPage() {
     return list
   }, [customers, search, statusFilter, sortBy, filterOverdue, today])
 
-  // {isArabic ? 'تجميع حسب المنطقة' : 'Group by area'}
+  // {'Group by area'}
   const grouped = useMemo(() => {
     if (!groupByArea || search.trim() || statusFilter !== 'all') return null
     const map = {}
@@ -106,12 +104,12 @@ export default function CustomersPage() {
           <div style={{ display: 'flex', gap: 6 }}>
             {dueTodayCount > 0 && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', borderRadius: 10, padding: '2px 7px', border: '1px solid #bfdbfe' }}>
-                {dueTodayCount} isArabic ? 'مستحق اليوم' : 'due today'
+                {dueTodayCount} 'due today'
               </span>
             )}
             {overdueCount > 0 && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: '#fef2f2', borderRadius: 10, padding: '2px 7px', border: '1px solid #fca5a5' }}>
-                {overdueCount} isArabic ? 'متأخر' : 'overdue'
+                {overdueCount} 'overdue'
               </span>
             )}
           </div>
@@ -129,7 +127,7 @@ export default function CustomersPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>{isArabic ? 'العملاء' : 'Customers'}</h1>
+        <h1>{'Customers'}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => navigate('/customers/new')}>+ Add</button>
       </div>
 
@@ -138,7 +136,7 @@ export default function CustomersPage() {
         <span className="search-icon">🔍</span>
         <input
           type="search"
-          placeholder={isArabic ? 'بحث بالاسم، الهاتف، المنطقة...' : 'Search name, phone, area...'}
+          placeholder={'Search name, phone, area...'}
           value={search}
           onChange={e => setSearch(e.target.value)}
           style={{ background: 'var(--gray-light)', border: '1.5px solid var(--border)', borderRadius: 24, padding: '11px 14px 11px 40px', width: '100%', fontSize: 16 }}
@@ -165,12 +163,12 @@ export default function CustomersPage() {
       <div style={{ padding: '0 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
           style={{ fontSize: 13, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--white)', color: 'var(--text)' }}>
-          <option value="next_visit">{isArabic ? 'الزيارة القادمة' : 'Next visit'}</option>
+          <option value="next_visit">{'Next visit'}</option>
           <option value="name">Name</option>
-          <option value="last_visit">{isArabic ? 'آخر زيارة' : 'Last visit'}</option>
+          <option value="last_visit">{'Last visit'}</option>
         </select>
 
-        {/* {isArabic ? 'تجميع حسب المنطقة' : 'Group by area'} toggle */}
+        {/* {'Group by area'} toggle */}
         <button onClick={() => setGroupByArea(g => !g)} style={{
           display: 'flex', alignItems: 'center', gap: 5,
           padding: '5px 11px', borderRadius: 8, fontSize: 13,
@@ -202,7 +200,7 @@ export default function CustomersPage() {
         {!loading && filtered.length === 0 && (
           <div className="empty-state">
             <div className="empty-icon">👥</div>
-            <h3>{isArabic ? 'لا يوجد عملاء' : 'No customers found'}</h3>
+            <h3>{'No customers found'}</h3>
             <p style={{ marginTop: 8 }}>Try changing your search or filters.</p>
           </div>
         )}

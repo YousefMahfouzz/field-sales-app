@@ -513,46 +513,6 @@ p { line-height: 1.5; }
   color: #f9fafb;
 }
 
-/* ── RTL / ARABIC ─────────────────────────────────────────────── */
-[dir="rtl"] {
-  text-align: right;
-}
-
-/* Only flip specific known RTL-safe elements — NOT .flex broadly */
-[dir="rtl"] .page-header {
-  flex-direction: row-reverse;
-}
-
-[dir="rtl"] .bottom-nav {
-  flex-direction: row-reverse;
-}
-
-[dir="rtl"] .card {
-  text-align: right;
-}
-
-[dir="rtl"] .form-group label {
-  display: block;
-  text-align: right;
-}
-
-[dir="rtl"] .modal-sheet {
-  text-align: right;
-}
-
-/* Flip margins for RTL */
-[dir="rtl"] .ml-auto { margin-left: 0; margin-right: auto; }
-[dir="rtl"] .mr-auto { margin-right: 0; margin-left: auto; }
-
-/* Arabic font */
-[dir="rtl"] {
-  font-family: 'Noto Sans Arabic', 'Segoe UI', -apple-system, sans-serif;
-  letter-spacing: 0;
-}
-
-[dir="rtl"] .nav-label {
-  font-family: 'Noto Sans Arabic', sans-serif;
-}
 
 /* ── MAP PAGE DARK MODE ───────────────────────────────────────── */
 [data-theme="dark"] #map-header {

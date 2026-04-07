@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { useSettings } from '../hooks/useSettings'
 
 const STATUS_COLOR = { pending:'#f59e0b', confirmed:'#2563eb', delivered:'#16a34a', cancelled:'#dc2626' }
 // STATUS_LABEL is dynamic based on language
@@ -10,8 +9,7 @@ const STATUS_BG    = { pending:'#fffbeb', confirmed:'#eff6ff', delivered:'#f0fdf
 
 export default function OrdersPage() {
   const { user } = useAuth()
-  const { isArabic } = useSettings()
-  const STATUS_LABEL = isArabic
+  const STATUS_LABEL = false
     ? { pending:'⏳ قيد الانتظار', confirmed:'✅ مؤكد', delivered:'📦 تم التوصيل', cancelled:'✕ ملغى' }
     : { pending:'⏳ Pending', confirmed:'✅ Confirmed', delivered:'📦 Delivered', cancelled:'✕ Cancelled' }
   const navigate = useNavigate()
@@ -47,7 +45,7 @@ export default function OrdersPage() {
   }
 
   const deleteOrder = async (id) => {
-    if (!window.confirm(isArabic ? 'حذف هذا الطلب؟ لا يمكن التراجع.' : 'Delete this order? This cannot be undone.')) return
+    if (!window.confirm('Delete this order? This cannot be undone.')) return
     await supabase.from('orders').delete().eq('id', id)
     setOrders(p => p.filter(o => o.id !== id))
   }
@@ -80,9 +78,9 @@ export default function OrdersPage() {
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
           {[
-            { label: isArabic?'إجمالي الطلبات':'Total Orders', val: orders.length, color: 'var(--blue)' },
-            { label: isArabic?'قيد الانتظار':'Pending', val: pending.length, color: '#f59e0b' },
-            { label: isArabic?'الإيرادات':'Revenue', val: `$${totalRevenue.toFixed(0)}`, color: 'var(--green)' },
+            { label: 'Total Orders', val: orders.length, color: 'var(--blue)' },
+            { label: 'Pending', val: pending.length, color: '#f59e0b' },
+            { label: 'Revenue', val: `$${totalRevenue.toFixed(0)}`, color: 'var(--green)' },
           ].map(s => (
             <div key={s.label} className="card" style={{ textAlign: 'center', padding: '10px 6px' }}>
               <p style={{ fontWeight: 800, fontSize: 17, color: s.color }}>{s.val}</p>
@@ -93,7 +91,7 @@ export default function OrdersPage() {
 
         {/* Filter pills */}
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 14 }}>
-          {[isArabic ? 'الكل' : 'all', 'pending', 'confirmed', 'delivered', 'cancelled'].map(s => (
+          {['all', 'pending', 'confirmed', 'delivered', 'cancelled'].map(s => (
             <button key={s} onClick={() => setFilter(s)} style={{
               flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 13,
               fontWeight: filter === s ? 700 : 400, cursor: 'pointer',
@@ -113,7 +111,7 @@ export default function OrdersPage() {
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '48px 24px' }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>📋</div>
-            <h3 style={{ marginBottom: 8 }}>{isArabic ? 'لا توجد طلبات بعد' : `No ${filter !== 'all' ? filter : ''} orders yet`}</h3>
+            <h3 style={{ marginBottom: 8 }}>{false ? 'لا توجد طلبات بعد' : `No ${filter !== 'all' ? filter : ''} orders yet`}</h3>
             <p className="text-sm text-muted" style={{ lineHeight: 1.6, marginBottom: 20 }}>
               Orders come in when customers visit your price list and tap "Request This Order".
             </p>
@@ -171,7 +169,7 @@ export default function OrdersPage() {
                   {/* Items list */}
                   <div style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
                     {items.length === 0 ? (
-                      <p className="text-xs text-muted">{isArabic ? 'لا عناصر مسجلة' : 'No items recorded'}</p>
+                      <p className="text-xs text-muted">{'No items recorded'}</p>
                     ) : items.map((item, i) => (
                       <div key={i} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',

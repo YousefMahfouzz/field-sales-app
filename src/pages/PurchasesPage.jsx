@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { useSettings } from '../hooks/useSettings'
 import { useProducts } from '../hooks/useProducts'
 import { supabase } from '../lib/supabase'
 
 export default function PurchasesPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { isArabic } = useSettings()
   const { products, fetchProducts } = useProducts()
   const [movements, setMovements] = useState([])
   const [loading, setLoading] = useState(true)
@@ -123,8 +121,8 @@ export default function PurchasesPage() {
     <div>
       <div className="page-header">
         <button onClick={() => navigate(-1)} style={{ background:'none',border:'none',fontSize:22,cursor:'pointer' }}>←</button>
-        <h1>{isArabic ? 'مشتريات المخزون' : 'Stock Purchases'}</h1>
-        <button onClick={() => setShowForm(true)} style={{ background:'var(--blue)',color:'white',border:'none',borderRadius:10,padding:'7px 14px',fontWeight:700,cursor:'pointer',fontSize:14 }}>{isArabic ? '+ إضافة' : '+ Add'}</button>
+        <h1>{'Stock Purchases'}</h1>
+        <button onClick={() => setShowForm(true)} style={{ background:'var(--blue)',color:'white',border:'none',borderRadius:10,padding:'7px 14px',fontWeight:700,cursor:'pointer',fontSize:14 }}>{'+ Add'}</button>
       </div>
 
       <div className="page" style={{ paddingTop:12 }}>
@@ -140,7 +138,7 @@ export default function PurchasesPage() {
         </div>
 
         <input className="form-input" value={search} onChange={e => setSearch(e.target.value)}
-          placeholder={isArabic ? '🔍 بحث عن منتج أو مورد...' : '🔍 Search product or supplier...'} style={{ marginBottom:12 }} />
+          placeholder={'🔍 Search product or supplier...'} style={{ marginBottom:12 }} />
 
         {loading && <p className="text-muted text-sm" style={{ textAlign:'center', padding:32 }}>Loading...</p>}
 
@@ -189,9 +187,9 @@ export default function PurchasesPage() {
             <div className="form-group">
               <label className="form-label">Product *</label>
               <select className="form-select" value={form.product_id} onChange={handleProductChange}>
-                <option value="">{isArabic ? '— اختر من منتجاتك —' : '— Select from your products —'}</option>
+                <option value="">{'— Select from your products —'}</option>
                 {products.map(p => <option key={p.id} value={p.id}>{p.name}{p.brand ? ` (${p.brand})` : ''}</option>)}
-                <option value="__new__">+ {isArabic ? 'آخر / منتج جديد' : 'Other / New Product'}</option>
+                <option value="__new__">+ {'Other / New Product'}</option>
               </select>
               {(form.product_id === '__new__' || !form.product_id) && (
                 <input className="form-input" value={form.product_name} onChange={set('product_name')}
@@ -224,11 +222,11 @@ export default function PurchasesPage() {
             </div>
             <div className="form-group">
               <label className="form-label">Notes</label>
-              <textarea className="form-textarea" value={form.notes} onChange={set('notes')} placeholder={isArabic ? 'أي ملاحظات...' : 'Any notes...'} style={{ minHeight:50 }} />
+              <textarea className="form-textarea" value={form.notes} onChange={set('notes')} placeholder={'Any notes...'} style={{ minHeight:50 }} />
             </div>
 
             <button className="btn btn-primary btn-full" onClick={handleSave} disabled={saving || !form.unit_cost || !form.qty}>
-              {saving ? 'Saving...' : isArabic ? 'حفظ الشراء' : 'Save Purchase'}
+              {saving ? 'Saving...' : 'Save Purchase'}
             </button>
           </div>
         </div>

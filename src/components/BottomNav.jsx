@@ -2,19 +2,17 @@ import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { useSettings } from '../hooks/useSettings'
 
 export default function BottomNav() {
   const { user } = useAuth()
-  const { isArabic } = useSettings()
   const [pendingOrders, setPendingOrders] = useState(0)
 
   const NAV = [
-    { to: '/dashboard', icon: '🏠', label: isArabic ? 'الرئيسية' : 'Home' },
-    { to: '/customers', icon: '👥', label: isArabic ? 'العملاء' : 'Customers' },
-    { to: '/map',       icon: '🗺️', label: isArabic ? 'الخريطة' : 'Map' },
-    { to: '/products',  icon: '📦', label: isArabic ? 'المنتجات' : 'Products' },
-    { to: '/orders',    icon: '📋', label: isArabic ? 'الطلبات' : 'Orders' },
+    { to: '/dashboard', icon: '🏠', label: 'Home' },
+    { to: '/customers', icon: '👥', label: 'Customers' },
+    { to: '/map',       icon: '🗺️', label: 'Map' },
+    { to: '/products',  icon: '📦', label: 'Products' },
+    { to: '/orders',    icon: '📋', label: 'Orders' },
   ]
 
   useEffect(() => {
@@ -40,7 +38,7 @@ export default function BottomNav() {
         <NavLink key={to} to={to} end={to === '/'} className="nav-item">
           <span className="nav-icon" style={{ position:'relative', display:'inline-block' }}>
             {icon}
-            {label === (isArabic ? 'الطلبات' : 'Orders') && pendingOrders > 0 && (
+            {label === ('Orders') && pendingOrders > 0 && (
               <span style={{
                 position:'absolute', top:-4, right:-6,
                 background:'#dc2626', color:'white',

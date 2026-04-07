@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { useSettings } from '../hooks/useSettings'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { user, profile, signOut, updateProfile } = useAuth()
-  const { darkMode, toggleDark, lang, toggleLang, isArabic } = useSettings()
   const [form, setForm] = useState({
     display_name: profile?.display_name || '',
     username: profile?.username || '',
@@ -96,7 +94,7 @@ export default function SettingsPage() {
     <div>
       <div className="page-header">
         <button onClick={() => navigate(-1)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer' }}>←</button>
-        <h1>{isArabic ? 'الإعدادات' : 'Settings'}</h1>
+        <h1>{'Settings'}</h1>
         <div style={{ width:36 }} />
       </div>
 
@@ -116,15 +114,15 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <p className="section-header">{isArabic ? 'ملفك الشخصي' : 'Your Profile'}</p>
+        <p className="section-header">{'Your Profile'}</p>
         {error && <div style={{ background:'var(--red-light)', color:'var(--red)', padding:'12px 16px', borderRadius:8, marginBottom:16, fontSize:14 }}>{error}</div>}
         {saved && <div style={{ background:'var(--green-light)', color:'var(--green)', padding:'12px 16px', borderRadius:8, marginBottom:16, fontSize:14 }}>✅ Saved!</div>}
 
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Display Name</label>
-            <input className="form-input" value={form.display_name} onChange={handleNameChange} placeholder={isArabic ? 'اسمك الكامل' : 'Your full name'} />
-            <p className="text-xs text-muted" style={{ marginTop:4 }}>{isArabic ? 'يظهر في قائمة أسعارك' : 'Shown on your price list'}</p>
+            <input className="form-input" value={form.display_name} onChange={handleNameChange} placeholder={'Your full name'} />
+            <p className="text-xs text-muted" style={{ marginTop:4 }}>{'Shown on your price list'}</p>
           </div>
           <div className="form-group">
             <label className="form-label">Username</label>
@@ -132,7 +130,7 @@ export default function SettingsPage() {
               <span style={{ padding:'10px 12px', background:'var(--gray-light)', borderRadius:'8px 0 0 8px', border:'1px solid var(--border)', borderRight:'none', fontSize:14, color:'var(--text-muted)' }}>@</span>
               <input className="form-input" value={form.username} onChange={handleUsernameChange} placeholder="yourname" style={{ borderRadius:'0 8px 8px 0' }} />
             </div>
-            <p className="text-xs text-muted" style={{ marginTop:4 }}>{isArabic ? 'أحرف صغيرة وأرقام فقط' : 'Lowercase letters and numbers only'}</p>
+            <p className="text-xs text-muted" style={{ marginTop:4 }}>{'Lowercase letters and numbers only'}</p>
           </div>
           {priceListUrl && (
             <div style={{ background:'#f8fafc', border:'1px solid var(--border)', borderRadius:10, padding:'12px 14px', marginBottom:16 }}>
@@ -145,45 +143,31 @@ export default function SettingsPage() {
             </div>
           )}
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? (isArabic?'جاري الحفظ...':'Saving...') : (isArabic?'حفظ التغييرات':isArabic ? 'حفظ التغييرات' : 'Save Changes')}
+            {loading ? ('Saving...') : ('Save Changes' )}
           </button>
         </form>
 
         {/* Display */}
-        <p className="section-header" style={{ marginTop:24 }}>{isArabic ? 'العرض' : 'Display'}</p>
+        <p className="section-header" style={{ marginTop:24 }}>{'Display'}</p>
         <Toggle
           value={darkMode}
           onChange={toggleDark}
-          label={isArabic ? '🌙 الوضع الداكن' : '🌙 Dark Mode'}
-          sub={isArabic ? 'تبديل بين الوضع الفاتح والداكن' : 'Switch between light and dark theme'}
+          label={'🌙 Dark Mode'}
+          sub={'Switch between light and dark theme'}
         />
         <Toggle
           value={wideMode}
           onChange={setWideMode}
-          label={isArabic ? 'وضع الشاشة العريضة (iPad)' : 'iPad / Wide Screen Mode'}
-          sub={isArabic ? 'توسيع التطبيق لملء العرض الكامل' : 'Expands app to full width — great for tablets'}
+          label={'iPad / Wide Screen Mode'}
+          sub={'Expands app to full width — great for tablets'}
         />
-
-        {/* Language */}
-        <p className="section-header" style={{ marginTop:16 }}>{isArabic ? 'اللغة' : 'Language'}</p>
-        <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-          {[['en','🇺🇸 English'],['ar','🇸🇦 العربية']].map(([code, label]) => (
-            <button key={code} onClick={() => code !== lang && toggleLang()} style={{
-              flex:1, padding:'12px', borderRadius:12, cursor:'pointer', fontWeight:700, fontSize:14,
-              border: lang===code ? '2px solid var(--blue)' : '2px solid var(--border)',
-              background: lang===code ? 'var(--blue-light)' : 'white',
-              color: lang===code ? 'var(--blue)' : 'var(--text)',
-            }}>{label}</button>
-          ))}
-        </div>
-
         {/* Account */}
         <div style={{ marginTop:24, paddingTop:8 }}>
-          <p className="section-header">{isArabic ? 'الحساب' : 'Account'}</p>
+          <p className="section-header">{'Account'}</p>
           <p className="text-xs text-muted" style={{ marginBottom:12 }}>{user?.email}</p>
 
           {profile?.is_admin && (<>
-            <p style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>{isArabic ? 'أدوات المشرف' : 'Admin Tools'}</p>
+            <p style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>{'Admin Tools'}</p>
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/settings')} style={{ marginBottom:8, color:'#7c3aed', borderColor:'#7c3aed' }}>
               ⚙️ Invite Codes & Logo
             </button>

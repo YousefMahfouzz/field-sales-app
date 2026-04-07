@@ -1,26 +1,24 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useSettings } from '../hooks/useSettings'
 import { useCustomers } from '../hooks/useCustomers'
 import { useVisits } from '../hooks/useVisits'
 import { StatusBadge, AreaBadge } from '../components/CustomerCard'
 
-function daysUntilVisit(dateStr, isArabic) {
+function daysUntilVisit(dateStr) {
   if (!dateStr) return null
   const today = new Date()
   today.setHours(0,0,0,0)
   const visit = new Date(dateStr + 'T00:00:00')
   const diff = Math.round((visit - today) / 86400000)
-  if (diff === 0) return isArabic ? 'زيارة اليوم!' : 'Visit today!'
-  if (diff === 1) return isArabic ? 'زيارة غداً' : 'Visit tomorrow'
-  if (diff < 0) return isArabic ? `متأخر ${Math.abs(diff)} يوم` : `${Math.abs(diff)} day${Math.abs(diff)!==1?'s':''} overdue`
-  return isArabic ? `زيارة بعد ${diff} يوم` : `Visit in ${diff} day${diff!==1?'s':''}`
+  if (diff === 0) return 'Visit today!'
+  if (diff === 1) return 'Visit tomorrow'
+  if (diff < 0) return `${Math.abs(diff)} day${Math.abs(diff)!==1?'s':''} overdue`
+  return `Visit in ${diff} day${diff!==1?'s':''}`
 }
 
 export default function CustomerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { isArabic } = useSettings()
   const { customers, deleteCustomer, updateCustomer } = useCustomers()
   const { visits, fetchVisitsForCustomer } = useVisits()
   const [showDelete, setShowDelete] = useState(false)
@@ -106,7 +104,7 @@ export default function CustomerDetailPage() {
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 18 }}>📅</span>
                 <div>
-                  <p style={{ fontSize: 12, color: '#78350f', fontWeight: 700 }}>{isArabic ? 'جدولهم' : 'Their schedule'}</p>
+                  <p style={{ fontSize: 12, color: '#78350f', fontWeight: 700 }}>{'Their schedule'}</p>
                   <p style={{ fontSize: 14, fontWeight: 600 }}>{customer.decision_maker_schedule}</p>
                 </div>
               </div>
@@ -156,8 +154,8 @@ export default function CustomerDetailPage() {
 {customer.next_visit_date ? (
                   <span>
                     <span style={{ display:'block' }}>{new Date(customer.next_visit_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    <span style={{ fontSize:11, color: (() => { const d = daysUntilVisit(customer.next_visit_date, isArabic); return d?.includes('overdue') ? 'var(--red)' : d?.includes('today') ? '#16a34a' : 'var(--blue)' })(), fontWeight:700 }}>
-                      {daysUntilVisit(customer.next_visit_date, isArabic)}
+                    <span style={{ fontSize:11, color: (() => { const d = daysUntilVisit(customer.next_visit_date); return d?.includes('overdue') ? 'var(--red)' : d?.includes('today') ? '#16a34a' : 'var(--blue)' })(), fontWeight:700 }}>
+                      {daysUntilVisit(customer.next_visit_date)}
                     </span>
                   </span>
                 ) : '—'}
@@ -169,7 +167,7 @@ export default function CustomerDetailPage() {
               <p className="text-sm" style={{ fontWeight: 600, marginTop: 2 }}>Every {customer.visit_frequency_days || 14} days</p>
             </div>
             <div>
-              <p className="text-xs text-muted">{isArabic ? 'إجمالي الزيارات' : 'Total Visits'}</p>
+              <p className="text-xs text-muted">{'Total Visits'}</p>
               <p className="text-sm" style={{ fontWeight: 600, marginTop: 2 }}>{visits.length}</p>
             </div>
           </div>
@@ -182,11 +180,11 @@ export default function CustomerDetailPage() {
             {customer.sale_amount > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div>
-                  <p className="text-xs text-muted">{isArabic ? 'الإيرادات' : 'Revenue'}</p>
+                  <p className="text-xs text-muted">{'Revenue'}</p>
                   <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--green)' }}>${(customer.sale_amount || 0).toFixed(0)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted">{isArabic ? 'التكلفة' : 'Cost'}</p>
+                  <p className="text-xs text-muted">{'Cost'}</p>
                   <p style={{ fontWeight: 700, fontSize: 16 }}>${(customer.cost || 0).toFixed(0)}</p>
                 </div>
                 <div>
@@ -197,7 +195,7 @@ export default function CustomerDetailPage() {
             )}
             {customer.bought_before && (
               <div style={{ marginBottom: 8 }}>
-                <p className="text-xs text-muted">{isArabic ? 'اشترى من قبل' : 'Bought before'}</p>
+                <p className="text-xs text-muted">{'Bought before'}</p>
                 <p className="text-sm" style={{ marginTop: 2 }}>{customer.bought_before}</p>
               </div>
             )}
@@ -228,7 +226,7 @@ export default function CustomerDetailPage() {
               <div className="flex justify-between items-center">
                 <div style={{ flex:1 }}>
                   <p style={{ fontWeight: 600, fontSize: 14 }}>
-                    {v.was_visited ? isArabic ? '✅ تمت الزيارة' : '✅ Visited' : isArabic ? '📞 متابعة' : '📞 Follow-up'}
+                    {v.was_visited ? '✅ Visited' : '📞 Follow-up'}
                     {v.had_sale ? ' · 💰 Sale' : ''}
                   </p>
                   <p className="text-xs text-muted">{new Date(v.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
@@ -238,7 +236,7 @@ export default function CustomerDetailPage() {
                     <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 15 }}>${saleTotal.toFixed(0)}</span>
                   )}
                   <button onClick={async () => {
-                    if (!window.confirm(isArabic ? 'حذف سجل الزيارة؟' : 'Delete this visit record?')) return
+                    if (!window.confirm('Delete this visit record?')) return
                     await supabase.from('visits').update({ deleted_at: new Date().toISOString() }).eq('id', v.id)
                     setVisits(prev => prev.filter(x => x.id !== v.id))
                   }} style={{ padding:'3px 8px', borderRadius:8, border:'1px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer' }}>🗑️</button>

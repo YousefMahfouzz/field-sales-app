@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { useSettings } from '../hooks/useSettings'
 import { useCustomers } from '../hooks/useCustomers'
 import { supabase } from '../lib/supabase'
 
 // ── Reschedule Modal ──────────────────────────────────────────────
-function RescheduleModal({ overdue, onClose, onDone, isArabic }) {
+function RescheduleModal({ overdue, onClose, onDone}) {
   const today = new Date().toLocaleDateString('en-CA')
   const [selected, setSelected] = useState(new Set(overdue.map(c => c.id)))
   const [targetDate, setTargetDate] = useState(today)
@@ -66,16 +65,16 @@ function RescheduleModal({ overdue, onClose, onDone, isArabic }) {
         {done ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-            <p style={{ fontWeight: 700, fontSize: 16 }}>{isArabic ? 'تمت إعادة الجدولة' : 'Rescheduled'} {selected.size} customer{selected.size > 1 ? 's' : ''}!</p>
+            <p style={{ fontWeight: 700, fontSize: 16 }}>{'Rescheduled'} {selected.size} customer{selected.size > 1 ? 's' : ''}!</p>
           </div>
         ) : <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ fontSize: 18 }}>{isArabic ? 'إعادة جدولة المتأخرين' : 'Reschedule Overdue'}</h2>
+            <h2 style={{ fontSize: 18 }}>{'Reschedule Overdue'}</h2>
             <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
           </div>
 
           {/* Quick date buttons */}
-          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{isArabic ? 'نقل الزيارات إلى' : 'Move visits to'}</p>
+          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{'Move visits to'}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             {quickDates.map(({ label, days }) => {
               const d = dateFor(days)
@@ -94,7 +93,7 @@ function RescheduleModal({ overdue, onClose, onDone, isArabic }) {
 
           {/* Custom date picker */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)', flexShrink: 0 }}>{isArabic ? 'أو اختر:' : 'Or pick:'}</span>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', flexShrink: 0 }}>{'Or pick:'}</span>
             <input type="date" value={targetDate} min={today}
               onChange={e => setTargetDate(e.target.value)}
               style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 14 }} />
@@ -103,17 +102,17 @@ function RescheduleModal({ overdue, onClose, onDone, isArabic }) {
           {/* Target date display */}
           <div style={{ background: 'var(--blue-light)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, border: '1px solid #bfdbfe' }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
-              📅 {isArabic ? 'نقل المحددين إلى:' : 'Moving selected to:'} {prettyDate(targetDate)}
+              📅 {'Moving selected to:'} {prettyDate(targetDate)}
             </p>
           </div>
 
           {/* Customer list with checkboxes */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Customers ({selected.size}/{overdue.length} {isArabic ? 'محدد)' : 'selected)'}
+              Customers ({selected.size}/{overdue.length} {'selected)'}
             </p>
             <button onClick={toggleAll} style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>
-              {selected.size === overdue.length ? isArabic ? 'إلغاء التحديد' : 'Deselect All' : isArabic ? 'تحديد الكل' : 'Select All'}
+              {selected.size === overdue.length ? 'Deselect All' : 'Select All'}
             </button>
           </div>
 
@@ -151,7 +150,7 @@ function RescheduleModal({ overdue, onClose, onDone, isArabic }) {
                     </p>
                   </div>
                   {c.status === 'priority' && (
-                    <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#fef3c7', color: '#92400e', fontWeight: 700 }}>{isArabic ? 'أولوية' : 'Priority'}</span>
+                    <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#fef3c7', color: '#92400e', fontWeight: 700 }}>{'Priority'}</span>
                   )}
                 </div>
               )
@@ -285,7 +284,7 @@ export default function DashboardPage() {
 
   const name = profile?.display_name?.split(' ')[0] || ''
   const hr = new Date().getHours()
-  const greeting = hr < 12 ? (isArabic ? 'صباح الخير' : 'Good morning') : hr < 17 ? (isArabic ? 'مساء الخير' : 'Good afternoon') : (isArabic ? 'مساء النور' : 'Good evening')
+  const greeting = hr < 12 ? ('Good morning') : hr < 17 ? ('Good afternoon') : ('Good evening')
 
   const Metric = ({ icon, label, value, color, onClick }) => (
     <div className="card" onClick={onClick} style={{ textAlign: 'center', padding: '14px 8px', cursor: onClick ? 'pointer' : 'default' }}>
@@ -344,7 +343,7 @@ export default function DashboardPage() {
             }}>
               <span style={{ fontSize: 20 }}>⚠️</span>
               <span style={{ fontWeight: 700, fontSize: 14, flex: 1, color: 'white' }}>
-                {isArabic ? `${overdue.length} زيارة متأخرة` : `${overdue.length} overdue visit${overdue.length > 1 ? 's' : ''}`}
+                {`${overdue.length} overdue visit${overdue.length > 1 ? 's' : ''}`}
               </span>
               <button
                 onClick={() => setShowReschedule(true)}
@@ -368,57 +367,57 @@ export default function DashboardPage() {
               padding: '12px 14px', borderRadius: 12,
             }}>
               <span style={{ fontSize: 20 }}>📅</span>
-              <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{isArabic ? `${dueToday.length} زيارة مستحقة اليوم` : `${dueToday.length} visit${dueToday.length > 1 ? 's' : ''} due today`}</span>
+              <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{`${dueToday.length} visit${dueToday.length > 1 ? 's' : ''} due today`}</span>
               <span>→</span>
             </button>
           )}
 
           {/* Today */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-            <p className="section-header" style={{ margin:0 }}>{isArabic ? 'اليوم' : 'Today'}</p>
+            <p className="section-header" style={{ margin:0 }}>{'Today'}</p>
             <button onClick={() => navigate('/analytics')} style={{ fontSize:12, color:'var(--blue)', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📊 Analytics →</button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
             <div style={{ background:'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius:12, padding:'12px 14px' }}>
-              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Revenue {isArabic ? 'اليوم' : 'Today'}</p>
+              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Revenue {'Today'}</p>
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayRevenue??0).toFixed(2)}`}</p>
             </div>
             <div style={{ background:'linear-gradient(135deg,#14532d,#16a34a)', borderRadius:12, padding:'12px 14px' }}>
-              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Profit {isArabic ? 'اليوم' : 'Today'}</p>
+              <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Profit {'Today'}</p>
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayProfit??0).toFixed(2)}`}</p>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Metric icon="🚶" label={isArabic ? 'الزيارات' : 'Visits'} value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
-            <Metric icon="📍" label={isArabic ? 'مضاف' : 'Added'} value={addedToday.length} color="#7c3aed" />
-            <Metric icon="📋" label={isArabic ? 'الطلبات' : 'Orders'} value={pendingOrders} color="#f59e0b" onClick={() => navigate('/orders')} />
+            <Metric icon="🚶" label={'Visits'} value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
+            <Metric icon="📍" label={'Added'} value={addedToday.length} color="#7c3aed" />
+            <Metric icon="📋" label={'Orders'} value={pendingOrders} color="#f59e0b" onClick={() => navigate('/orders')} />
           </div>
 
           {/* This week */}
-          <p className="section-header">{isArabic ? 'هذا الأسبوع' : 'This Week'}</p>
+          <p className="section-header">{'This Week'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            <Metric icon="📍" label={isArabic ? 'الزيارات' : 'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
-            <Metric icon="💰" label={isArabic ? 'المبيعات' : 'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
-            <Metric icon="💵" label={isArabic ? 'الإيرادات' : 'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
-            <Metric icon="📈" label={isArabic ? 'الربح' : 'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />
+            <Metric icon="📍" label={'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
+            <Metric icon="💰" label={'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
+            <Metric icon="💵" label={'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
+            <Metric icon="📈" label={'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />
           </div>
 
           {/* Customers */}
-          <p className="section-header">{isArabic ? 'العملاء' : 'Customers'}</p>
+          <p className="section-header">{'Customers'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Metric icon="👥" label={isArabic ? 'نشط' : 'Active'} value={active.length} />
-            <Metric icon="📅" label={isArabic ? 'مستحق اليوم' : 'Due Today'} value={dueToday.length} color="var(--blue)" />
-            <Metric icon="⚠️" label={isArabic ? 'متأخر' : 'Overdue'} value={overdue.length} color="#dc2626" onClick={() => overdue.length > 0 && setShowReschedule(true)} />
+            <Metric icon="👥" label={'Active'} value={active.length} />
+            <Metric icon="📅" label={'Due Today'} value={dueToday.length} color="var(--blue)" />
+            <Metric icon="⚠️" label={'Overdue'} value={overdue.length} color="#dc2626" onClick={() => overdue.length > 0 && setShowReschedule(true)} />
           </div>
 
           {/* Recent activity */}
           {recentVisits.length > 0 && <>
-            <p className="section-header">{isArabic ? 'النشاط الأخير' : 'Recent Activity'}</p>
+            <p className="section-header">{'Recent Activity'}</p>
             {recentVisits.map(v => (
               <div key={v.id} className="card" style={{ marginBottom: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <p style={{ fontWeight: 600, fontSize: 13 }}>
-                    {v.had_sale ? isArabic ? '💰 بيع' : '💰 Sale' : v.outcome === 'come_back' ? isArabic ? '📅 متابعة' : '📅 Follow-up' : v.outcome === 'avoid' ? isArabic ? '⛔ تجنب' : '⛔ Avoided' : isArabic ? '🤝 زيارة' : '🤝 Visit'}
+                    {v.had_sale ? '💰 Sale' : v.outcome === 'come_back' ? '📅 Follow-up' : v.outcome === 'avoid' ? '⛔ Avoided' : '🤝 Visit'}
                   </p>
                   <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     {new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -432,13 +431,13 @@ export default function DashboardPage() {
           </>}
 
           {/* Quick actions */}
-          <p className="section-header">{isArabic ? 'إجراءات سريعة' : 'Quick Actions'}</p>
+          <p className="section-header">{'Quick Actions'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
-              { label: isArabic ? '📍 إضافة عميل' : '📍 Add Customer', to: '/customers/new' },
-              { label: isArabic ? '📦 تسجيل شراء' : '📦 Record Purchase', to: '/purchases' },
-              { label: isArabic ? '📋 عرض الطلبات' : '📋 View Orders', to: '/orders' },
-              { label: isArabic ? '📊 التحليلات' : '📊 Analytics', to: '/analytics' },
+              { label: '📍 Add Customer', to: '/customers/new' },
+              { label: '📦 Record Purchase', to: '/purchases' },
+              { label: '📋 View Orders', to: '/orders' },
+              { label: '📊 Analytics', to: '/analytics' },
             ].map(a => (
               <button key={a.to} onClick={() => navigate(a.to)} style={{
                 padding: '13px', borderRadius: 12, border: '1.5px solid var(--border)',
@@ -449,8 +448,8 @@ export default function DashboardPage() {
         </>}
 
         {tab === 'deleted' && <>
-          <p className="section-header">Deleted {isArabic ? 'العملاء' : 'Customers'}</p>
-          <p className="text-xs text-muted" style={{ marginBottom: 12 }}>{isArabic ? 'تم الحذف — اضغط استعادة للإرجاع' : 'Soft-deleted — tap Restore to bring them back.'}</p>
+          <p className="section-header">Deleted {'Customers'}</p>
+          <p className="text-xs text-muted" style={{ marginBottom: 12 }}>{'Soft-deleted — tap Restore to bring them back.'}</p>
           {deletedCustomers.length === 0 && (
             <div style={{ textAlign: 'center', padding: 48 }}>
               <div style={{ fontSize: 36, marginBottom: 10 }}>✅</div>
@@ -478,7 +477,6 @@ export default function DashboardPage() {
       {showReschedule && overdue.length > 0 && (
         <RescheduleModal
           overdue={overdue}
-          isArabic={isArabic}
           onClose={() => setShowReschedule(false)}
           onDone={() => { fetchCustomers(); loadStats() }}
         />
