@@ -4,7 +4,7 @@ import { useCustomers } from '../hooks/useCustomers'
 import { useProducts } from '../hooks/useProducts'
 import { useVisits } from '../hooks/useVisits'
 import { useAuth } from '../hooks/useAuth'
-import { getCurrentPosition } from '../lib/geo'
+import { getCurrentPosition, reverseGeocodeArea } from '../lib/geo'
 import { loadGoogleMaps, loadPlaces } from '../lib/mapsLoader'
 import { supabase } from '../lib/supabase'
 import ProductSelector from '../components/ProductSelector'
@@ -304,7 +304,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
       const latN = parseFloat(lat), lngN = parseFloat(lng)
       setForm(f => ({ ...f, lat, lng }))
       // Auto-fill area from URL GPS
-      reverseGeocode(latN, lngN).then(area => {
+      reverseGeocodeArea(latN, lngN).then(area => {
         if (area) setForm(f => ({ ...f, area: f.area || area }))
       })
       setNearbyLoading(true)
@@ -321,7 +321,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
       const lng = pos.coords.longitude.toFixed(7)
       setForm(f => ({ ...f, lat, lng }))
       // Auto-fill area from GPS — run in parallel with POI fetch
-      reverseGeocode(parseFloat(lat), parseFloat(lng)).then(area => {
+      reverseGeocodeArea(parseFloat(lat), parseFloat(lng)).then(area => {
         if (area) setForm(f => ({ ...f, area: f.area || area }))
       })
       await fetchNearbyPOI(parseFloat(lat), parseFloat(lng))
