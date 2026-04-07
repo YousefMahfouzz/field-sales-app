@@ -344,7 +344,7 @@ export default function DashboardPage() {
             }}>
               <span style={{ fontSize: 20 }}>⚠️</span>
               <span style={{ fontWeight: 700, fontSize: 14, flex: 1, color: 'white' }}>
-                {overdue.length} isArabic?'زيارة متأخرة':'overdue visit'{overdue.length > 1 ? 's' : ''}
+                {isArabic ? `${overdue.length} زيارة متأخرة` : `${overdue.length} overdue visit${overdue.length > 1 ? 's' : ''}`}
               </span>
               <button
                 onClick={() => setShowReschedule(true)}
