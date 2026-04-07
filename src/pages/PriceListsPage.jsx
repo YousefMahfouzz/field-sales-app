@@ -29,7 +29,7 @@ export default function PriceListsPage() {
     const rand = Math.random().toString(36).slice(2, 7)
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + rand
     const { data, error } = await supabase.from('price_lists').insert([{
-      user_id: user.id, name, slug, niche, is_active: true
+      user_id: user.id, name, slug, niche, is_active: true, is_public: true
     }]).select().single()
     if (!error && data) {
       setLists(prev => [...prev, data])
