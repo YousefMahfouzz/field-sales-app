@@ -41,6 +41,12 @@ export default function OrdersPage() {
     setOrders(p => p.map(o => o.id === id ? { ...o, status } : o))
   }
 
+  const deleteOrder = async (id) => {
+    if (!window.confirm('Delete this order? This cannot be undone.')) return
+    await supabase.from('orders').delete().eq('id', id)
+    setOrders(p => p.filter(o => o.id !== id))
+  }
+
   const pending  = orders.filter(o => o.status === 'pending')
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter)
   const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (o.total_amount || 0), 0)
@@ -222,6 +228,11 @@ export default function OrdersPage() {
                         style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
                       >✕ Cancel</button>
                     )}
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => deleteOrder(order.id)}
+                      style={{ color: 'var(--red)', borderColor: '#fecaca', background:'#fef2f2', marginLeft:'auto' }}
+                    >🗑️ Delete</button>
                   </div>
                 </div>
               )}

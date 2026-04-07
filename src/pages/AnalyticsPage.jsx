@@ -4,15 +4,53 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
 const fmt = (n) => n >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(2)}`
+
+// ── Monthly Bar Chart ──────────────────────────────────────────
+function MonthlyChart({ data }) {
+  const max = Math.max(...data.map(d => Math.max(d.revenue, d.stockCost)), 1)
+
+  return (
+    <div className="card" style={{ padding:'16px 16px 12px', marginBottom:12 }}>
+      <p style={{ fontWeight:800, fontSize:14, marginBottom:4 }}>📊 Monthly Overview — Last 6 Months</p>
+      <div style={{ display:'flex', gap:4, marginBottom:8 }}>
+        {[['#2563eb','Revenue'],['#16a34a','Profit'],['#dc2626','Stock Cost']].map(([c,l]) => (
+          <div key={l} style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, color:'var(--text-muted)' }}>
+            <div style={{ width:10, height:10, borderRadius:2, background:c }} />{l}
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'flex', gap:6, alignItems:'flex-end', height:120 }}>
+        {data.map((m, i) => {
+          const rh = Math.max((m.revenue / max) * 110, m.revenue > 0 ? 3 : 0)
+          const ph = Math.max((Math.max(m.profit,0) / max) * 110, m.profit > 0 ? 3 : 0)
+          const sh = Math.max((m.stockCost / max) * 110, m.stockCost > 0 ? 3 : 0)
+          return (
+            <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+              <div style={{ width:'100%', display:'flex', gap:2, alignItems:'flex-end', height:110, justifyContent:'center' }}>
+                <div title={`Revenue: $${m.revenue.toFixed(2)}`} style={{ flex:1, height:rh, background:'#2563eb', borderRadius:'3px 3px 0 0', minWidth:4 }} />
+                <div title={`Profit: $${m.profit.toFixed(2)}`} style={{ flex:1, height:ph, background:'#16a34a', borderRadius:'3px 3px 0 0', minWidth:4 }} />
+                <div title={`Stock: $${m.stockCost.toFixed(2)}`} style={{ flex:1, height:sh, background:'#dc2626', borderRadius:'3px 3px 0 0', minWidth:4 }} />
+              </div>
+              <p style={{ fontSize:10, color:'var(--text-muted)', marginTop:4 }}>{m.label}</p>
+              {m.revenue > 0 && <p style={{ fontSize:9, color:'#2563eb', fontWeight:700 }}>{fmt(m.revenue)}</p>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+
 const fmtFull = (n) => `$${n.toFixed(2)}`
-const toDate = (d) => d.toLocaleDateString('en-CA') // YYYY-MM-DD
-const today = () => toDate(new Date())
+// Always use Central Time (America/Chicago) for date boundaries
+const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 const startOf = (unit) => {
-  const d = new Date()
-  if (unit === 'month') d.setDate(1)
-  if (unit === 'week') d.setDate(d.getDate() - d.getDay())
-  if (unit === 'year') { d.setMonth(0); d.setDate(1) }
-  return toDate(d)
+  const ct = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+  if (unit === 'month') ct.setDate(1)
+  if (unit === 'week') ct.setDate(ct.getDate() - ct.getDay())
+  if (unit === 'year') { ct.setMonth(0); ct.setDate(1) }
+  return ct.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 }
 
 function StatCard({ icon, label, value, sub, color = '#2563eb', onClick }) {
@@ -54,6 +92,7 @@ export default function AnalyticsPage() {
 
   // ── Today auto-load ──
   const [todayData, setTodayData] = useState(null)
+  const [monthlyChart, setMonthlyChart] = useState([])
 
   const loadDay = useCallback(async (date) => {
     if (!user || !date) return
@@ -151,6 +190,33 @@ export default function AnalyticsPage() {
         monthStock: (monthStock.data||[]).reduce((s,r) => s+(r.total_cost||0), 0),
         allStock:   (allStock.data||[]).reduce((s,r) => s+(r.total_cost||0), 0),
       })
+
+      // Build monthly chart — last 6 months
+      const months = []
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+        d.setDate(1)
+        d.setMonth(d.getMonth() - i)
+        const from = d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+        const dEnd = new Date(d)
+        dEnd.setMonth(dEnd.getMonth() + 1)
+        dEnd.setDate(0)
+        const to = dEnd.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+        months.push({ label: d.toLocaleDateString('en-US', { month: 'short', timeZone: 'America/Chicago' }), from, to })
+      }
+      const chartData = await Promise.all(months.map(async m => {
+        const [sales, stock] = await Promise.all([
+          supabase.from('sale_items').select('total_price,total_cost,total_profit').eq('user_id', user.id)
+            .gte('created_at', m.from+'T00:00:00').lte('created_at', m.to+'T23:59:59'),
+          supabase.from('stock_movements').select('total_cost').eq('user_id', user.id).eq('type','in')
+            .gte('created_at', m.from+'T00:00:00').lte('created_at', m.to+'T23:59:59'),
+        ])
+        const revenue = (sales.data||[]).reduce((s,i)=>s+(i.total_price||0),0)
+        const profit  = (sales.data||[]).reduce((s,i)=>s+(i.total_profit||0),0)
+        const stockCost = (stock.data||[]).reduce((s,i)=>s+(i.total_cost||0),0)
+        return { label: m.label, revenue, profit, stockCost }
+      }))
+      setMonthlyChart(chartData)
     } catch(e) { console.error(e) }
     finally { setLoadingSummary(false) }
   }, [user])
@@ -343,6 +409,9 @@ export default function AnalyticsPage() {
             )}
           </div>
         )}
+
+        {/* ── MONTHLY CHART ── */}
+        {monthlyChart.length > 0 && <MonthlyChart data={monthlyChart} />}
 
         {/* ── ALL TIME ── */}
         <SectionHeader title="All Time" />

@@ -330,28 +330,6 @@ export default function MapPage() {
         {gpsLoading ? '📡...' : '📍 Add Customer Here'}
       </button>
 
-      {/* FAB: Find Nearby POI — sits above nav bar */}
-      <button
-        onClick={handleFindNearby}
-        disabled={poiLoading}
-        style={{
-          position: 'fixed',
-          bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 60px)',
-          right: 16,
-          zIndex: 100,
-          padding: '11px 16px', borderRadius: 28, border: 'none', cursor: 'pointer',
-          fontSize: 13, fontWeight: 700,
-          background: poiVisible ? '#7c3aed' : '#2563eb',
-          color: 'white',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-          display: 'flex', alignItems: 'center', gap: 6,
-          transition: 'all 0.2s',
-          whiteSpace: 'nowrap',
-          opacity: poiLoading ? 0.7 : 1,
-        }}
-      >
-        {poiLoading ? '🔍 Searching...' : poiVisible ? `✕ Clear (${poiMarkersRef.current.length})` : '⛽🏪💄 Find Nearby'}
-      </button>
 
       {/* Customer popup */}
       {selectedCustomer && (

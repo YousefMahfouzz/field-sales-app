@@ -5,8 +5,8 @@ import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import CustomerCard from '../components/CustomerCard'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 
-const STATUSES = ['all', 'active', 'priority', 'follow_up', 'avoid', 'do_not_visit']
-const STATUS_LABELS = { all: 'All', active: 'Active', priority: 'Priority', follow_up: 'Follow Up', avoid: 'Avoid', do_not_visit: 'Do Not Visit' }
+const STATUSES = ['all', 'active', 'priority', 'follow_up', 'do_not_visit', 'avoid']
+const STATUS_LABELS = { all: 'All', active: 'Active', priority: 'Priority', follow_up: 'Follow Up', do_not_visit: 'Do Not Visit', avoid: '⛔ Avoid' }
 const STATUS_COLORS = { active: '#16a34a', priority: '#d97706', follow_up: '#0891b2', avoid: '#dc2626', do_not_visit: '#6b7280' }
 
 export default function CustomersPage() {
@@ -35,7 +35,9 @@ export default function CustomersPage() {
         c.area?.toLowerCase().includes(q)
       )
     }
-    if (statusFilter !== 'all') list = list.filter(c => c.status === statusFilter)
+    // 'all' hides avoid customers — they only appear in the dedicated 'avoid' tab
+  if (statusFilter === 'all') list = list.filter(c => c.status !== 'avoid')
+  else list = list.filter(c => c.status === statusFilter)
     if (filterOverdue) list = list.filter(c => c.next_visit_date && c.next_visit_date < today && c.status !== 'avoid')
     if (sortBy === 'next_visit') list.sort((a, b) => (a.next_visit_date || '9999') < (b.next_visit_date || '9999') ? -1 : 1)
     else if (sortBy === 'name') list.sort((a, b) => (a.business_name || a.full_name).localeCompare(b.business_name || b.full_name))

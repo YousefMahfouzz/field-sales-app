@@ -188,8 +188,9 @@ export default function DashboardPage() {
   const [tab, setTab] = useState('overview')
   const [showReschedule, setShowReschedule] = useState(false)
 
-  const today = new Date().toLocaleDateString('en-CA')
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA')
+  // Central Time dates — new day starts at midnight CT, not device local time
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  const weekAgo = (() => { const d = new Date(Date.now() - 7*24*60*60*1000); return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })()
 
   const dueToday = customers.filter(c => c.next_visit_date?.startsWith(today) && c.status !== 'avoid')
   const overdue  = customers.filter(c => c.next_visit_date && c.next_visit_date < today && c.status !== 'avoid')

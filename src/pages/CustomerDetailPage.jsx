@@ -4,6 +4,18 @@ import { useCustomers } from '../hooks/useCustomers'
 import { useVisits } from '../hooks/useVisits'
 import { StatusBadge, AreaBadge } from '../components/CustomerCard'
 
+function daysUntilVisit(dateStr) {
+  if (!dateStr) return null
+  const today = new Date()
+  today.setHours(0,0,0,0)
+  const visit = new Date(dateStr + 'T00:00:00')
+  const diff = Math.round((visit - today) / 86400000)
+  if (diff === 0) return 'Visit today!'
+  if (diff === 1) return 'Visit tomorrow'
+  if (diff < 0) return `${Math.abs(diff)} day${Math.abs(diff)!==1?'s':''} overdue`
+  return `Visit in ${diff} day${diff!==1?'s':''}`
+}
+
 export default function CustomerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -139,7 +151,14 @@ export default function CustomerDetailPage() {
             <div>
               <p className="text-xs text-muted">Next Visit</p>
               <p className="text-sm" style={{ fontWeight: 600, marginTop: 2, color: isOverdue ? 'var(--red)' : 'var(--text)' }}>
-                {customer.next_visit_date ? new Date(customer.next_visit_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+{customer.next_visit_date ? (
+                  <span>
+                    <span style={{ display:'block' }}>{new Date(customer.next_visit_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span style={{ fontSize:11, color: (() => { const d = daysUntilVisit(customer.next_visit_date); return d?.includes('overdue') ? 'var(--red)' : d?.includes('today') ? '#16a34a' : 'var(--blue)' })(), fontWeight:700 }}>
+                      {daysUntilVisit(customer.next_visit_date)}
+                    </span>
+                  </span>
+                ) : '—'}
                 {isOverdue && ' ⚠️'}
               </p>
             </div>
