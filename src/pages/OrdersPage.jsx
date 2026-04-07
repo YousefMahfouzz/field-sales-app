@@ -46,7 +46,8 @@ export default function OrdersPage() {
 
   const deleteOrder = async (id) => {
     if (!window.confirm('Delete this order? This cannot be undone.')) return
-    await supabase.from('orders').delete().eq('id', id)
+    const { error } = await supabase.from('orders').delete().eq('id', id)
+    if (error) { alert('Delete failed: ' + error.message); return }
     setOrders(p => p.filter(o => o.id !== id))
   }
 
