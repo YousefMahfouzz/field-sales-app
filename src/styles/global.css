@@ -359,3 +359,137 @@ p { line-height: 1.5; }
   color: var(--text-muted);
 }
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* ── DARK MODE ────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --blue: #3b82f6;
+  --blue-light: #1e3a5f;
+  --blue-dark: #60a5fa;
+  --green: #22c55e;
+  --green-light: #14532d;
+  --red: #f87171;
+  --red-light: #450a0a;
+  --amber: #fbbf24;
+  --amber-light: #451a03;
+  --gray: #9ca3af;
+  --gray-light: #1f2937;
+  --gray-200: #374151;
+  --text: #f9fafb;
+  --text-muted: #9ca3af;
+  --border: #374151;
+  --white: #111827;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+  background: #111827;
+  color: #f9fafb;
+}
+
+[data-theme="dark"] #root {
+  background: #111827;
+}
+
+[data-theme="dark"] .card {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] .card-tap:active {
+  background: #2d3748 !important;
+}
+
+[data-theme="dark"] .page-header {
+  background: #111827 !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] .bottom-nav {
+  background: #111827 !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .form-input::placeholder,
+[data-theme="dark"] .form-textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+[data-theme="dark"] .modal-sheet {
+  background: #1f2937 !important;
+}
+
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0,0,0,0.75) !important;
+}
+
+[data-theme="dark"] .btn-ghost {
+  background: transparent !important;
+  color: var(--text) !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] .section-header {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] option {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+/* ── RTL / ARABIC ─────────────────────────────────────────────── */
+[dir="rtl"] {
+  text-align: right;
+  font-family: 'Segoe UI', 'Tahoma', -apple-system, sans-serif;
+}
+
+[dir="rtl"] .page-header {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .bottom-nav {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .flex {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .card {
+  text-align: right;
+}
+
+/* Flip margins/paddings for RTL */
+[dir="rtl"] .ml-auto { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .mr-auto { margin-right: 0; margin-left: auto; }
+
+/* Arabic font */
+[dir="rtl"] {
+  font-family: 'Noto Sans Arabic', 'Segoe UI', -apple-system, sans-serif;
+  letter-spacing: 0;
+}
+
+[dir="rtl"] .nav-label {
+  font-family: 'Noto Sans Arabic', sans-serif;
+}

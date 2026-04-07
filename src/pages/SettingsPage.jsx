@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useSettings } from '../hooks/useSettings'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { user, profile, signOut, updateProfile } = useAuth()
+  const { darkMode, toggleDark, lang, toggleLang, isArabic } = useSettings()
   const [form, setForm] = useState({
     display_name: profile?.display_name || '',
     username: profile?.username || '',
@@ -148,13 +150,32 @@ export default function SettingsPage() {
         </form>
 
         {/* Display */}
-        <p className="section-header" style={{ marginTop:24 }}>Display</p>
+        <p className="section-header" style={{ marginTop:24 }}>{isArabic ? 'العرض' : 'Display'}</p>
+        <Toggle
+          value={darkMode}
+          onChange={toggleDark}
+          label={isArabic ? '🌙 الوضع الداكن' : '🌙 Dark Mode'}
+          sub={isArabic ? 'تبديل بين الوضع الفاتح والداكن' : 'Switch between light and dark theme'}
+        />
         <Toggle
           value={wideMode}
           onChange={setWideMode}
-          label="iPad / Wide Screen Mode"
-          sub="Expands app to full width — great for tablets"
+          label={isArabic ? 'وضع الشاشة العريضة (iPad)' : 'iPad / Wide Screen Mode'}
+          sub={isArabic ? 'توسيع التطبيق لملء العرض الكامل' : 'Expands app to full width — great for tablets'}
         />
+
+        {/* Language */}
+        <p className="section-header" style={{ marginTop:16 }}>{isArabic ? 'اللغة' : 'Language'}</p>
+        <div style={{ display:'flex', gap:8, marginBottom:16 }}>
+          {[['en','🇺🇸 English'],['ar','🇸🇦 العربية']].map(([code, label]) => (
+            <button key={code} onClick={() => code !== lang && toggleLang()} style={{
+              flex:1, padding:'12px', borderRadius:12, cursor:'pointer', fontWeight:700, fontSize:14,
+              border: lang===code ? '2px solid var(--blue)' : '2px solid var(--border)',
+              background: lang===code ? 'var(--blue-light)' : 'white',
+              color: lang===code ? 'var(--blue)' : 'var(--text)',
+            }}>{label}</button>
+          ))}
+        </div>
 
         {/* Account */}
         <div style={{ marginTop:24, paddingTop:8 }}>
