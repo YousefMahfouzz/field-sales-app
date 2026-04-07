@@ -4,13 +4,7 @@ import App from './App'
 import './styles/global.css'
 
 // Apply saved preferences before render
-try {
-  const dark = localStorage.getItem('darkMode') === 'true'
-  const lang = localStorage.getItem('lang') || 'en'
-  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
-  document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr')
-  document.documentElement.setAttribute('lang', lang)
-} catch {}
+
 
 // Apply wide mode on startup
 try {

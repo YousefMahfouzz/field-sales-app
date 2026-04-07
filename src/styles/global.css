@@ -59,10 +59,7 @@ html, body {
     background: var(--gray-light);
   }
 
-  [data-theme="dark"] body {
-    background: #0d1117 !important;
-  }
-
+  
   #root {
     max-width: 600px;
     width: 100%;
@@ -415,193 +412,28 @@ p { line-height: 1.5; }
 }
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
 
-/* ── DARK MODE ────────────────────────────────────────────────── */
-[data-theme="dark"] {
-  --blue: #3b82f6;
-  --blue-light: #1e3a5f;
-  --blue-dark: #60a5fa;
-  --green: #22c55e;
-  --green-light: #14532d;
-  --red: #f87171;
-  --red-light: #450a0a;
-  --amber: #fbbf24;
-  --amber-light: #451a03;
-  --gray: #9ca3af;
-  --gray-light: #1f2937;
-  --gray-200: #374151;
-  --text: #f9fafb;
-  --text-muted: #9ca3af;
-  --border: #374151;
-  --white: #111827;
-  color-scheme: dark;
-}
-
-[data-theme="dark"] body {
-  background: #111827;
-  color: #f9fafb;
-}
-
-[data-theme="dark"] #root {
-  background: #111827;
-}
-
-[data-theme="dark"] .card {
-  background: #1f2937 !important;
-  border-color: #374151 !important;
-}
-
-[data-theme="dark"] .card-tap:active {
-  background: #2d3748 !important;
-}
-
-[data-theme="dark"] .page-header {
-  background: #111827 !important;
-  border-color: #374151 !important;
-}
-
-[data-theme="dark"] .bottom-nav {
-  background: #111827 !important;
-  border-color: #374151 !important;
-}
-
-[data-theme="dark"] .form-input,
-[data-theme="dark"] .form-select,
-[data-theme="dark"] .form-textarea {
-  background: #1f2937 !important;
-  border-color: #374151 !important;
-  color: #f9fafb !important;
-}
-
-[data-theme="dark"] .form-input::placeholder,
-[data-theme="dark"] .form-textarea::placeholder {
-  color: #6b7280 !important;
-}
-
-[data-theme="dark"] .modal-sheet {
-  background: #1f2937 !important;
-}
-
-[data-theme="dark"] .modal-overlay {
-  background: rgba(0,0,0,0.75) !important;
-}
-
-[data-theme="dark"] .btn-ghost {
-  background: transparent !important;
-  color: var(--text) !important;
-  border-color: #374151 !important;
-}
-
-[data-theme="dark"] .section-header {
-  color: #9ca3af !important;
-}
-
-[data-theme="dark"] input[type="date"],
-[data-theme="dark"] input[type="number"],
-[data-theme="dark"] input[type="search"],
-[data-theme="dark"] input[type="text"],
-[data-theme="dark"] input[type="tel"],
-[data-theme="dark"] input[type="email"],
-[data-theme="dark"] select,
-[data-theme="dark"] textarea {
-  background: #1f2937 !important;
-  color: #f9fafb !important;
-  border-color: #374151 !important;
-}
-
-[data-theme="dark"] option {
-  background: #1f2937;
-  color: #f9fafb;
-}
-
 
 /* ── MAP PAGE DARK MODE ───────────────────────────────────────── */
-[data-theme="dark"] #map-header {
-  background: #111827 !important;
-  border-color: #374151 !important;
-  color: #f9fafb !important;
-}
 
-[data-theme="dark"] #map-header h1,
-[data-theme="dark"] #map-header span,
-[data-theme="dark"] #map-header p {
-  color: #f9fafb !important;
-}
 
-[data-theme="dark"] #map-header select {
-  background: #1f2937 !important;
-  color: #f9fafb !important;
-  border-color: #374151 !important;
-}
 
-[data-theme="dark"] #map-header button {
-  color: #f9fafb !important;
-  border-color: #374151 !important;
-  background: #1f2937 !important;
-}
 
-[data-theme="dark"] #map-header button[style*="background: var(--blue)"],
-[data-theme="dark"] #map-header button[style*="background:var(--blue)"] {
-  background: #2563eb !important;
-  color: white !important;
-}
 
 /* ── CUSTOMER STATUS BADGES — DARK MODE ──────────────────────── */
-[data-theme="dark"] .badge-active     { background: #14532d !important; color: #4ade80 !important; border: 1px solid #16a34a; }
-[data-theme="dark"] .badge-priority   { background: #451a03 !important; color: #fbbf24 !important; border: 1px solid #d97706; }
-[data-theme="dark"] .badge-follow_up  { background: #0c4a6e !important; color: #38bdf8 !important; border: 1px solid #0891b2; }
-[data-theme="dark"] .badge-avoid      { background: #450a0a !important; color: #f87171 !important; border: 1px solid #dc2626; }
-[data-theme="dark"] .badge-do_not_visit { background: #1f2937 !important; color: #9ca3af !important; border: 1px solid #4b5563; }
 
 /* Status filter pills in dark mode */
-[data-theme="dark"] .pl-pill,
-[data-theme="dark"] button[style*="border-color: var(--border)"] {
-  background: #1f2937 !important;
-  color: #e5e7eb !important;
-  border-color: #374151 !important;
-}
 
 /* Customer card overdue/due indicators */
-[data-theme="dark"] .card .text-muted {
-  color: #9ca3af !important;
-}
 
 /* Filter pills on customers page */
-[data-theme="dark"] .status-pill-active {
-  background: #14532d !important;
-  color: #4ade80 !important;
-  border-color: #16a34a !important;
-}
 
 /* Log Visit button contrast in dark */
-[data-theme="dark"] .btn-primary {
-  background: #2563eb !important;
-  color: white !important;
-}
 
 /* Follow Up badge specifically — make more visible */
-[data-theme="dark"] [class*="badge-follow"] {
-  background: #0c4a6e !important;
-  color: #7dd3fc !important;
-}
 
 /* Overdue warning text */
-[data-theme="dark"] [style*="color: var(--red)"],
-[data-theme="dark"] [style*="color:var(--red)"] {
-  color: #f87171 !important;
-}
 
-[data-theme="dark"] [style*="color: var(--amber)"],
-[data-theme="dark"] [style*="color:var(--amber)"] {
-  color: #fbbf24 !important;
-}
 
 /* ── CUSTOMER CARDS IN DARK MODE — stronger contrast ─────────── */
-[data-theme="dark"] .card-tap:hover {
-  background: #2d3748 !important;
-}
 
-[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3,
-[data-theme="dark"] p, [data-theme="dark"] span, [data-theme="dark"] label {
-  color: inherit;
-}
 
