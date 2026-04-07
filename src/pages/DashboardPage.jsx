@@ -188,8 +188,41 @@ export default function DashboardPage() {
   const [tab, setTab] = useState('overview')
   const [showReschedule, setShowReschedule] = useState(false)
 
-  // Central Time dates — new day starts at midnight CT, not device local time
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  // CT day boundaries — compute fresh each render so day change auto-updates
+  const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  const today = todayCT()
+  // CT midnight → UTC: CT is UTC-6 (CST) or UTC-5 (CDT)
+  const ctMidnightUTC = (dateStr) => {
+    // dateStr is YYYY-MM-DD in CT; convert CT midnight to UTC ISO string
+    const offset = (() => {
+      // Check if CDT (second Sun March–first Sun Nov) or CST
+      const d = new Date(dateStr + 'T00:00:00-06:00')
+      const utcStr = d.toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: false })
+      // Use Intl to get actual offset
+      const fmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', timeZoneName: 'shortOffset' })
+      const parts = fmt.formatToParts(new Date(dateStr + 'T06:00:00Z'))
+      const tz = parts.find(p => p.type === 'timeZoneName')?.value || 'GMT-5'
+      const h = parseInt(tz.replace('GMT', '')) || -5
+      return -h
+    })()
+    return new Date(dateStr + 'T00:00:00Z').toISOString().replace('00:00:00', `${String(offset).padStart(2,'0')}:00:00`).slice(0, 19) + 'Z'
+  }
+  // Simpler approach: use fixed UTC offsets — CDT = UTC-5, CST = UTC-6
+  const ctDayStart = (dateStr) => {
+    // CT midnight in UTC — try both offsets and pick the right one based on current CT offset
+    const now = new Date()
+    const ctHour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', hour12: false }))
+    const utcHour = now.getUTCHours()
+    const offset = utcHour - ctHour // will be 5 (CDT) or 6 (CST)
+    return dateStr + 'T' + String(offset).padStart(2,'0') + ':00:00Z'
+  }
+  const ctDayEnd = (dateStr) => {
+    const now = new Date()
+    const ctHour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', hour12: false }))
+    const utcHour = now.getUTCHours()
+    const offset = utcHour - ctHour
+    return dateStr + 'T' + String(23 + offset).padStart(2,'0') + ':59:59Z'
+  }
   const weekAgo = (() => { const d = new Date(Date.now() - 7*24*60*60*1000); return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })()
 
   const dueToday = customers.filter(c => c.next_visit_date?.startsWith(today) && c.status !== 'avoid')
@@ -197,22 +230,25 @@ export default function DashboardPage() {
   const active   = customers.filter(c => c.status === 'active' || c.status === 'priority')
   const addedToday = customers.filter(c => {
     if (!c.created_at) return false
-    return new Date(c.created_at).toLocaleDateString('en-CA') === today
+    return new Date(c.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) === today
   })
 
   const loadStats = useCallback(async () => {
     if (!user) return
     setLoadingStats(true)
     try {
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const { data: visits } = await supabase
         .from('visits').select('id,had_sale,sale_amount,cost,outcome,created_at')
         .eq('user_id', user.id)
-        .gte('created_at', weekAgo + 'T00:00:00')
+        .gte('created_at', ctDayStart(weekAgo))
         .lte('created_at', new Date().toISOString())
         .is('deleted_at', null)
         .order('created_at', { ascending: false }).limit(50)
       const v = visits || []
-      const todayV = v.filter(x => x.created_at && new Date(x.created_at).toLocaleDateString('en-CA') === today)
+      // Filter today using CT timezone comparison
+      const todayV = v.filter(x => x.created_at &&
+        new Date(x.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) === todayStr)
       const sales  = v.filter(x => x.had_sale)
       const rev    = sales.reduce((s, x) => s + (x.sale_amount || 0), 0)
       const cst    = sales.reduce((s, x) => s + (x.cost || 0), 0)
@@ -220,8 +256,8 @@ export default function DashboardPage() {
       const { data: todaySales } = await supabase
         .from('sale_items').select('total_price,total_profit')
         .eq('user_id', user.id)
-        .gte('created_at', today + 'T00:00:00')
-        .lte('created_at', today + 'T23:59:59')
+        .gte('created_at', ctDayStart(todayStr))
+        .lte('created_at', new Date().toISOString())
       const todayRev  = (todaySales||[]).reduce((s,i) => s+(i.total_price||0), 0)
       const todayProf = (todaySales||[]).reduce((s,i) => s+(i.total_profit||0), 0)
       setStats({

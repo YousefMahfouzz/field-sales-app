@@ -52,6 +52,14 @@ const startOf = (unit) => {
   if (unit === 'year') { ct.setMonth(0); ct.setDate(1) }
   return ct.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 }
+// Convert a CT date string (YYYY-MM-DD) to UTC start/end for Supabase queries
+const ctOffset = () => {
+  const now = new Date()
+  const ct = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', hour12: false }))
+  return now.getUTCHours() - ct  // 5=CDT, 6=CST
+}
+const ctStart = (d) => { const h = ctOffset(); return `${d}T${String(h).padStart(2,'0')}:00:00Z` }
+const ctEnd   = (d) => { const h = ctOffset(); return `${d}T${String(h+23).padStart(2,'0')}:59:59Z` }
 
 function StatCard({ icon, label, value, sub, color = '#2563eb', onClick }) {
   return (
@@ -98,8 +106,8 @@ export default function AnalyticsPage() {
     if (!user || !date) return
     setLoadingDay(true)
     try {
-      const from = date + 'T00:00:00'
-      const to   = date + 'T23:59:59'
+      const from = ctStart(date)
+      const to   = ctEnd(date)
       const { data: items } = await supabase
         .from('sale_items').select('qty,unit_price,unit_cost,total_price,total_cost,total_profit,product_name')
         .eq('user_id', user.id)
@@ -154,21 +162,21 @@ export default function AnalyticsPage() {
       const ws = startOf('week')
       const ys = startOf('year')
 
-      // Sales revenue + profit for different periods
+      // Sales revenue + profit for different periods — all use CT-aware UTC timestamps
       const [todayItems, monthItems, weekItems, yearItems] = await Promise.all([
         supabase.from('sale_items').select('total_price,total_cost,total_profit,qty')
-          .eq('user_id', user.id).gte('created_at', t+'T00:00:00').lte('created_at', t+'T23:59:59'),
+          .eq('user_id', user.id).gte('created_at', ctStart(t)).lte('created_at', new Date().toISOString()),
         supabase.from('sale_items').select('total_price,total_cost,total_profit,qty')
-          .eq('user_id', user.id).gte('created_at', ms+'T00:00:00'),
+          .eq('user_id', user.id).gte('created_at', ctStart(ms)),
         supabase.from('sale_items').select('total_price,total_cost,total_profit,qty')
-          .eq('user_id', user.id).gte('created_at', ws+'T00:00:00'),
+          .eq('user_id', user.id).gte('created_at', ctStart(ws)),
         supabase.from('sale_items').select('total_price,total_cost,total_profit,qty')
-          .eq('user_id', user.id).gte('created_at', ys+'T00:00:00'),
+          .eq('user_id', user.id).gte('created_at', ctStart(ys)),
       ])
 
       // Stock purchased this month
       const [monthStock, allStock] = await Promise.all([
-        supabase.from('stock_movements').select('total_cost').eq('user_id', user.id).eq('type','in').gte('created_at', ms+'T00:00:00'),
+        supabase.from('stock_movements').select('total_cost').eq('user_id', user.id).eq('type','in').gte('created_at', ctStart(ms)),
         supabase.from('stock_movements').select('total_cost').eq('user_id', user.id).eq('type','in'),
       ])
 
