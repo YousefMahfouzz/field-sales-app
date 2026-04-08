@@ -4,6 +4,7 @@ import { useCustomers } from '../hooks/useCustomers'
 import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 import { loadGoogleMaps } from '../lib/mapsLoader'
+import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/customerAvailability'
 
 const EXCLUDED_NEARBY = ['circle k', 'circlek']
 function isExcluded(name) {
@@ -33,6 +34,7 @@ export default function MapPage() {
   const markersRef = useRef([])
   const { customers } = useCustomers()
   const navigate = useNavigate()
+  const [smartFilter, setSmartFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [gpsLoading, setGpsLoading] = useState(false)
@@ -95,11 +97,12 @@ export default function MapPage() {
     markersRef.current.forEach((m) => m.setMap(null))
     markersRef.current = []
 
-    const visible = statusFilter === 'all' ? customers : customers.filter((c) => c.status === statusFilter)
+    let visible = applySmartFilter(customers, smartFilter)
+    if (statusFilter !== 'all') visible = visible.filter(c => c.status === statusFilter)
 
     visible.forEach((customer) => {
       if (!customer.lat || !customer.lng) return
-      const color = STATUS_COLORS[customer.status] || '#6b7280'
+      const { color } = getCustomerColor(customer)
       const marker = new window.google.maps.Marker({
         position: { lat: customer.lat, lng: customer.lng },
         map: mapInstance.current,

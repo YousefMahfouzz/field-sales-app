@@ -4,6 +4,7 @@ import { useCustomers } from '../hooks/useCustomers'
 import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import CustomerCard from '../components/CustomerCard'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
+import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/customerAvailability'
 
 const STATUSES = ['all', 'active', 'priority', 'follow_up', 'do_not_visit', 'avoid']
 // STATUS_LABELS defined inside component for Arabic support
@@ -20,6 +21,7 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortBy, setSortBy] = useState('next_visit')
   const [groupByArea, setGroupByArea] = useState(true)
+  const [smartFilter, setSmartFilter] = useState('all')
   const [gpsLoading, setGpsLoading] = useState(false)
   const [nearbyCustomers, setNearbyCustomers] = useState([])
   const [capturedLocation, setCapturedLocation] = useState(null)
@@ -42,6 +44,7 @@ export default function CustomersPage() {
   if (statusFilter === 'all') list = list.filter(c => c.status !== 'avoid')
   else list = list.filter(c => c.status === statusFilter)
     if (filterOverdue) list = list.filter(c => c.next_visit_date && c.next_visit_date < today && c.status !== 'avoid')
+    if (smartFilter !== 'all') list = applySmartFilter(list, smartFilter)
     if (sortBy === 'next_visit') list.sort((a, b) => (a.next_visit_date || '9999') < (b.next_visit_date || '9999') ? -1 : 1)
     else if (sortBy === 'name') list.sort((a, b) => (a.business_name || a.full_name).localeCompare(b.business_name || b.full_name))
     else if (sortBy === 'last_visit') list.sort((a, b) => (b.last_visit_date || '') < (a.last_visit_date || '') ? -1 : 1)

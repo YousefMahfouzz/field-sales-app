@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useProducts } from '../hooks/useProducts'
 import { compressImage } from '../lib/imageUtils'
+import ImageEditor from '../components/ImageEditor'
 
 export const CATEGORIES = [
   'Wigs','Hair Extensions & Weaves','Braiding Hair','Hair Care & Treatments',
@@ -47,14 +48,12 @@ export default function AddEditProductPage() {
   const isEdit = Boolean(id)
   const [form, setForm] = useState({ ...EMPTY })
   const [loading, setLoading] = useState(false)
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [extraImageFiles, setExtraImageFiles] = useState([])
-  const [existingImages, setExistingImages] = useState([])
+  const [imageData, setImageData] = useState({
+    primaryFile: null, primaryPreview: null,
+    extraFiles: [], existingImages: []
+  })
   const [error, setError] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
-  const fileRef = useRef()
-  const extraFileRef = useRef()
 
   useEffect(() => {
     if (isEdit) {
@@ -67,8 +66,10 @@ export default function AddEditProductPage() {
           sell_range: p.sell_range ?? '', source: p.source ?? '', brand: p.brand ?? '',
           category: p.category || ''
         })
-        setImagePreview(p.image_url)
-        setExistingImages(p.images || [])
+        setImageData({
+          primaryFile: null, primaryPreview: p.image_url || null,
+          extraFiles: [], existingImages: p.images || []
+        })
       }
     }
   }, [id, products, isEdit])
@@ -83,19 +84,6 @@ export default function AddEditProductPage() {
 
   const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
 
-  const handleImageChange = async e => {
-    const file = e.target.files[0]; if (!file) return
-    const c = await compressImage(file)
-    setImageFile(c); setImagePreview(URL.createObjectURL(c))
-  }
-  const handleExtraAdd = async e => {
-    const files = Array.from(e.target.files)
-    const compressed = await Promise.all(files.map(f => compressImage(f)))
-    setExtraImageFiles(prev => [...prev, ...compressed.map(file => ({ file, preview: URL.createObjectURL(file) }))])
-    e.target.value = ''
-  }
-  const removeExtraNew = i => setExtraImageFiles(p => p.filter((_, j) => j !== i))
-  const removeExisting = i => setExistingImages(p => p.filter((_, j) => j !== i))
 
   const generateAI = async () => {
     if (!form.name) { setError('Enter product name first'); return }
@@ -156,12 +144,22 @@ export default function AddEditProductPage() {
           await supabase.from('products').update({ avg_cost: unitCost }).eq('id', saved.id)
         }
       }
-      if (imageFile && saved?.id) await uploadProductImage(saved.id, imageFile)
-      if (extraImageFiles.length > 0 && saved?.id) {
-        const urls = await Promise.all(extraImageFiles.map((item, i) => uploadAdditionalImage(saved.id, item.file, i)))
-        await updateProduct(saved.id, { images: [...existingImages, ...urls] })
-      } else if (existingImages.length > 0 && saved?.id) {
-        await updateProduct(saved.id, { images: existingImages })
+      if (saved?.id) {
+        const { primaryFile, extraFiles, existingImages: keepImages } = imageData
+        // Upload new primary image if changed
+        if (primaryFile) await uploadProductImage(saved.id, primaryFile)
+        else if (!imageData.primaryPreview && isEdit) {
+          // Primary image was removed
+          await updateProduct(saved.id, { image_url: null })
+        }
+        // Upload new extra images
+        let allExtraUrls = [...keepImages]
+        if (extraFiles.length > 0) {
+          const newUrls = await Promise.all(extraFiles.map((file, i) => uploadAdditionalImage(saved.id, file, Date.now() + i)))
+          allExtraUrls = [...allExtraUrls, ...newUrls]
+        }
+        // Always save the final images array
+        await updateProduct(saved.id, { images: allExtraUrls })
       }
       navigate('/products')
     } catch (err) { setError(err.message) }
@@ -185,34 +183,13 @@ export default function AddEditProductPage() {
         {error && <div style={{ background:'var(--red-light)',color:'var(--red)',padding:'12px 16px',borderRadius:8,marginBottom:14,fontSize:14 }}>{error}</div>}
 
         {/* Images */}
-        <div style={{ display:'flex',gap:10,alignItems:'flex-start',marginBottom:18 }}>
-          {/* Primary */}
-          <div onClick={() => fileRef.current?.click()}
-            style={{ width:90,height:90,borderRadius:12,border:'2px dashed var(--border)',background:'var(--gray-light)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden',flexShrink:0 }}>
-            {imagePreview
-              ? <img src={imagePreview} alt="" style={{ width:'100%',height:'100%',objectFit:'cover' }} />
-              : <div style={{ textAlign:'center' }}><div style={{ fontSize:28 }}>📷</div><div className="text-xs text-muted" style={{ marginTop:2 }}>Main</div></div>}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display:'none' }} />
-
-          {/* Extra thumbnails */}
-          <div style={{ display:'flex',flexWrap:'wrap',gap:6,flex:1 }}>
-            {existingImages.map((url,i) => (
-              <div key={i} style={{ position:'relative',width:56,height:56 }}>
-                <img src={url} alt="" style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:8,border:'1px solid var(--border)' }} />
-                <button type="button" onClick={() => removeExisting(i)} style={{ position:'absolute',top:-5,right:-5,width:18,height:18,borderRadius:'50%',background:'var(--red)',color:'white',border:'none',cursor:'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center' }}>×</button>
-              </div>
-            ))}
-            {extraImageFiles.map((item,i) => (
-              <div key={i} style={{ position:'relative',width:56,height:56 }}>
-                <img src={item.preview} alt="" style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:8,border:'2px solid var(--blue)' }} />
-                <button type="button" onClick={() => removeExtraNew(i)} style={{ position:'absolute',top:-5,right:-5,width:18,height:18,borderRadius:'50%',background:'var(--red)',color:'white',border:'none',cursor:'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center' }}>×</button>
-              </div>
-            ))}
-            <div onClick={() => extraFileRef.current?.click()}
-              style={{ width:56,height:56,borderRadius:8,border:'1.5px dashed var(--border)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',fontSize:22 }}>+</div>
-            <input ref={extraFileRef} type="file" accept="image/*" multiple onChange={handleExtraAdd} style={{ display:'none' }} />
-          </div>
+        <div style={{ marginBottom:18 }}>
+          <p className="section-header" style={{ marginBottom:10 }}>📸 Photos</p>
+          <ImageEditor
+            primaryPreview={imageData.primaryPreview}
+            existingExtras={imageData.existingImages}
+            onChange={data => setImageData(prev => ({ ...prev, ...data }))}
+          />
         </div>
 
         <p className="section-header">Product Info</p>

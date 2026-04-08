@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { getCustomerColor } from '../lib/customerAvailability'
 
 const STATUS_LABELS = {
   active: 'Active',
@@ -38,10 +39,12 @@ export default function CustomerCard({ customer, onQuickAction }) {
   const isDueToday = customer.next_visit_date &&
     new Date(customer.next_visit_date).toDateString() === new Date().toDateString()
 
+  const { color: smartColor, label: availLabel } = getCustomerColor(customer)
   return (
     <div
       className="card card-tap"
       onClick={() => navigate(`/customers/${customer.id}`)}
+      style={{ borderLeft: `4px solid ${smartColor}` }}
     >
       <div className="flex justify-between items-center" style={{ marginBottom: 6 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -50,7 +53,10 @@ export default function CustomerCard({ customer, onQuickAction }) {
             <p className="text-muted" style={{ fontSize: 13 }}>{customer.business_name}</p>
           )}
         </div>
-        <StatusBadge status={customer.status} />
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:3 }}>
+          <StatusBadge status={customer.status} />
+          {customer.best_time && <span style={{ fontSize:10, color:'var(--text-muted)' }}>⏰ {customer.best_time}</span>}
+        </div>
       </div>
 
       {customer.area && (
