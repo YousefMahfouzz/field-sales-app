@@ -5,6 +5,7 @@ import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 import { loadGoogleMaps } from '../lib/mapsLoader'
 import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/customerAvailability'
+import Icon from '../components/Icon'
 
 const EXCLUDED_NEARBY = ['circle k', 'circlek']
 function isExcluded(name) {
@@ -347,41 +348,71 @@ export default function MapPage() {
 
 
       {/* Customer popup */}
-      {selectedCustomer && (
-        <div style={{
-          position: 'absolute', bottom: 'calc(var(--nav-height) + 90px)',
-          left: 16, right: 16, zIndex: 50,
-          background: 'var(--white)', borderRadius: 16, padding: 16,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
-        }}>
-          <div className="flex justify-between items-center" style={{ marginBottom: 8 }}>
-            <div>
-              <h3 style={{ fontSize: 16 }}>{selectedCustomer.full_name}</h3>
-              {selectedCustomer.business_name && <p className="text-sm text-muted">{selectedCustomer.business_name}</p>}
+      {selectedCustomer && (() => {
+        const { color, label } = getCustomerColor(selectedCustomer)
+        return (
+          <div style={{
+            position: 'absolute',
+            bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 12px)',
+            left: 12, right: 12, zIndex: 100,
+            background: '#ffffff',
+            borderRadius: 18,
+            padding: 16,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)',
+            borderTop: `4px solid ${color}`,
+          }}>
+            {/* Header */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 10 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color:'#14171e', lineHeight:1.2, marginBottom: 2 }}>
+                  {selectedCustomer.business_name || selectedCustomer.full_name}
+                </h3>
+                {selectedCustomer.business_name && (
+                  <p style={{ fontSize: 13, color:'#4a5260', fontWeight:500 }}>{selectedCustomer.full_name}</p>
+                )}
+              </div>
+              <button onClick={() => setSelectedCustomer(null)}
+                style={{ background:'#f4f6f9', border:'none', borderRadius:'50%', width:30, height:30, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginLeft:8, color:'#7a8394' }}>
+                <Icon name="close" size={14} />
+              </button>
             </div>
-            <button onClick={() => setSelectedCustomer(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: 4 }}>✕</button>
-          </div>
 
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <span className={`badge badge-${selectedCustomer.status}`} style={{ fontSize: 12 }}>
-              {selectedCustomer.status?.replace('_', ' ')}
-            </span>
-            {selectedCustomer.next_visit_date && (
-              <span className="text-xs text-muted" style={{ display: 'flex', alignItems: 'center' }}>
-                📅 {new Date(selectedCustomer.next_visit_date).toLocaleDateString()}
+            {/* Status + next visit */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+              <span style={{ fontSize:11, fontWeight:700, color, background: color + '18', padding:'3px 10px', borderRadius:20 }}>
+                {label}
               </span>
-            )}
-          </div>
+              {selectedCustomer.next_visit_date && (
+                <span style={{ fontSize:12, color:'#7a8394', fontWeight:500 }}>
+                  {new Date(selectedCustomer.next_visit_date + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' })}
+                </span>
+              )}
+              {selectedCustomer.area && (
+                <span style={{ fontSize:12, color:'#7a8394' }}>· {selectedCustomer.area}</span>
+              )}
+            </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            {selectedCustomer.phone && (
-              <a href={`tel:${selectedCustomer.phone}`} className="btn btn-ghost btn-sm" onClick={(e) => e.stopPropagation()}>📞 Call</a>
-            )}
-            <button className="btn btn-primary btn-sm" onClick={() => navigate(`/visit/${selectedCustomer.id}`)}>✅ Visit</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/customers/${selectedCustomer.id}`)}>👤 Profile</button>
+            {/* Action buttons */}
+            <div style={{ display:'flex', gap:8 }}>
+              {selectedCustomer.phone && (
+                <a href={`tel:${selectedCustomer.phone}`}
+                  onClick={e => e.stopPropagation()}
+                  style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'1.5px solid #d4d8e0', background:'white', textDecoration:'none', color:'#14171e', fontWeight:700, fontSize:13 }}>
+                  <Icon name="phone" size={15} color="#3563e9" /> Call
+                </a>
+              )}
+              <button onClick={() => navigate(`/visit/${selectedCustomer.id}`)}
+                style={{ flex:2, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'none', background:'#3563e9', color:'white', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+                <Icon name="check" size={15} color="white" /> Log Visit
+              </button>
+              <button onClick={() => navigate(`/customers/${selectedCustomer.id}`)}
+                style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'1.5px solid #d4d8e0', background:'white', color:'#14171e', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+                <Icon name="user" size={15} /> Info
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Nearby modal */}
       {nearbyCustomers.length > 0 && capturedLocation && (

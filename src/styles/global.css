@@ -32,6 +32,8 @@
   /* Neutrals — darker warm slate, easier on eyes */
   --bg:         #e8ebf0;       /* page background — medium warm gray */
   --surface:    #f4f6f9;       /* cards, panels — off-white not bright white */
+  --white:      #ffffff;
+  --gray-light: #eceef2;       /* pure white — for popups, modals */
   --surface-2:  #eceef2;       /* secondary surface */
   --border:     #d4d8e0;       /* dividers */
   --border-strong: #b8bdc8;
