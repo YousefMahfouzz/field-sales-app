@@ -35,7 +35,6 @@ export default function MapPage() {
   const { customers } = useCustomers()
   const navigate = useNavigate()
   const [smartFilter, setSmartFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [gpsLoading, setGpsLoading] = useState(false)
   const [nearbyCustomers, setNearbyCustomers] = useState([])
@@ -99,7 +98,6 @@ export default function MapPage() {
 
     // applySmartFilter handles all logic; 'all' now includes avoid customers
     let visible = applySmartFilter(customers, smartFilter)
-    if (statusFilter !== 'all') visible = visible.filter(c => c.status === statusFilter)
 
     visible.forEach((customer) => {
       if (!customer.lat || !customer.lng) return
@@ -284,21 +282,26 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* Status filter */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {['all', 'active', 'priority', 'follow_up', 'avoid'].map((s) => (
-            <button key={s} onClick={() => setStatusFilter(s)} style={{
-              flexShrink: 0, padding: '5px 12px', borderRadius: 20,
-              border: '1.5px solid',
-              borderColor: statusFilter === s ? 'var(--blue)' : 'var(--border)',
-              background: statusFilter === s ? 'var(--blue)' : 'var(--white)',
-              color: statusFilter === s ? 'white' : 'var(--text)',
-              fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              {s !== 'all' && STATUS_ICONS[s]} {s === 'all' ? 'All' : s.replace('_', ' ')}
-            </button>
-          ))}
+        {/* Smart filter pills */}
+        <div style={{ display:'flex', gap:6, overflowX:'auto', scrollbarWidth:'none' }}>
+          {SMART_FILTERS.map(f => {
+            const isAvailNow = f.id === 'available_now'
+            const isActive = smartFilter === f.id
+            return (
+              <button key={f.id} onClick={() => setSmartFilter(f.id)} style={{
+                flexShrink:0, padding:'5px 12px', borderRadius:20, cursor:'pointer',
+                fontSize:12, fontWeight:700, whiteSpace:'nowrap', transition:'all 0.15s',
+                border: isAvailNow && !isActive ? '2px solid #f59e0b' : '1.5px solid transparent',
+                background: isActive
+                  ? (isAvailNow ? '#f59e0b' : 'var(--blue)')
+                  : 'var(--gray-light)',
+                color: isActive ? 'white' : (isAvailNow ? '#92400e' : 'var(--text)'),
+                fontWeight: isAvailNow ? 800 : 600,
+              }}>
+                {f.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Hint when POIs visible */}
