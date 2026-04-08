@@ -10,6 +10,15 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ── Prevent iOS double-tap zoom and layout shift ── */
+html {
+  /* Prevent iOS font size adjustment */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Lock height to prevent URL bar bounce */
+  height: -webkit-fill-available;
+}
+
 :root {
   /* Brand */
   --blue:       #3563e9;
@@ -61,15 +70,19 @@ html, body {
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
-  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
   overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
   -webkit-font-smoothing: antialiased;
 }
 
 #root {
   max-width: 430px;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
   background: var(--bg);
   position: relative;
 }
@@ -80,13 +93,15 @@ html, body {
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
     background: #d8dce4;
   }
   #root {
     max-width: 620px;
     width: 100%;
-    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.06), var(--shadow-lg);
     background: var(--bg);
   }
@@ -100,7 +115,7 @@ html, body {
   }
 }
 @media (min-width: 1100px) {
-  #root { max-width: 720px; }
+  #root { max-width: 720px; min-height: 100svh; min-height: 100dvh; }
   .bottom-nav { width: 720px; max-width: 720px; }
 }
 
@@ -132,6 +147,9 @@ h3 { font-size: 14px; font-weight: 600; }
 /* ── Page content ────────────────────────────────────────────────── */
 .page {
   padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  /* Smooth scroll, no double-bounce */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* ── Cards ──────────────────────────────────────────────────────── */
@@ -167,6 +185,11 @@ h3 { font-size: 14px; font-weight: 600; }
   border-top: 1px solid var(--border);
   padding: 8px 0 calc(10px + var(--safe-bottom));
   box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+  /* Prevent nav from receiving map swipe gestures */
+  touch-action: manipulation;
+  /* Crisp rendering — no subpixel jitter */
+  transform: translateZ(0);
+  will-change: auto;
 }
 
 .nav-item {
@@ -320,7 +343,8 @@ h3 { font-size: 14px; font-weight: 600; }
   border-radius: 20px 20px 0 0;
   width: 100%;
   padding: 20px 20px calc(20px + var(--safe-bottom));
-  max-height: 90vh;
+  max-height: 90svh;
+  max-height: 90dvh;
   overflow-y: auto;
   box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
 }

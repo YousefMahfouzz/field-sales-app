@@ -261,7 +261,7 @@ export default function MapPage() {
 
 
   return (
-    <div style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', height: '100dvh', overflow: 'hidden' }}>
       {/* Header */}
       <div ref={mapHeaderRef} style={{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
@@ -337,6 +337,7 @@ export default function MapPage() {
             position: 'absolute',
             top: mapTop,
             left: 0, right: 0, bottom: 0, width: '100%',
+            touchAction: 'none',
           }}
         />
       )}
