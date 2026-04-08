@@ -341,8 +341,8 @@ export default function MapPage() {
       )}
 
       {/* FAB: Add Customer */}
-      <button className="fab" onClick={handleCheckInHere} disabled={gpsLoading} style={{ bottom: 90 }}>
-        {gpsLoading ? '📡...' : '📍 Add Customer Here'}
+      <button className="fab" onClick={handleCheckInHere} disabled={gpsLoading}>
+        {gpsLoading ? 'Getting location...' : '+ Add Customer Here'}
       </button>
 
 

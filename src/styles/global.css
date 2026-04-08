@@ -365,3 +365,26 @@ h3 { font-size: 14px; font-weight: 600; }
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
 }
+
+/* ── FAB (Floating Action Button) ─────────────────────────────── */
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 28px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(53,99,233,0.4);
+  white-space: nowrap;
+  font-family: var(--font);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.fab:active { transform: translateX(-50%) scale(0.96); }
+.fab:disabled { opacity: 0.7; cursor: not-allowed; }
