@@ -20,13 +20,6 @@ const STATUS_COLORS = {
   do_not_visit: '#6b7280',
 }
 
-const STATUS_ICONS = {
-  active: '🟢',
-  priority: '🟡',
-  follow_up: '🔵',
-  avoid: '🔴',
-  do_not_visit: '⚫',
-}
 
 export default function MapPage() {
   const mapRef = useRef(null)
@@ -118,7 +111,7 @@ export default function MapPage() {
       marker.addListener('click', () => setSelectedCustomer(customer))
       markersRef.current.push(marker)
     })
-  }, [customers, statusFilter, mapReady])
+  }, [customers, smartFilter, mapReady])
 
   const handleCheckInHere = async () => {
     setGpsLoading(true)
