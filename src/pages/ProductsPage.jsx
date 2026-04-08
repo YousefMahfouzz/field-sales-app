@@ -69,33 +69,33 @@ export default function ProductsPage() {
 
   return (
     <div>
-      <div className="page-header" style={{ flexDirection:'column', alignItems:'stretch', gap:8, padding:'10px 16px' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <h1>{'Products'}</h1>
-          <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>
-        </div>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => {
-            const url = profile?.username
-              ? `${window.location.origin}/u/${profile.username}/pricelist`
-              : `${window.location.origin}/pricelist`
-            const a = document.createElement('a')
-            a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.click()
-          }} style={{ fontSize:11, padding:'5px 10px' }}>👁️ View</button>
-          <button className="btn btn-ghost btn-sm" onClick={shareList} style={{ fontSize:11, padding:'5px 10px' }}>🔗 Share</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/price-lists')} style={{ fontSize:11, padding:'5px 10px' }}>📋 Lists</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/shared-catalog')} style={{ fontSize:11, padding:'5px 10px' }}>
-            {isAdmin ? 'Shared' : 'Catalog'}
-          </button>
-          {isAdmin && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/homepage')} style={{ fontSize:11, padding:'5px 10px' }}>🏠 Featured</button>}
-          <button onClick={() => setShowArchived(v => !v)} style={{ fontSize:11, padding:'5px 10px', borderRadius:20, border:'1.5px solid', cursor:'pointer', fontWeight:600, borderColor: showArchived ? '#f59e0b' : 'var(--border)', background: showArchived ? '#fef3c7' : 'white', color: showArchived ? '#b45309' : 'var(--text-muted)' }}>
-            📦 {showArchived ? `Archived (${archivedProducts.length})` : `Archive`}
-          </button>
-        </div>
+      <div className="page-header">
+        <h1>Products</h1>
+        <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>
+      </div>
+
+      {/* ── ACTION PILLS ── */}
+      <div style={{ padding:'8px 16px 0', display:'flex', gap:6, flexWrap:'wrap', borderBottom:'1px solid var(--border)', paddingBottom:8, background:'var(--surface)', position:'sticky', top:56, zIndex:30 }}>
+        <button className="btn btn-ghost btn-sm" onClick={() => {
+          const url = profile?.username
+            ? `${window.location.origin}/u/${profile.username}/pricelist`
+            : `${window.location.origin}/pricelist`
+          const a = document.createElement('a')
+          a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.click()
+        }} style={{ fontSize:11, padding:'5px 10px' }}>View</button>
+        <button className="btn btn-ghost btn-sm" onClick={shareList} style={{ fontSize:11, padding:'5px 10px' }}>Share</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/price-lists')} style={{ fontSize:11, padding:'5px 10px' }}>Lists</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/shared-catalog')} style={{ fontSize:11, padding:'5px 10px' }}>
+          {isAdmin ? 'Shared' : 'Catalog'}
+        </button>
+        {isAdmin && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/homepage')} style={{ fontSize:11, padding:'5px 10px' }}>Featured</button>}
+        <button onClick={() => setShowArchived(v => !v)} style={{ fontSize:11, padding:'5px 10px', borderRadius:20, border:'1.5px solid', cursor:'pointer', fontWeight:600, borderColor: showArchived ? '#f59e0b' : 'var(--border)', background: showArchived ? '#fef3c7' : 'white', color: showArchived ? '#b45309' : 'var(--text-muted)' }}>
+          {showArchived ? `Archived (${archivedProducts.length})` : `Archive`}
+        </button>
       </div>
 
       {/* ── INVENTORY SUMMARY ── */}
-      <div style={{ padding:'0 16px 14px' }}>
+      <div style={{ padding:'0 16px 14px', paddingTop:14 }}>
 
         {/* Big 3 value cards */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:10 }}>

@@ -5,6 +5,7 @@ import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import CustomerCard from '../components/CustomerCard'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/customerAvailability'
+import Icon from '../components/Icon'
 
 const STATUSES = ['all', 'active', 'priority', 'follow_up', 'do_not_visit', 'avoid']
 // STATUS_LABELS defined inside component for Arabic support
@@ -134,15 +135,37 @@ export default function CustomersPage() {
         <button className="btn btn-primary btn-sm" onClick={() => navigate('/customers/new')}>+ Add</button>
       </div>
 
+      {/* Smart filters */}
+      <div style={{ display:'flex', gap:6, overflowX:'auto', scrollbarWidth:'none', padding:'10px 16px 6px', borderBottom:'1px solid var(--border)', background:'var(--surface)', position:'sticky', top:56, zIndex:30 }}>
+        {SMART_FILTERS.map(f => (
+          <button key={f.id} onClick={() => setSmartFilter(f.id)}
+            style={{
+              padding:'5px 14px', borderRadius:20, border:'1.5px solid', cursor:'pointer',
+              fontSize:12, fontWeight:700, whiteSpace:'nowrap', flexShrink:0,
+              borderColor: smartFilter === f.id ? 'var(--blue)' : 'var(--border)',
+              background: f.id === 'available_now'
+                ? (smartFilter === f.id ? '#f59e0b' : '#fffbeb')
+                : (smartFilter === f.id ? 'var(--blue)' : 'var(--surface)'),
+              color: f.id === 'available_now'
+                ? (smartFilter === f.id ? 'white' : '#92400e')
+                : (smartFilter === f.id ? 'white' : 'var(--text-muted)'),
+            }}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Search */}
-      <div className="search-bar" style={{ marginTop: 12 }}>
-        <span className="search-icon">🔍</span>
+      <div style={{ padding:'10px 16px 0', position:'relative' }}>
+        <span style={{ position:'absolute', left:28, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', display:'flex' }}>
+          <Icon name="search" size={16} />
+        </span>
         <input
           type="search"
-          placeholder={'Search name, phone, area...'}
+          placeholder="Search name, phone, area..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ background: 'var(--gray-light)', border: '1.5px solid var(--border)', borderRadius: 24, padding: '11px 14px 11px 40px', width: '100%', fontSize: 16 }}
+          style={{ background:'var(--surface-2)', border:'1.5px solid var(--border)', borderRadius:24, padding:'10px 14px 10px 40px', width:'100%', fontSize:15, outline:'none' }}
         />
       </div>
 

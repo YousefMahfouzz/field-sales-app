@@ -23,6 +23,8 @@ const STATUS_COLORS = {
 
 export default function MapPage() {
   const mapRef = useRef(null)
+  const mapHeaderRef = useRef(null)
+  const [mapTop, setMapTop] = useState(108)
   const mapInstance = useRef(null)
   const markersRef = useRef([])
   const { customers } = useCustomers()
@@ -33,6 +35,13 @@ export default function MapPage() {
   const [nearbyCustomers, setNearbyCustomers] = useState([])
   const [capturedLocation, setCapturedLocation] = useState(null)
   const [mapReady, setMapReady] = useState(false)
+
+  useEffect(() => {
+    if (mapHeaderRef.current) {
+      const h = mapHeaderRef.current.offsetHeight
+      setMapTop(h + 2)
+    }
+  }, [])
   const [poiLoading, setPoiLoading] = useState(false)
   const [poiMarkers, setPoiMarkers] = useState([])
   const [poiVisible, setPoiVisible] = useState(false)
@@ -253,7 +262,7 @@ export default function MapPage() {
   return (
     <div style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
       {/* Header */}
-      <div id="map-header" style={{
+      <div ref={mapHeaderRef} style={{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
         background: 'var(--white)', borderBottom: '1px solid var(--border)',
         padding: '10px 16px 8px',
@@ -325,7 +334,7 @@ export default function MapPage() {
           ref={mapRef}
           style={{
             position: 'absolute',
-            top: 120,
+            top: mapTop,
             left: 0, right: 0, bottom: 0, width: '100%',
           }}
         />
