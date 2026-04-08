@@ -41,7 +41,7 @@ export default function CustomersPage() {
     else if (sortBy === 'name') list.sort((a, b) => (a.business_name || a.full_name).localeCompare(b.business_name || b.full_name))
     else if (sortBy === 'last_visit') list.sort((a, b) => (b.last_visit_date || '') < (a.last_visit_date || '') ? -1 : 1)
     return list
-  }, [customers, search, sortBy, filterOverdue, today])
+  }, [customers, search, sortBy, filterOverdue, today, smartFilter])
 
   // {'Group by area'}
   const grouped = useMemo(() => {

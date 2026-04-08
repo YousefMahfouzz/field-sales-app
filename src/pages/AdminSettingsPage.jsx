@@ -76,9 +76,9 @@ export default function AdminSettingsPage() {
     try {
       // Compress then upload to Supabase storage
       const compressed = await compressImage(file, 800, 0.9)
-      const ext = file.name.split('.').pop()
-      const path = `logos/kanz-logo-${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('product-images').upload(path, compressed, { upsert: true })
+      const { data: { user } } = await supabase.auth.getUser()
+      const path = `${user.id}/logo-${Date.now()}.webp`
+      const { error: upErr } = await supabase.storage.from('product-images').upload(path, compressed, { upsert: false })
       if (upErr) throw upErr
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path)
       // Save to app_settings
