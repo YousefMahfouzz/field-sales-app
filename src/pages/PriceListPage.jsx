@@ -338,9 +338,7 @@ export default function PriceListPage() {
         if (p) {
           setProfile(p); userId = p.id
         } else {
-          // Profile blocked by RLS for public (anon) visitors
-          // This means the Supabase profile policy needs to allow anon reads
-          // For now, show not found - user needs to use /pl/:userId/:slug URLs
+          // Profile not found for this username
           setNotFound(true); setLoading(false); return
         }
       }
@@ -463,14 +461,7 @@ export default function PriceListPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: 32 }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>😕</div>
       <h2 style={{ color: '#0f172a', marginBottom: 8 }}>Page not found</h2>
-      <p style={{ color: '#64748b', marginBottom: 8 }}>
-          {username ? `Listing for @${username} requires login to view.` : 'No listing found.'}
-        </p>
-        {username && (
-          <p style={{ color: '#94a3b8', fontSize: 13 }}>
-            If you received a direct price list link, please use that URL instead.
-          </p>
-        )}
+      <p style={{ color: '#64748b' }}>No listing for <strong>@{username}</strong></p>
     </div>
   )
 
