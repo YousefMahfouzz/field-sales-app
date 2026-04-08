@@ -102,7 +102,7 @@ export function useProducts() {
   }
 
   const uploadProductImage = async (productId, file) => {
-    const ext = file.name.split('.').pop()
+    const ext = file.name ? file.name.split('.').pop() : 'webp'
     const path = `${user.id}/${productId}.${ext}`
     const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
     if (error) throw error
@@ -112,7 +112,7 @@ export function useProducts() {
   }
 
   const uploadAdditionalImage = async (productId, file, index) => {
-    const ext = file.name.split('.').pop()
+    const ext = file.name ? file.name.split('.').pop() : 'webp'
     const path = `${user.id}/${productId}_extra_${index}_${Date.now()}.${ext}`
     const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
     if (error) throw error
