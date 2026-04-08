@@ -335,12 +335,21 @@ export default function PriceListPage() {
       let userId = null
       if (username) {
         const { data: p } = await supabase.from('profiles').select('id,username,display_name').eq('username', username).single()
-        if (!p) { setNotFound(true); setLoading(false); return }
-        setProfile(p); userId = p.id
+        if (p) {
+          setProfile(p); userId = p.id
+        } else {
+          // Profile blocked by RLS for public (anon) visitors
+          // This means the Supabase profile policy needs to allow anon reads
+          // For now, show not found - user needs to use /pl/:userId/:slug URLs
+          setNotFound(true); setLoading(false); return
+        }
       }
       let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id').eq('is_active', true).order('category').order('name')
       if (userId) q = q.eq('user_id', userId)
       const { data } = await q
+      if (username && !userId && (!data || data.length === 0)) {
+        setNotFound(true); setLoading(false); return
+      }
       setProducts((data || []).map(p => ({ ...p, category: p.category || inferCategory(p.name) })))
       setLoading(false)
     }
@@ -454,7 +463,14 @@ export default function PriceListPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: 32 }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>😕</div>
       <h2 style={{ color: '#0f172a', marginBottom: 8 }}>Page not found</h2>
-      <p style={{ color: '#64748b' }}>No listing for <strong>@{username}</strong></p>
+      <p style={{ color: '#64748b', marginBottom: 8 }}>
+          {username ? `Listing for @${username} requires login to view.` : 'No listing found.'}
+        </p>
+        {username && (
+          <p style={{ color: '#94a3b8', fontSize: 13 }}>
+            If you received a direct price list link, please use that URL instead.
+          </p>
+        )}
     </div>
   )
 
