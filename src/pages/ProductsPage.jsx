@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import Icon from '../components/Icon'
 
 export default function ProductsPage() {
   const { profile } = useAuth()
@@ -26,7 +27,7 @@ export default function ProductsPage() {
     try {
       await supabase.from('products').update({ is_active: product.is_active === false }).eq('id', product.id)
       if (fetchProducts) await fetchProducts()
-      showToast(product.is_active === false ? '✅ Restored' : '📦 Archived')
+      showToast(product.is_active === false ? '✅ Restored' : 'Archived')
     } catch(e) { showToast('❌ ' + e.message) }
     finally { setArchiving(null) }
   }
@@ -84,7 +85,7 @@ export default function ProductsPage() {
           <button className="btn btn-ghost btn-sm" onClick={shareList} style={{ fontSize:11, padding:'5px 10px' }}>🔗 Share</button>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate('/price-lists')} style={{ fontSize:11, padding:'5px 10px' }}>📋 Lists</button>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate('/shared-catalog')} style={{ fontSize:11, padding:'5px 10px' }}>
-            {isAdmin ? '👑 Shared' : '📦 Catalog'}
+            {isAdmin ? 'Shared' : 'Catalog'}
           </button>
           {isAdmin && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/homepage')} style={{ fontSize:11, padding:'5px 10px' }}>🏠 Featured</button>}
           <button onClick={() => setShowArchived(v => !v)} style={{ fontSize:11, padding:'5px 10px', borderRadius:20, border:'1.5px solid', cursor:'pointer', fontWeight:600, borderColor: showArchived ? '#f59e0b' : 'var(--border)', background: showArchived ? '#fef3c7' : 'white', color: showArchived ? '#b45309' : 'var(--text-muted)' }}>
@@ -234,7 +235,7 @@ export default function ProductsPage() {
                             background: product.is_active === false ? '#f0fdf4' : '#fef2f2',
                             color: product.is_active === false ? '#16a34a' : '#dc2626'
                           }}>
-                          {archiving === product.id ? '...' : product.is_active === false ? '↩ Restore' : '📦 Archive'}
+                          {archiving === product.id ? '...' : product.is_active === false ? 'Restore' : 'Archive'}
                         </button>
                       </div>
                     </div>

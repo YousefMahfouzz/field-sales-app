@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import Icon from '../components/Icon'
 import { supabase } from '../lib/supabase'
 
 function Toggle({ label, sub, value, onChange }) {
@@ -131,21 +132,21 @@ export default function SettingsPage() {
           {profile?.is_admin && (<>
             <p style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Admin Tools</p>
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/settings')} style={{ marginBottom:8, color:'#7c3aed', borderColor:'#7c3aed' }}>
-              ⚙️ Invite Codes & Logo
+              Invite Codes & Logo
             </button>
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/homepage')} style={{ marginBottom:8, color:'#6366f1', borderColor:'#6366f1' }}>
-              🌐 Manage Homepage
+              Manage Homepage
             </button>
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/price-lists')} style={{ marginBottom:8, color:'#2563eb', borderColor:'#2563eb' }}>
-              🏷️ Manage Price Lists
+              Manage Price Lists
             </button>
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/inventory')} style={{ marginBottom:10, color:'#dc2626', borderColor:'#dc2626' }}>
-              👑 View User Inventories
+              View User Inventories
             </button>
           </>)}
 
           <button className="btn btn-ghost btn-full" onClick={() => navigate('/backup')} style={{ marginBottom:10 }}>
-            💾 Backup & Restore Data
+            Backup & Restore
           </button>
           <button className="btn btn-ghost btn-full" onClick={signOut} style={{ color:'var(--red)', borderColor:'var(--red)' }}>
             Sign Out

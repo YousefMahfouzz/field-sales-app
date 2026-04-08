@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import Icon from '../components/Icon'
 import { useProducts } from '../hooks/useProducts'
 import { supabase } from '../lib/supabase'
 
@@ -103,7 +104,7 @@ export default function PurchasesPage() {
     try {
       await supabase.from('stock_movements').delete().eq('id', mov.id)
       setMovements(p => p.filter(m => m.id !== mov.id))
-      showToast('🗑️ Purchase deleted')
+      showToast('Purchase deleted')
     } catch (e) { showToast('❌ ' + e.message) }
     finally { setDeleting(null) }
   }
@@ -169,7 +170,7 @@ export default function PurchasesPage() {
                   <p style={{ fontWeight:800, color:'#dc2626', fontSize:15 }}>-${total.toFixed(2)}</p>
                   <button onClick={() => handleDelete(m)} disabled={deleting === m.id}
                     style={{ padding:'3px 10px', borderRadius:8, border:'1px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                    {deleting === m.id ? '...' : '🗑️'}
+                    {deleting === m.id ? '...' : 'Del'}
                   </button>
                 </div>
               </div>

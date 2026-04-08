@@ -289,9 +289,9 @@ export default function DashboardPage() {
 
   const Metric = ({ icon, label, value, color, onClick }) => (
     <div className="card" onClick={onClick} style={{ textAlign: 'center', padding: '14px 8px', cursor: onClick ? 'pointer' : 'default' }}>
-      <div style={{ fontSize: 22, marginBottom: 4 }}>{icon}</div>
-      <p style={{ fontWeight: 900, fontSize: 20, color: color || 'var(--text)' }}>{value}</p>
-      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{label}</p>
+      <div style={{ display:'flex', justifyContent:'center', marginBottom: 6, color: color || 'var(--text-muted)' }}>{icon}</div>
+      <p style={{ fontWeight: 800, fontSize: 19, color: color || 'var(--text)', lineHeight:1 }}>{value}</p>
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight:500 }}>{label}</p>
     </div>
   )
 
@@ -299,7 +299,7 @@ export default function DashboardPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 18 }}>{name ? `${greeting}, ${name} 👋` : 'Dashboard'}</h1>
+          <h1 style={{ fontSize: 18 }}>{name ? `${greeting}, ${name}` : 'Dashboard'}</h1>
           <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
@@ -389,26 +389,26 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Metric icon="🚶" label={'Visits'} value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
-            <Metric icon="📍" label={'Added'} value={addedToday.length} color="#7c3aed" />
-            <Metric icon="📋" label={'Orders'} value={pendingOrders} color="#f59e0b" onClick={() => navigate('/orders')} />
+            <Metric icon={<Icon name="user" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
+            <Metric icon={<Icon name="map-pin" size={18} />} label={'Added'} value={addedToday.length} color="#7c3aed" />
+            <Metric icon={<Icon name="orders" size={18} />} label={'Orders'} value={pendingOrders} color="#f59e0b" onClick={() => navigate('/orders')} />
           </div>
 
           {/* This week */}
           <p className="section-header">{'This Week'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            <Metric icon="📍" label={'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
-            <Metric icon="💰" label={'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
-            <Metric icon="💵" label={'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
-            <Metric icon="📈" label={'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />
+            <Metric icon={<Icon name="map-pin" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
+            <Metric icon={<Icon name="dollar" size={18} />} label={'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
+            <Metric icon={<Icon name="trending-up" size={18} />} label={'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
+            <Metric icon={<Icon name="bar-chart" size={18} />} label={'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />
           </div>
 
           {/* Customers */}
           <p className="section-header">{'Customers'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Metric icon="👥" label={'Active'} value={active.length} />
-            <Metric icon="📅" label={'Due Today'} value={dueToday.length} color="var(--blue)" />
-            <Metric icon="⚠️" label={'Overdue'} value={overdue.length} color="#dc2626" onClick={() => overdue.length > 0 && setShowReschedule(true)} />
+            <Metric icon={<Icon name="users" size={18} />} label={'Active'} value={active.length} />
+            <Metric icon={<Icon name="calendar" size={18} />} label={'Due Today'} value={dueToday.length} color="var(--blue)" />
+            <Metric icon={<Icon name="alert" size={18} />} label={'Overdue'} value={overdue.length} color="#dc2626" onClick={() => overdue.length > 0 && setShowReschedule(true)} />
           </div>
 
           {/* Recent activity */}
@@ -435,15 +435,20 @@ export default function DashboardPage() {
           <p className="section-header">{'Quick Actions'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
-              { label: '📍 Add Customer', to: '/customers/new' },
-              { label: '📦 Record Purchase', to: '/purchases' },
-              { label: '📋 View Orders', to: '/orders' },
-              { label: '📊 Analytics', to: '/analytics' },
+              { label: 'Add Customer', to: '/customers/new', icon: 'map-pin' },
+              { label: 'Record Purchase', to: '/purchases', icon: 'truck' },
+              { label: 'View Orders', to: '/orders', icon: 'orders' },
+              { label: 'Analytics', to: '/analytics', icon: 'bar-chart' },
             ].map(a => (
               <button key={a.to} onClick={() => navigate(a.to)} style={{
-                padding: '13px', borderRadius: 12, border: '1.5px solid var(--border)',
-                background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: 14, textAlign: 'center',
-              }}>{a.label}</button>
+                padding: '12px 14px', borderRadius: 12, border: '1.5px solid var(--border)',
+                background: 'var(--surface)', cursor: 'pointer', fontWeight: 600, fontSize: 13,
+                textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
+                color: 'var(--text)',
+              }}>
+                <span style={{ color: 'var(--blue)', display:'flex' }}><Icon name={a.icon || 'zap'} size={18} /></span>
+                {a.label}
+              </button>
             ))}
           </div>
         </>}

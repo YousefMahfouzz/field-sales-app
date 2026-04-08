@@ -12,9 +12,9 @@
 
 :root {
   /* Brand */
-  --blue:       #3b6cf4;
+  --blue:       #3563e9;
   --blue-light: #eef2ff;
-  --blue-dark:  #2952d9;
+  --blue-dark:  #2347cc;
   --blue-muted: #6b8ef5;
 
   /* Semantic */
@@ -29,15 +29,15 @@
   --purple:     #8b5cf6;
   --purple-light:#ede9fe;
 
-  /* Neutrals — warm slate, easy on eyes */
-  --bg:         #f0f2f5;       /* page background — warm light gray */
-  --surface:    #ffffff;       /* cards, panels */
-  --surface-2:  #f7f8fa;       /* secondary surface */
-  --border:     #e2e5ea;       /* dividers */
-  --border-strong: #cdd1d8;
-  --text:       #1a1d23;       /* primary text */
-  --text-2:     #4a5260;       /* secondary text */
-  --text-muted: #8891a1;       /* hints, placeholders */
+  /* Neutrals — darker warm slate, easier on eyes */
+  --bg:         #e8ebf0;       /* page background — medium warm gray */
+  --surface:    #f4f6f9;       /* cards, panels — off-white not bright white */
+  --surface-2:  #eceef2;       /* secondary surface */
+  --border:     #d4d8e0;       /* dividers */
+  --border-strong: #b8bdc8;
+  --text:       #14171e;       /* primary text — near black */
+  --text-2:     #3d4454;       /* secondary text */
+  --text-muted: #7a8394;       /* hints, placeholders */
 
   /* Misc */
   --radius:     14px;
@@ -79,7 +79,7 @@ html, body {
     align-items: flex-start;
     justify-content: center;
     min-height: 100vh;
-    background: #e8eaf0;
+    background: #d8dce4;
   }
   #root {
     max-width: 620px;
@@ -138,8 +138,8 @@ h3 { font-size: 14px; font-weight: 600; }
   border-radius: var(--radius);
   border: 1px solid var(--border);
   padding: 14px 16px;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  transition: box-shadow 0.15s, transform 0.1s;
 }
 
 .card-tap {
