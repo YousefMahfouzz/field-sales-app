@@ -259,7 +259,13 @@ export default function MapPage() {
         padding: '10px 16px 8px',
       }}>
         <div className="flex justify-between items-center" style={{ marginBottom: 6 }}>
-          <h1 style={{ fontSize: 18 }}>Map</h1>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <h1 style={{ fontSize: 18 }}>Map</h1>
+            <button onClick={() => navigate('/route')}
+              style={{ padding:'5px 12px', borderRadius:20, border:'1.5px solid var(--blue)', background:'var(--blue-light)', color:'var(--blue)', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+              🗺️ Trip Planner
+            </button>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Radius selector */}
             <select value={searchRadius} onChange={e => { setSearchRadius(Number(e.target.value)); if(poiVisible) clearPoiMarkers() }}

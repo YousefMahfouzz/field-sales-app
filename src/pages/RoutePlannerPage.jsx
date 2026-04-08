@@ -1,329 +1,339 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCustomers } from '../hooks/useCustomers'
-import { useTerritorySchedule } from '../hooks/useTerritorySchedule'
-import { getCurrentPosition, optimizeRoute, routeTotalDistance } from '../lib/geo'
+import { getCurrentPosition } from '../lib/geo'
+import { applySmartFilter, getCustomerColor } from '../lib/customerAvailability'
 
-const REGION_COLORS = {
-  GNO: '#7c3aed', 'SE Louisiana': '#0891b2', 'Central LA': '#16a34a',
-  'N Louisiana': '#d97706', 'SW Louisiana': '#0369a1',
-  Mississippi: '#dc2626', Alabama: '#c2410c',
+// ── Nearest-neighbour route optimizer ──────────────────────────
+function optimizeStops(stops, startLat, startLng) {
+  if (!stops.length) return []
+  const rem = [...stops]
+  const ordered = []
+  let lat = startLat, lng = startLng
+  while (rem.length) {
+    let best = 0, bestD = Infinity
+    rem.forEach((s, i) => {
+      const d = Math.hypot(s.lat - lat, s.lng - lng)
+      if (d < bestD) { bestD = d; best = i }
+    })
+    ordered.push(rem.splice(best, 1)[0])
+    lat = ordered.at(-1).lat
+    lng = ordered.at(-1).lng
+  }
+  return ordered
 }
 
-function getAreaColor(area) {
-  if (!area) return '#6b7280'
-  if (area.includes(' MS')) return '#dc2626'
-  if (area.includes(' AL')) return '#c2410c'
-  if (area.includes('East') || area.includes('Kenner') || area.includes('Westbank') || area.includes('Chalmette') || area.includes('Northshore')) return '#7c3aed'
-  if (area.includes('Baton Rouge') || area.includes('Baker')) return '#16a34a'
-  if (area.includes('Shreveport') || area.includes('Monroe')) return '#d97706'
-  return '#2563eb'
+// Build a Google Maps URL with waypoints
+function buildGoogleMapsUrl(start, stops, end) {
+  const enc = (s) => encodeURIComponent(s)
+  const origin = enc(start)
+  const destination = end ? enc(end) : enc(`${stops.at(-1).lat},${stops.at(-1).lng}`)
+
+  const waypoints = (end ? stops : stops.slice(0, -1))
+    .map(s => enc(`${s.lat},${s.lng}`))
+    .join('|')
+
+  let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`
+  if (waypoints) url += `&waypoints=${waypoints}`
+  return url
 }
 
 export default function RoutePlannerPage() {
   const navigate = useNavigate()
   const { customers } = useCustomers()
-  const { schedule, DAYS } = useTerritorySchedule()
-  const [selected, setSelected] = useState(new Set())
-  const [route, setRoute] = useState([])
-  const [currentLocation, setCurrentLocation] = useState(null)
-  const [gpsLoading, setGpsLoading] = useState(false)
-  const [optimized, setOptimized] = useState(false)
-  const [filter, setFilter] = useState('suggested')
 
-  const today = new Date().toISOString().split('T')[0]
-  const todayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]
-  const todayTerritories = Object.entries(schedule).filter(([, d]) => d === todayName).map(([b]) => b)
+  // ── State ──
+  const [startAddress, setStartAddress] = useState('')
+  const [endAddress, setEndAddress]     = useState('')
+  const [useHome, setUseHome]           = useState(false)
+  const [filterMode, setFilterMode]     = useState('available_now')
+  const [selected, setSelected]         = useState(new Set()) // customer ids
+  const [route, setRoute]               = useState([])        // ordered stops
+  const [gpsLoading, setGpsLoading]     = useState(false)
+  const [optimized, setOptimized]       = useState(false)
+  const [mapsUrl, setMapsUrl]           = useState('')
 
-  // Suggested = due today + overdue, excluding avoid
-  const suggested = customers.filter(
-    (c) => c.status !== 'avoid' && c.next_visit_date && c.next_visit_date <= today
-  )
-  const priority = customers.filter((c) => c.status === 'priority')
-  const active = customers.filter((c) => c.status === 'active')
-  const allSelectable = customers.filter((c) => c.status !== 'avoid')
-
-  const displayed = filter === 'suggested' ? suggested
-    : filter === 'priority' ? priority
-    : filter === 'active' ? active
-    : allSelectable
+  // ── Filtered customer pool ──
+  const pool = useMemo(() => {
+    const base = applySmartFilter(customers, filterMode)
+    return base.filter(c => c.lat && c.lng)
+  }, [customers, filterMode])
 
   const toggleCustomer = (id) => {
-    setSelected((prev) => {
+    setSelected(prev => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
     setOptimized(false)
     setRoute([])
+    setMapsUrl('')
   }
 
   const selectAll = () => {
-    setSelected(new Set(displayed.map((c) => c.id)))
+    setSelected(new Set(pool.map(c => c.id)))
     setOptimized(false)
     setRoute([])
+    setMapsUrl('')
   }
 
-  // Always get fresh GPS — route always starts from your current location
-  const getMyLocation = async () => {
-    const pos = await getCurrentPosition()
-    const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-    setCurrentLocation(loc)
-    return loc
+  const clearAll = () => {
+    setSelected(new Set())
+    setOptimized(false)
+    setRoute([])
+    setMapsUrl('')
   }
 
-  const handlePlanMyDay = async () => {
+  // ── GPS pin current location as start ──
+  const pinGPS = useCallback(async () => {
     setGpsLoading(true)
     try {
-      const loc = await getMyLocation()
-      const ids = new Set(suggested.map((c) => c.id))
-      setSelected(ids)
-      setRoute(optimizeRoute(suggested, loc.lat, loc.lng))
-      setOptimized(true)
-    } catch {
-      alert('Could not get your location. Please allow location access and try again.')
-    } finally {
-      setGpsLoading(false)
-    }
-  }
+      const pos = await getCurrentPosition()
+      setStartAddress(`${pos.lat},${pos.lng}`)
+    } catch { alert('Could not get location') }
+    finally { setGpsLoading(false) }
+  }, [])
 
-  const handleOptimize = async () => {
-    const toVisit = customers.filter((c) => selected.has(c.id))
-    if (!toVisit.length) { alert('Select at least one customer.'); return }
-    setGpsLoading(true)
-    try {
-      // Always get fresh location — never reuse stale location
-      const loc = await getMyLocation()
-      setRoute(optimizeRoute(toVisit, loc.lat, loc.lng))
-      setOptimized(true)
-    } catch {
-      alert('Could not get your location. Please allow location access and try again.')
-    } finally {
-      setGpsLoading(false)
-    }
-  }
+  // ── Build optimized route ──
+  const buildRoute = useCallback(() => {
+    if (!startAddress.trim()) { alert('Enter a starting address or pin your location'); return }
+    const stops = pool.filter(c => selected.has(c.id))
+    if (!stops.length) { alert('Select at least one customer'); return }
 
-  const totalDist = currentLocation && route.length
-    ? routeTotalDistance(route, currentLocation.lat, currentLocation.lng)
-    : null
+    // Parse start coords if GPS was used, otherwise use a fake centroid offset
+    // (Google Maps will handle the actual geocoding of text addresses)
+    let startLat = 29.95, startLng = -90.07 // NOLA default
+    const gpsMatch = startAddress.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/)
+    if (gpsMatch) { startLat = parseFloat(gpsMatch[1]); startLng = parseFloat(gpsMatch[2]) }
 
-  const openGoogleMaps = () => {
-    if (!route.length) return
-    const waypoints = route.slice(0, -1).map((c) => `${c.lat},${c.lng}`).join('/')
-    const dest = route[route.length - 1]
-    const origin = currentLocation ? `${currentLocation.lat},${currentLocation.lng}` : ''
-    const url = `https://www.google.com/maps/dir/${origin}/${waypoints}/${dest.lat},${dest.lng}`
-    window.open(url, '_blank')
-  }
+    const ordered = optimizeStops(stops, startLat, startLng)
+    setRoute(ordered)
+    setOptimized(true)
 
-  const openAppleMaps = () => {
-    if (!route.length) return
-    const dest = route[route.length - 1]
-    const url = `http://maps.apple.com/?daddr=${dest.lat},${dest.lng}`
-    window.open(url, '_blank')
-  }
+    const end = useHome && endAddress.trim() ? endAddress.trim() : null
+    const url = buildGoogleMapsUrl(startAddress.trim(), ordered, end)
+    setMapsUrl(url)
+  }, [startAddress, endAddress, useHome, pool, selected])
+
+  const selectedCount = selected.size
+
+  // ── FILTER TABS ──
+  const FILTERS = [
+    { id: 'available_now', label: '🌟 Available Now' },
+    { id: 'due_today',     label: '📅 Due Today' },
+    { id: 'overdue',       label: '🔷 Overdue' },
+    { id: 'all',           label: '👥 All' },
+  ]
 
   return (
     <div>
       <div className="page-header">
-        <h1>Route Planner</h1>
-        <span className="text-sm text-muted">{selected.size} selected</span>
+        <button onClick={() => navigate(-1)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer' }}>←</button>
+        <h1>🗺️ Trip Planner</h1>
+        <div style={{ width:36 }} />
       </div>
 
-      <div className="page" style={{ paddingTop: 12 }}>
+      <div className="page" style={{ paddingTop:12, paddingBottom:120 }}>
 
-        {/* Today's Territories Banner */}
-        {todayTerritories.length > 0 && (
-          <div className="card" style={{ marginBottom: 12, background: '#f5f3ff', border: '1px solid #c4b5fd' }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', marginBottom: 8 }}>
-              📅 Today is {todayName} — {todayTerritories.length} territory{todayTerritories.length > 1 ? 's' : ''} scheduled
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-              {todayTerritories.map(block => {
-                const color = getAreaColor(block)
-                const count = customers.filter(c => c.area === block && c.status !== 'avoid' && c.status !== 'do_not_visit').length
-                return (
-                  <span key={block} style={{
-                    fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
-                    background: color + '20', color, border: `1px solid ${color}40`
-                  }}>
-                    {block} {count > 0 ? `· ${count} active` : '· no active yet'}
-                  </span>
-                )
-              })}
-            </div>
-            <button
-              className="btn btn-sm"
-              onClick={() => {
-                // Select all active customers in today's territories
-                const ids = customers
-                  .filter(c => todayTerritories.includes(c.area) && c.status !== 'avoid' && c.status !== 'do_not_visit' && c.lat && c.lng)
-                  .map(c => c.id)
-                setSelected(new Set(ids))
-              }}
-              style={{ fontSize: 12, background: '#7c3aed', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer' }}
-            >
-              ✅ Select today's territories
-            </button>
-          </div>
-        )}
-
-        {/* Plan My Day */}
-        <button
-          className="btn btn-primary btn-full"
-          onClick={handlePlanMyDay}
-          disabled={gpsLoading}
-          style={{ fontSize: 17, padding: '14px 20px', marginBottom: 12 }}
-        >
-          {gpsLoading ? '📡 Getting location...' : '🧭 Plan My Day'}
-        </button>
-        <p className="text-xs text-muted" style={{ textAlign: 'center', marginBottom: 16 }}>
-          Auto-selects overdue + due today customers and optimizes route
+        {/* ── START ADDRESS ── */}
+        <p className="section-header">Starting Point</p>
+        <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+          <input
+            className="form-input"
+            value={startAddress}
+            onChange={e => setStartAddress(e.target.value)}
+            placeholder="e.g. 123 Main St, New Orleans"
+            style={{ flex:1 }}
+          />
+          <button onClick={pinGPS} disabled={gpsLoading}
+            style={{ padding:'10px 14px', borderRadius:10, border:'1.5px solid var(--border)', background:'white', cursor:'pointer', flexShrink:0, fontSize:18 }}>
+            {gpsLoading ? '⏳' : '📍'}
+          </button>
+        </div>
+        <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:14 }}>
+          Type an address or tap 📍 to use your current GPS location.
         </p>
 
-        {/* Optimized route result */}
-        {optimized && route.length > 0 && (
-          <div className="card" style={{ background: 'var(--blue-light)', marginBottom: 16, border: '1px solid #bfdbfe' }}>
-            <div className="flex justify-between items-center" style={{ marginBottom: 12 }}>
-              <div>
-                <h3 style={{ color: 'var(--blue-dark)' }}>✅ Route ready</h3>
-                <p className="text-sm text-muted">{route.length} stops · ~{totalDist} km</p>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              {route.map((c, i) => (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < route.length - 1 ? '1px solid #dbeafe' : 'none' }}>
-                  <div style={{
-                    width: 26, height: 26, borderRadius: '50%',
-                    background: 'var(--blue)', color: 'white',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 700, flexShrink: 0
-                  }}>{i + 1}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.full_name}</p>
-                    {c.business_name && <p className="text-xs text-muted">{c.business_name}</p>}
-                    {c.area && (
-                      <span style={{ fontSize: 11, color: getAreaColor(c.area), fontWeight: 600 }}>📍 {c.area}</span>
-                    )}
-                  </div>
-                  <button
-                    className="btn btn-sm btn-primary"
-                    onClick={() => navigate(`/visit/${c.id}`)}
-                    style={{ flexShrink: 0, padding: '6px 10px', fontSize: 12 }}
-                  >
-                    Log
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={openGoogleMaps}>
-                🗺️ Google Maps
-              </button>
-              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={openAppleMaps}>
-                🍎 Apple Maps
-              </button>
-            </div>
+        {/* ── END ADDRESS (home/return) ── */}
+        <div onClick={() => setUseHome(v => !v)}
+          style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:10, border:'1.5px solid var(--border)', background: useHome ? 'var(--blue-light)' : 'white', cursor:'pointer', marginBottom:8 }}>
+          <div style={{ width:20, height:20, borderRadius:6, border:`2px solid ${useHome ? 'var(--blue)' : 'var(--border)'}`, background: useHome ? 'var(--blue)' : 'white', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            {useHome && <span style={{ color:'white', fontSize:13, fontWeight:900 }}>✓</span>}
           </div>
+          <span style={{ fontWeight:600, fontSize:14 }}>🏠 Return to a different address</span>
+        </div>
+        {useHome && (
+          <input
+            className="form-input"
+            value={endAddress}
+            onChange={e => setEndAddress(e.target.value)}
+            placeholder="Home address / last stop"
+            style={{ marginBottom:14 }}
+          />
         )}
 
-        {/* Manual selection */}
-        <div className="flex justify-between items-center" style={{ marginBottom: 8 }}>
-          <p className="section-header" style={{ padding: 0 }}>Or select manually</p>
-          <button className="btn btn-ghost btn-sm" onClick={selectAll}>Select all</button>
-        </div>
-
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-          {[
-            { key: 'suggested', label: `Due (${suggested.length})` },
-            { key: 'priority', label: `Priority (${priority.length})` },
-            { key: 'active', label: 'Active' },
-            { key: 'all', label: 'All' },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
+        {/* ── FILTER MODE ── */}
+        <p className="section-header" style={{ marginTop:4 }}>Pick Customers From</p>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+          {FILTERS.map(f => (
+            <button key={f.id} onClick={() => { setFilterMode(f.id); clearAll() }}
               style={{
-                padding: '6px 12px',
-                borderRadius: 20,
-                border: '1.5px solid',
-                borderColor: filter === key ? 'var(--blue)' : 'var(--border)',
-                background: filter === key ? 'var(--blue)' : 'white',
-                color: filter === key ? 'white' : 'var(--text)',
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >
-              {label}
+                padding:'7px 14px', borderRadius:20, border:'1.5px solid', cursor:'pointer',
+                fontWeight:700, fontSize:12,
+                borderColor: filterMode === f.id ? 'var(--blue)' : 'var(--border)',
+                background: filterMode === f.id ? 'var(--blue)' : 'white',
+                color: filterMode === f.id ? 'white' : 'var(--text)',
+              }}>
+              {f.label}
             </button>
           ))}
         </div>
 
-        {displayed.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">📭</div>
-            <p>No customers in this category.</p>
+        {/* ── CUSTOMER SELECTION ── */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+          <p style={{ fontWeight:700, fontSize:13 }}>
+            {pool.length} customer{pool.length !== 1 ? 's' : ''} · {selectedCount} selected
+          </p>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={selectAll} style={{ fontSize:12, color:'var(--blue)', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
+            <button onClick={clearAll} style={{ fontSize:12, color:'var(--text-muted)', background:'none', border:'none', cursor:'pointer' }}>Clear</button>
+          </div>
+        </div>
+
+        {pool.length === 0 && (
+          <div style={{ textAlign:'center', padding:'32px 0', color:'var(--text-muted)' }}>
+            <div style={{ fontSize:36, marginBottom:8 }}>👥</div>
+            <p>No customers match this filter right now.</p>
           </div>
         )}
 
-        {displayed.map((c) => {
+        {pool.map(c => {
+          const { color, label } = getCustomerColor(c)
           const isSelected = selected.has(c.id)
-          const isOverdue = c.next_visit_date && c.next_visit_date < today
           return (
-            <div
-              key={c.id}
-              className="card card-tap"
-              onClick={() => toggleCustomer(c.id)}
+            <div key={c.id} onClick={() => toggleCustomer(c.id)}
               style={{
-                border: `2px solid ${isSelected ? 'var(--blue)' : 'var(--border)'}`,
-                background: isSelected ? 'var(--blue-light)' : 'white',
-              }}
-            >
-              <div className="flex items-center gap-12">
-                <div style={{
-                  width: 24, height: 24, borderRadius: '50%',
-                  border: `2px solid ${isSelected ? 'var(--blue)' : 'var(--border)'}`,
-                  background: isSelected ? 'var(--blue)' : 'white',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, fontSize: 14, color: 'white',
-                }}>
-                  {isSelected && '✓'}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: 15 }}>{c.full_name}</p>
-                  {c.business_name && <p className="text-xs text-muted">{c.business_name}</p>}
-                  {c.area && (
-                    <p style={{ fontSize: 11, color: getAreaColor(c.area), fontWeight: 600, marginTop: 2 }}>📍 {c.area}</p>
-                  )}
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  {isOverdue && <p style={{ fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>⚠️ Overdue</p>}
-                  {c.next_visit_date && !isOverdue && (
-                    <p className="text-xs text-muted">{new Date(c.next_visit_date).toLocaleDateString()}</p>
-                  )}
-                </div>
+                display:'flex', alignItems:'center', gap:12, padding:'10px 14px',
+                borderRadius:12, marginBottom:6, cursor:'pointer', transition:'all 0.15s',
+                border: `1.5px solid ${isSelected ? color : 'var(--border)'}`,
+                background: isSelected ? `${color}12` : 'white',
+                borderLeft: `4px solid ${color}`,
+              }}>
+              {/* Checkbox */}
+              <div style={{
+                width:22, height:22, borderRadius:6, flexShrink:0,
+                border: `2px solid ${isSelected ? color : 'var(--border)'}`,
+                background: isSelected ? color : 'white',
+                display:'flex', alignItems:'center', justifyContent:'center',
+              }}>
+                {isSelected && <span style={{ color:'white', fontSize:13, fontWeight:900 }}>✓</span>}
               </div>
+
+              {/* Info */}
+              <div style={{ flex:1, minWidth:0 }}>
+                <p style={{ fontWeight:700, fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {c.business_name || c.full_name}
+                </p>
+                <p style={{ fontSize:11, color:'var(--text-muted)' }}>{c.area || c.full_name}</p>
+              </div>
+
+              {/* Status label */}
+              <span style={{ fontSize:10, color, fontWeight:700, flexShrink:0, textAlign:'right', maxWidth:80 }}>{label}</span>
             </div>
           )
         })}
 
-        {selected.size > 0 && !optimized && (
-          <button
-            className="btn btn-success btn-full"
-            onClick={handleOptimize}
-            disabled={gpsLoading}
-            style={{ marginTop: 8, fontSize: 16, padding: '14px 20px' }}
-          >
-            {gpsLoading ? '📡 Getting location...' : `🔀 Optimize ${selected.size} Stops`}
-          </button>
+        {/* ── BUILD ROUTE BUTTON ── */}
+        {selectedCount > 0 && (
+          <div style={{ position:'fixed', bottom:'calc(var(--nav-height) + 12px)', left:'50%', transform:'translateX(-50%)', width:'calc(100% - 32px)', maxWidth:600, zIndex:50 }}>
+            <button onClick={buildRoute}
+              style={{
+                width:'100%', padding:'15px', borderRadius:14, border:'none', cursor:'pointer',
+                background:'linear-gradient(135deg,#2563eb,#1d4ed8)', color:'white',
+                fontWeight:800, fontSize:16, boxShadow:'0 4px 20px rgba(37,99,235,0.4)',
+              }}>
+              🗺️ Build Route ({selectedCount} stop{selectedCount !== 1 ? 's' : ''})
+            </button>
+          </div>
         )}
       </div>
+
+      {/* ── ROUTE RESULT MODAL ── */}
+      {optimized && route.length > 0 && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:200, display:'flex', alignItems:'flex-end' }}
+          onClick={() => setOptimized(false)}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:'white', borderRadius:'20px 20px 0 0', width:'100%', maxHeight:'80vh', overflowY:'auto', padding:'20px 20px 40px' }}>
+            <div style={{ width:40, height:4, borderRadius:2, background:'var(--border)', margin:'0 auto 16px' }} />
+
+            <h2 style={{ fontSize:18, marginBottom:4 }}>
+              🗺️ Optimized Route — {route.length} stops
+            </h2>
+            <p style={{ fontSize:12, color:'var(--text-muted)', marginBottom:16 }}>
+              Nearest-neighbour order from your starting point
+            </p>
+
+            {/* Route list */}
+            <div style={{ marginBottom:16 }}>
+              {/* Start */}
+              <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:8 }}>
+                <div style={{ width:28, height:28, borderRadius:'50%', background:'#16a34a', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:12, flexShrink:0 }}>S</div>
+                <p style={{ fontSize:13, fontWeight:600, color:'#16a34a' }}>
+                  {startAddress.match(/^-?\d+\.\d+,-?\d+\.\d+$/) ? '📍 Current location' : startAddress}
+                </p>
+              </div>
+
+              {route.map((c, i) => {
+                const { color, label } = getCustomerColor(c)
+                return (
+                  <div key={c.id} style={{ display:'flex', gap:10, alignItems:'center', marginBottom:8 }}>
+                    <div style={{ width:28, height:28, borderRadius:'50%', background:color, color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:12, flexShrink:0 }}>
+                      {i + 1}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <p style={{ fontSize:13, fontWeight:700 }}>{c.business_name || c.full_name}</p>
+                      <p style={{ fontSize:10, color:'var(--text-muted)' }}>{c.area} · {label}</p>
+                    </div>
+                    {c.phone && (
+                      <a href={`tel:${c.phone}`} onClick={e => e.stopPropagation()}
+                        style={{ fontSize:18, textDecoration:'none' }}>📞</a>
+                    )}
+                  </div>
+                )
+              })}
+
+              {/* End */}
+              {useHome && endAddress && (
+                <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:8 }}>
+                  <div style={{ width:28, height:28, borderRadius:'50%', background:'#7c3aed', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:12, flexShrink:0 }}>🏠</div>
+                  <p style={{ fontSize:13, fontWeight:600, color:'#7c3aed' }}>{endAddress}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Open in Google Maps */}
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+              style={{
+                display:'block', width:'100%', padding:'15px', borderRadius:12,
+                background:'linear-gradient(135deg,#16a34a,#15803d)', color:'white',
+                fontWeight:800, fontSize:16, textAlign:'center', textDecoration:'none',
+                boxShadow:'0 4px 16px rgba(22,163,74,0.4)', boxSizing:'border-box',
+                marginBottom:10,
+              }}>
+              🗺️ Open in Google Maps
+            </a>
+
+            <p style={{ fontSize:11, color:'var(--text-muted)', textAlign:'center' }}>
+              Opens turn-by-turn navigation with all stops pre-loaded
+            </p>
+
+            <button onClick={() => setOptimized(false)}
+              style={{ width:'100%', marginTop:8, padding:'12px', borderRadius:12, border:'1px solid var(--border)', background:'white', color:'var(--text-muted)', fontSize:14, cursor:'pointer' }}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
