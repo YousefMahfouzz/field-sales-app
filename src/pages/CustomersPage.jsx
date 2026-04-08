@@ -7,19 +7,13 @@ import NearbyCustomerModal from '../components/NearbyCustomerModal'
 import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/customerAvailability'
 import Icon from '../components/Icon'
 
-const STATUSES = ['all', 'active', 'priority', 'follow_up', 'do_not_visit', 'avoid']
 // STATUS_LABELS defined inside component for Arabic support
-const STATUS_COLORS = { active: '#16a34a', priority: '#d97706', follow_up: '#0891b2', avoid: '#dc2626', do_not_visit: '#6b7280' }
 
 export default function CustomersPage() {
   const navigate = useNavigate()
-  const STATUS_LABELS = false
-    ? { all:'الكل', active:'نشط', priority:'أولوية', follow_up:'متابعة', do_not_visit:'لا تزور', avoid:'⛔ تجنب' }
-    : { all:'All', active:'Active', priority:'Priority', follow_up:'Follow Up', do_not_visit:'Do Not Visit', avoid:'⛔ Avoid' }
-  const [searchParams] = useSearchParams()
+    const [searchParams] = useSearchParams()
   const { customers, loading } = useCustomers()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
   const [sortBy, setSortBy] = useState('next_visit')
   const [groupByArea, setGroupByArea] = useState(true)
   const [smartFilter, setSmartFilter] = useState('all')
@@ -41,20 +35,17 @@ export default function CustomersPage() {
         c.area?.toLowerCase().includes(q)
       )
     }
-    // 'all' hides avoid customers — they only appear in the dedicated 'avoid' tab
-  if (statusFilter === 'all') list = list.filter(c => c.status !== 'avoid')
-  else list = list.filter(c => c.status === statusFilter)
     if (filterOverdue) list = list.filter(c => c.next_visit_date && c.next_visit_date < today && c.status !== 'avoid')
     if (smartFilter !== 'all') list = applySmartFilter(list, smartFilter)
     if (sortBy === 'next_visit') list.sort((a, b) => (a.next_visit_date || '9999') < (b.next_visit_date || '9999') ? -1 : 1)
     else if (sortBy === 'name') list.sort((a, b) => (a.business_name || a.full_name).localeCompare(b.business_name || b.full_name))
     else if (sortBy === 'last_visit') list.sort((a, b) => (b.last_visit_date || '') < (a.last_visit_date || '') ? -1 : 1)
     return list
-  }, [customers, search, statusFilter, sortBy, filterOverdue, today])
+  }, [customers, search, sortBy, filterOverdue, today])
 
   // {'Group by area'}
   const grouped = useMemo(() => {
-    if (!groupByArea || search.trim() || statusFilter !== 'all') return null
+    if (!groupByArea || search.trim()) return null
     const map = {}
     for (const c of filtered) {
       const area = c.area?.trim() || 'No Area'
@@ -67,7 +58,7 @@ export default function CustomersPage() {
       if (b === 'No Area') return -1
       return a.localeCompare(b)
     })
-  }, [filtered, groupByArea, search, statusFilter])
+  }, [filtered, groupByArea, search])
 
   const handleAddHere = async () => {
     setGpsLoading(true)
@@ -169,21 +160,7 @@ export default function CustomersPage() {
         />
       </div>
 
-      {/* Status filter pills */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '0 16px 10px', scrollbarWidth: 'none' }}>
-        {STATUSES.map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} style={{
-            flexShrink: 0, padding: '6px 14px', borderRadius: 20,
-            border: '1.5px solid',
-            borderColor: statusFilter === s ? (STATUS_COLORS[s] || 'var(--blue)') : 'var(--border)',
-            background: statusFilter === s ? (STATUS_COLORS[s] || 'var(--blue)') : 'var(--white)',
-            color: statusFilter === s ? 'white' : 'var(--text)',
-            fontSize: 13, fontWeight: statusFilter === s ? 700 : 500, cursor: 'pointer',
-          }}>
-            {STATUS_LABELS[s]}
-          </button>
-        ))}
-      </div>
+
 
       {/* Sort + group toggle */}
       <div style={{ padding: '0 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
