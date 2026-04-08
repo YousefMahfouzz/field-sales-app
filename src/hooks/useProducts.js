@@ -36,12 +36,18 @@ export function useProducts() {
   }
 
   const updateProduct = async (id, updates) => {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('products')
       .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id).select().single()
+      .eq('id', id)
     if (error) throw error
-    setProducts(prev => prev.map(p => p.id === id ? data : p))
+    // Re-fetch the updated product
+    const { data } = await supabase
+      .from('products')
+      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at')
+      .eq('id', id)
+      .single()
+    if (data) setProducts(prev => prev.map(p => p.id === id ? data : p))
     return data
   }
 
@@ -107,7 +113,7 @@ export function useProducts() {
     const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
     if (error) throw error
     const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path)
-    await updateProduct(productId, { image_url: publicUrl })
+    // Returns URL only — caller does the final updateProduct to avoid race conditions
     return publicUrl
   }
 

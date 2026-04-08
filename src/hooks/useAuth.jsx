@@ -67,13 +67,18 @@ export function AuthProvider({ children }) {
 
   const updateProfile = async (updates) => {
     if (!user) return
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', user.id)
-      .select().single()
     if (error) throw error
-    setProfile(data)
+    // Re-fetch profile to get fresh data
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, is_admin')
+      .eq('id', user.id)
+      .single()
+    if (data) setProfile(data)
     return data
   }
 

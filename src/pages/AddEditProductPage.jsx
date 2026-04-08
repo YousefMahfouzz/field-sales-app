@@ -145,21 +145,29 @@ export default function AddEditProductPage() {
         }
       }
       if (saved?.id) {
-        const { primaryFile, extraFiles, existingImages: keepImages } = imageData
-        // Upload new primary image if changed
-        if (primaryFile) await uploadProductImage(saved.id, primaryFile)
-        else if (!imageData.primaryPreview && isEdit) {
-          // Primary image was removed
-          await updateProduct(saved.id, { image_url: null })
+        const { primaryFile, primaryPreview, extraFiles, existingImages: keepImages } = imageData
+        const imgUpdates = {}
+
+        // Upload new primary image — get URL back
+        if (primaryFile) {
+          const newUrl = await uploadProductImage(saved.id, primaryFile)
+          imgUpdates.image_url = newUrl
+        } else if (!primaryPreview && isEdit) {
+          imgUpdates.image_url = null  // removed
         }
-        // Upload new extra images
+
+        // Upload extra images
         let allExtraUrls = [...keepImages]
         if (extraFiles.length > 0) {
-          const newUrls = await Promise.all(extraFiles.map((file, i) => uploadAdditionalImage(saved.id, file, Date.now() + i)))
+          const newUrls = await Promise.all(
+            extraFiles.map((file, i) => uploadAdditionalImage(saved.id, file, Date.now() + i))
+          )
           allExtraUrls = [...allExtraUrls, ...newUrls]
         }
-        // Always save the final images array
-        await updateProduct(saved.id, { images: allExtraUrls })
+        imgUpdates.images = allExtraUrls
+
+        // ONE single update with all image data at once
+        await updateProduct(saved.id, imgUpdates)
       }
       navigate('/products')
     } catch (err) { setError(err.message) }
