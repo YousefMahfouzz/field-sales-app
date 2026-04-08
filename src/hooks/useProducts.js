@@ -52,7 +52,8 @@ export function useProducts() {
   }
 
   const deleteProduct = async (id) => {
-    await supabase.from('products').update({ is_active: false }).eq('id', id)
+    const { error } = await supabase.from('products').delete().eq('id', id)
+    if (error) throw error
     setProducts(prev => prev.filter(p => p.id !== id))
   }
 

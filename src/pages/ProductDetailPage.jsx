@@ -181,9 +181,11 @@ export default function ProductDetailPage() {
         <p className="section-header" style={{ color:'var(--red)' }}>Danger Zone</p>
         <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)', borderColor:'var(--red)' }}
           onClick={async () => {
-            if (window.confirm('Delete this product?')) {
-              await deleteProduct(id)
-              navigate('/products')
+            if (window.confirm('Delete this product permanently? This cannot be undone.')) {
+              try {
+                await deleteProduct(id)
+                navigate('/products')
+              } catch(e) { alert('Delete failed: ' + e.message) }
             }
           }}>
           🗑️ Delete Product
