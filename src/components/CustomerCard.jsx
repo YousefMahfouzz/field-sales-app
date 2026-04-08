@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import Icon from './Icon'
 import { getCustomerColor } from '../lib/customerAvailability'
 
 const STATUS_LABELS = {
@@ -69,11 +70,10 @@ export default function CustomerCard({ customer, onQuickAction }) {
         {customer.phone && (
           <a
             href={`tel:${customer.phone}`}
-            className="text-sm"
-            style={{ color: 'var(--blue)' }}
+            style={{ color: 'var(--blue)', display:'flex', alignItems:'center', gap:4, fontSize:13, textDecoration:'none' }}
             onClick={(e) => e.stopPropagation()}
           >
-            📞 {customer.phone}
+            <><Icon name='phone' size={13} color='var(--blue)' strokeWidth={2} /> {customer.phone}</>
           </a>
         )}
         {customer.area && (

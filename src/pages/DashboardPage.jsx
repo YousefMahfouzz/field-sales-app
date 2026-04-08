@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useCustomers } from '../hooks/useCustomers'
 import { supabase } from '../lib/supabase'
+import Icon from '../components/Icon'
 
 // ── Reschedule Modal ──────────────────────────────────────────────
 function RescheduleModal({ overdue, onClose, onDone}) {
