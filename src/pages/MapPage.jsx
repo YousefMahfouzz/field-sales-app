@@ -97,6 +97,7 @@ export default function MapPage() {
     markersRef.current.forEach((m) => m.setMap(null))
     markersRef.current = []
 
+    // applySmartFilter handles all logic; 'all' now includes avoid customers
     let visible = applySmartFilter(customers, smartFilter)
     if (statusFilter !== 'all') visible = visible.filter(c => c.status === statusFilter)
 
