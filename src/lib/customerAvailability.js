@@ -86,7 +86,7 @@ export function parseAvailability(best_time, notes) {
  *   🟡 Gold      #f59e0b  — Available right now (highest priority)
  *   🔵 Blue      #2563eb  — Due today
  *   🟢 Green     #16a34a  — Active (healthy, on schedule)
- *   🟠 Orange    #ea580c  — Overdue (needs attention)
+ *   🟠 Orange    #0d9488  — Overdue (needs attention)
  *   🟣 Purple    #7c3aed  — Follow-up (a conversation to resume, not urgent)
  *   ⭐ Amber     #d97706  — Priority customer
  *   ⚫ Slate     #94a3b8  — Do not visit (muted, low urgency)
@@ -124,13 +124,13 @@ export function getCustomerColor(customer) {
   // Not available now but has timing
   if (avail && !avail.available) {
     if (isOverdue)
-      return { color:'#ea580c', bgColor:'#fff7ed', label:`🟠 Overdue · visits ${avail.range}`, priority:6 }
+      return { color:'#0d9488', bgColor:'#f0fdfa', label:`🟠 Overdue · visits ${avail.range}`, priority:6 }
     return { color:'#94a3b8', bgColor:'#f8fafc', label:`🕐 Available ${avail.range}`, priority:3 }
   }
 
   // No timing info — use status + schedule
   if (isToday)   return { color:'#2563eb', bgColor:'#eff6ff', label:'📅 Due today',  priority:8 }
-  if (isOverdue) return { color:'#ea580c', bgColor:'#fff7ed', label:'🟠 Overdue',    priority:7 }
+  if (isOverdue) return { color:'#0d9488', bgColor:'#f0fdfa', label:'🔷 Overdue',    priority:7 }
 
   if (status === 'priority')
     return { color:'#d97706', bgColor:'#fffbeb', label:'⭐ Priority', priority:6 }
@@ -152,7 +152,7 @@ export const SMART_FILTERS = [
   { id: 'all',            label: 'All' },
   { id: 'available_now',  label: '🌟 Available Now' },
   { id: 'due_today',      label: '📅 Due Today' },
-  { id: 'overdue',        label: '🟠 Overdue' },
+  { id: 'overdue',        label: '🔷 Overdue' },
   { id: 'priority',       label: '⭐ Priority' },
   { id: 'hide_avoid',     label: 'Hide Avoid' },
 ]
