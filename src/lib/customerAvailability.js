@@ -105,7 +105,9 @@ export function getCustomerColor(customer) {
     return { color:'#94a3b8', bgColor:'#f1f5f9', label:'⚫ Do Not Visit', priority:0 }
 
   const avail     = parseAvailability(customer.best_time, customer.notes)
-  const isNow     = avail?.available || (!avail && inGoldenWindow && status !== 'follow_up')
+  // Don't show as available if they have a scheduled future visit (visited recently)
+  const hasFutureVisit = customer.next_visit_date && customer.next_visit_date > today
+  const isNow     = !hasFutureVisit && (avail?.available || (!avail && inGoldenWindow && status !== 'follow_up'))
   const isOverdue = customer.next_visit_date && customer.next_visit_date < today
   const isToday   = customer.next_visit_date === today
 
@@ -166,6 +168,8 @@ export function applySmartFilter(customers, filterId) {
     case 'available_now':
       return customers.filter(c => {
         if (c.status === 'avoid' || c.status === 'do_not_visit') return false
+        // Skip if they have a future scheduled visit (recently visited)
+        if (c.next_visit_date && c.next_visit_date > today) return false
         const avail = parseAvailability(c.best_time, c.notes)
         return avail?.available || (!avail && inGoldenWindow && c.status !== 'follow_up')
       })
