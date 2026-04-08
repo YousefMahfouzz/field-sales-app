@@ -120,8 +120,8 @@ export default function VisitLogPage() {
       if (callbackDate) {
         customerUpdates.next_visit_date = callbackDate
       } else if (outcome !== 'avoid') {
-        // Sale = 30 days, regular visit = use their frequency
-        const daysUntilNext = hasSale ? 30 : (customer?.visit_frequency_days || 14)
+        // Always 30 days after any visit
+        const daysUntilNext = 30
         const next = new Date()
         next.setDate(next.getDate() + daysUntilNext)
         customerUpdates.next_visit_date = next.toISOString().split('T')[0]
