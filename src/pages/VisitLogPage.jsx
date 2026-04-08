@@ -119,13 +119,13 @@ export default function VisitLogPage() {
       // Set next visit date
       if (callbackDate) {
         customerUpdates.next_visit_date = callbackDate
-      } else if (outcome !== 'avoid') {
-        // Always 30 days after any visit
-        const daysUntilNext = 30
+      } else if (hasSale) {
+        // Sale: always schedule 30 days out automatically
         const next = new Date()
-        next.setDate(next.getDate() + daysUntilNext)
+        next.setDate(next.getDate() + 30)
         customerUpdates.next_visit_date = next.toISOString().split('T')[0]
       }
+      // No sale + no callback date: leave next_visit_date as-is (keep whatever was manually set)
       await updateCustomer(customerId, customerUpdates)
 
       setDone(true)
