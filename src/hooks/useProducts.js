@@ -36,17 +36,19 @@ export function useProducts() {
   }
 
   const updateProduct = async (id, updates) => {
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('products')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .select('id') // need select to get count
     if (error) throw error
-    // Re-fetch the updated product
-    const { data } = await supabase
+    // Re-fetch the updated product fresh from DB
+    const { data, error: fetchErr } = await supabase
       .from('products')
       .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at')
       .eq('id', id)
       .single()
+    if (fetchErr) throw fetchErr
     if (data) setProducts(prev => prev.map(p => p.id === id ? data : p))
     return data
   }
@@ -109,12 +111,13 @@ export function useProducts() {
   }
 
   const uploadProductImage = async (productId, file) => {
-    const ext = file.name ? file.name.split('.').pop() : 'webp'
-    const path = `${user.id}/${productId}.${ext}`
-    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+    const ext = 'webp'
+    // Include timestamp in filename so URL changes on every upload (busts CDN cache)
+    const ts = Date.now()
+    const path = `${user.id}/${productId}_${ts}.${ext}`
+    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false })
     if (error) throw error
     const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path)
-    // Returns URL only — caller does the final updateProduct to avoid race conditions
     return publicUrl
   }
 

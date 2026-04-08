@@ -151,6 +151,7 @@ export default function AddEditProductPage() {
         // Upload new primary image — get URL back
         if (primaryFile) {
           const newUrl = await uploadProductImage(saved.id, primaryFile)
+          if (!newUrl) throw new Error('Image upload returned no URL')
           imgUpdates.image_url = newUrl
         } else if (!primaryPreview && isEdit) {
           imgUpdates.image_url = null  // removed
@@ -167,7 +168,8 @@ export default function AddEditProductPage() {
         imgUpdates.images = allExtraUrls
 
         // ONE single update with all image data at once
-        await updateProduct(saved.id, imgUpdates)
+        const updated = await updateProduct(saved.id, imgUpdates)
+        if (!updated) throw new Error('Product update failed — check permissions')
       }
       navigate('/products')
     } catch (err) { setError(err.message) }
