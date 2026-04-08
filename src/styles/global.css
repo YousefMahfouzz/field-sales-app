@@ -105,19 +105,11 @@ html, body {
     box-shadow: 0 0 0 1px rgba(0,0,0,0.06), var(--shadow-lg);
     background: var(--bg);
   }
-  .bottom-nav {
-    position: fixed !important;
-    bottom: 0;
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%) !important;
-    width: 620px !important;
-    max-width: 620px;
-  }
+  /* bottom-nav desktop handled below */
 }
 @media (min-width: 1100px) {
   #root { max-width: 720px; min-height: 100svh; min-height: 100dvh; }
-  .bottom-nav { width: 720px !important; max-width: 720px; }
+  /* bottom-nav 1100px handled below */
 }
 
 /* Price list pages — full width */
@@ -188,6 +180,23 @@ h3 { font-size: 14px; font-weight: 600; }
   box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
   /* Prevent nav from receiving map swipe gestures */
   touch-action: manipulation;
+}
+
+/* ── Bottom nav desktop centering (must come AFTER base rule) ── */
+@media (min-width: 768px) {
+  .bottom-nav {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 620px;
+    max-width: 620px;
+  }
+}
+@media (min-width: 1100px) {
+  .bottom-nav {
+    width: 720px;
+    max-width: 720px;
+  }
 }
 
 .nav-item {
