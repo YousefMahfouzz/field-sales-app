@@ -33,12 +33,13 @@ export function useCustomers() {
   }
 
   const updateCustomer = async (id, updates) => {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('customers')
       .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id).select().single()
+      .eq('id', id)
     if (error) throw error
-    setCustomers(prev => prev.map(c => c.id === id ? data : c))
+    const { data } = await supabase.from('customers').select('*').eq('id', id).single()
+    if (data) setCustomers(prev => prev.map(c => c.id === id ? data : c))
     return data
   }
 
@@ -49,8 +50,9 @@ export function useCustomers() {
   }
 
   const restoreCustomer = async (id) => {
-    const { data } = await supabase.from('customers').update({ deleted_at: null }).eq('id', id).select().single()
-    if (data) setCustomers(prev => [...prev, data])
+    await supabase.from('customers').update({ deleted_at: null }).eq('id', id)
+    const { data } = await supabase.from('customers').select('*').eq('id', id).single()
+    if (data) setCustomers(prev => [...prev.filter(c => c.id !== id), data])
   }
 
   const fetchDeleted = async () => {
