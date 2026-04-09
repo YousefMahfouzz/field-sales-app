@@ -33,6 +33,12 @@ export default function PublicHomePage() {
 
   return (
     <div style={{ minHeight:'100vh', background:'#0a0a0a', color:'white', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', width:'100%', overflowX:'hidden' }}>
+      <style>{`
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); opacity: 0.7; }
+          50% { transform: translateY(8px); opacity: 1; }
+        }
+      `}</style>
 
       {/* Nav — Login only in corner */}
       <nav style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, padding:'0 24px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(10,10,10,0.85)', backdropFilter:'blur(20px)', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
@@ -81,6 +87,20 @@ export default function PublicHomePage() {
               boxShadow:'0 4px 24px rgba(0,0,0,0.3)',
             }}
           />
+        </div>
+
+        {/* ↓ Price list CTA arrow */}
+        <div style={{ marginTop:40, display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer' }}
+          onClick={() => document.getElementById('contact').scrollIntoView({ behavior:'smooth' })}>
+          <p style={{ color:'rgba(255,255,255,0.45)', fontSize:14, fontWeight:500, letterSpacing:'0.3px' }}>
+            Looking for a custom price list?
+          </p>
+          <svg
+            width="28" height="28" viewBox="0 0 28 28" fill="none"
+            style={{ animation:'bounce 1.6s ease-in-out infinite' }}>
+            <path d="M14 4 L14 22 M6 15 L14 23 L22 15"
+              stroke="rgba(99,102,241,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
       </div>
 
@@ -197,7 +217,7 @@ export default function PublicHomePage() {
 
             {/* Footer */}
       {/* Contact CTA */}
-      <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'48px 24px', textAlign:'center' }}>
+      <div id="contact" style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'48px 24px', textAlign:'center' }}>
         <p style={{ color:'rgba(255,255,255,0.4)', fontSize:14, marginBottom:20 }}>
           Interested in carrying our products in your store?
         </p>
