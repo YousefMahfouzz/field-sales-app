@@ -113,8 +113,8 @@ html, body {
 }
 
 /* Price list pages — full width */
-body.pricelist-page #root { max-width: 100% !important; background: #f8fafc; }
-body.pricelist-page { background: #f0f2f5; }
+body.pricelist-page #root { max-width: 100% !important; width: 100% !important; background: transparent !important; box-shadow: none !important; }
+body.pricelist-page { background: transparent !important; display: block !important; }
 
 /* ── Typography ─────────────────────────────────────────────────── */
 h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }

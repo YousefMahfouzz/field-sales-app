@@ -13,6 +13,11 @@ export default function PublicHomePage() {
   const [showInquiry, setShowInquiry] = useState(false)
 
   useEffect(() => {
+    document.body.classList.add('pricelist-page')
+    return () => document.body.classList.remove('pricelist-page')
+  }, [])
+
+  useEffect(() => {
     // Load featured products
     supabase.from('homepage_featured')
       .select('id, sort_order, product:products(id, name, description, image_url, images, brand, category)')
