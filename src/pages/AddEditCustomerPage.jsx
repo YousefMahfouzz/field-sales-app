@@ -211,10 +211,12 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
   const TOTAL = 7
   const [step, setStep] = useState(0)
   const [form, setForm] = useState({
-    business_name: '', phone: '',
+    business_name: searchParams.get('name') || '',
+    phone: '',
     lat: searchParams.get('lat') || '',
     lng: searchParams.get('lng') || '',
-    address: '', area: '',
+    address: searchParams.get('address') || '',
+    area: '',
     decision_maker: '', best_time: '', notes: '',
   })
   const [nearbyList, setNearbyList] = useState([])
@@ -236,6 +238,69 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
 
   const EXCLUDED = ['circle k', 'circlek']
   const isExcl = name => EXCLUDED.some(b => (name||'').toLowerCase().replace(/\s/g,'').includes(b))
+
+  // Smart type label — detect from Google Places type
+  const getTypeInfo = (type) => {
+    switch (type) {
+      case 'convenience_store': return { icon: '🏪', label: 'Convenience Store' }
+      case 'gas_station': return { icon: '⛽', label: 'Gas Station' }
+      case 'grocery_store': case 'grocery_or_supermarket': case 'supermarket': return { icon: '🛒', label: 'Grocery Store' }
+      case 'liquor_store': return { icon: '🏬', label: 'Liquor Store' }
+      case 'hair_care': return { icon: '💇', label: 'Hair Care' }
+      case 'beauty_store': case 'beauty_salon': return { icon: '💄', label: 'Beauty Supply' }
+      default: return { icon: '🏪', label: 'Store' }
+    }
+  }
+
+  // Smart area detection from address string
+  const detectAreaFromAddress = (address) => {
+    if (!address) return ''
+    const addr = address.toLowerCase()
+    // NOLA metro area detection — check specific neighborhoods/cities first
+    const areas = [
+      { match: ['east new orleans', 'new orleans east', 'chef menteur', 'read blvd', 'bullard'], area: 'East New Orleans' },
+      { match: ['metairie', 'veterans memorial', 'causeway blvd', 'severn ave'], area: 'Metairie' },
+      { match: ['kenner', 'williams blvd'], area: 'Kenner' },
+      { match: ['harvey', 'lapalco', 'manhattan blvd'], area: 'Westbank' },
+      { match: ['gretna', 'belle chasse', 'terrytown', 'marrero', 'westwego'], area: 'Westbank' },
+      { match: ['chalmette', 'arabi', 'meraux', 'violet'], area: 'Chalmette' },
+      { match: ['slidell', 'pearl river'], area: 'Northshore' },
+      { match: ['covington', 'mandeville', 'madisonville', 'abita'], area: 'Northshore' },
+      { match: ['hammond', 'ponchatoula', 'amite'], area: 'Northshore' },
+      { match: ['laplace', 'reserve', 'gramercy', 'gonzales'], area: 'River Parishes' },
+      { match: ['baton rouge', 'br,', 'baton rouge,'], area: 'Baton Rouge' },
+      { match: ['baker', 'zachary', 'denham springs'], area: 'Baton Rouge' },
+      { match: ['shreveport', 'bossier'], area: 'Shreveport' },
+      { match: ['monroe', 'west monroe'], area: 'Monroe' },
+      { match: ['lafayette', 'broussard', 'scott'], area: 'Lafayette' },
+      { match: ['lake charles', 'sulphur'], area: 'Lake Charles' },
+      { match: ['houma', 'thibodaux'], area: 'Houma' },
+      { match: ['mid-city', 'mid city', 'tulane', 'carrollton'], area: 'Mid-City' },
+      { match: ['uptown', 'magazine st', 'prytania'], area: 'Uptown' },
+      { match: ['french quarter', 'bourbon', 'royal st', 'decatur'], area: 'French Quarter' },
+      { match: ['gentilly', 'elysian fields'], area: 'Gentilly' },
+      { match: ['algiers'], area: 'Algiers' },
+      { match: ['new orleans', 'nola'], area: 'New Orleans' },
+      // Mississippi / Alabama
+      { match: ['biloxi', 'gulfport', 'ocean springs', 'pascagoula', 'moss point'], area: 'MS Gulf Coast' },
+      { match: ['hattiesburg'], area: 'Hattiesburg MS' },
+      { match: ['jackson, ms', 'jackson,ms'], area: 'Jackson MS' },
+      { match: ['mobile, al', 'mobile,al', 'prichard', 'saraland'], area: 'Mobile AL' },
+      // Ohio
+      { match: ['cleveland', 'east cleveland'], area: 'Cleveland' },
+      { match: ['akron'], area: 'Akron' },
+      { match: ['euclid'], area: 'Euclid' },
+      { match: ['parma'], area: 'Parma' },
+      { match: ['lorain'], area: 'Lorain' },
+      { match: ['canton'], area: 'Canton' },
+      { match: ['maple heights'], area: 'Maple Heights' },
+      { match: ['warrensville'], area: 'Warrensville' },
+    ]
+    for (const { match, area } of areas) {
+      if (match.some(m => addr.includes(m))) return area
+    }
+    return ''
+  }
 
   // Preload Google Maps as soon as wizard mounts so it's ready when user taps GPS
   useEffect(() => { loadGoogleMaps() }, [])
@@ -315,15 +380,31 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
   // Auto-trigger when GPS comes from URL params (Map → Add Customer Here)
   useEffect(() => {
     const lat = searchParams.get('lat'), lng = searchParams.get('lng')
+    const urlName = searchParams.get('name')
+    const urlAddr = searchParams.get('address')
     if (lat && lng) {
       const latN = parseFloat(lat), lngN = parseFloat(lng)
-      setForm(f => ({ ...f, lat, lng }))
-      // Auto-fill area from URL GPS
-      reverseGeocodeArea(latN, lngN).then(area => {
-        if (area) setForm(f => ({ ...f, area: f.area || area }))
-      })
-      setNearbyLoading(true)
-      fetchNearbyPOI(latN, lngN)
+      setForm(f => ({
+        ...f, lat, lng,
+        business_name: urlName ? decodeURIComponent(urlName) : f.business_name,
+        address: urlAddr ? decodeURIComponent(urlAddr) : f.address,
+      }))
+      // Smart area from address first, then geocode as fallback
+      const smartArea = detectAreaFromAddress(urlAddr ? decodeURIComponent(urlAddr) : '')
+      if (smartArea) {
+        setForm(f => ({ ...f, area: f.area || smartArea }))
+      } else {
+        reverseGeocodeArea(latN, lngN).then(area => {
+          if (area) setForm(f => ({ ...f, area: f.area || detectAreaFromAddress(area) || area }))
+        })
+      }
+      // If name came from URL (Map POI), skip GPS + nearby search, go to step 2 or 3
+      if (urlName) {
+        setStep(2) // go to manual name step (pre-filled)
+      } else {
+        setNearbyLoading(true)
+        fetchNearbyPOI(latN, lngN)
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // only on mount, fetchNearbyPOI is stable
@@ -335,9 +416,9 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
       const lat = pos.coords.latitude.toFixed(7)
       const lng = pos.coords.longitude.toFixed(7)
       setForm(f => ({ ...f, lat, lng }))
-      // Auto-fill area from GPS — run in parallel with POI fetch
+      // Auto-fill area from GPS — try smart detection from address, then geocode
       reverseGeocodeArea(parseFloat(lat), parseFloat(lng)).then(area => {
-        if (area) setForm(f => ({ ...f, area: f.area || area }))
+        if (area) setForm(f => ({ ...f, area: f.area || detectAreaFromAddress(area) || area }))
       })
       await fetchNearbyPOI(parseFloat(lat), parseFloat(lng))
     } catch { showToast('Could not get location – enable GPS', 'error') }
@@ -345,7 +426,13 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
   }
 
   const confirmBusiness = (biz) => {
-    setForm(f => ({ ...f, business_name: biz.name, address: biz.address || f.address }))
+    const smartArea = detectAreaFromAddress(biz.address)
+    setForm(f => ({
+      ...f,
+      business_name: biz.name,
+      address: biz.address || f.address,
+      area: smartArea || f.area,
+    }))
     setStep(3)
   }
   const rejectBusiness = () => {
@@ -482,13 +569,12 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
   if (step === 1) {
     const biz = nearbyList[nearbyIdx]
     if (!biz) { setStep(2); return null }
-    const typeIcon = biz.type==='convenience_store' ? '🏪' : biz.type==='gas_station' ? '⛽' : '💄'
-    const typeLabel = biz.type==='convenience_store' ? 'Convenience Store' : biz.type==='gas_station' ? 'Gas Station' : 'Beauty Supply'
+    const { icon: typeIcon, label: typeLabel } = getTypeInfo(biz.type)
     return (
       <div>
         <Header title="Is this your store?" sub={nearbyList.length > 1 ? `${nearbyIdx+1} of ${nearbyList.length} nearby` : 'Found nearby'} />
         <div style={{ padding:'0 20px' }}>
-          <div style={{ background:'white',borderRadius:20,padding:'28px 24px',border:'2px solid var(--border)',marginBottom:20,textAlign:'center',boxShadow:'0 4px 20px rgba(0,0,0,0.08)' }}>
+          <div style={{ background:'white',borderRadius:20,padding:'28px 24px',border:'2px solid var(--border)',marginBottom:16,textAlign:'center',boxShadow:'0 4px 20px rgba(0,0,0,0.08)' }}>
             <div style={{ fontSize:52,marginBottom:12 }}>{typeIcon}</div>
             <h2 style={{ fontSize:22,fontWeight:900,marginBottom:6 }}>{biz.name}</h2>
             <p style={{ fontSize:13,color:'#64748b',marginBottom:4 }}>{typeLabel}</p>
@@ -496,7 +582,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
             {biz.dist && <p style={{ fontSize:11,color:'#cbd5e1',marginTop:4 }}>~{biz.dist}m away</p>}
             {biz.rating && <p style={{ fontSize:13,color:'#f59e0b',marginTop:4 }}>⭐ {biz.rating}</p>}
           </div>
-          <div style={{ display:'flex',gap:12 }}>
+          <div style={{ display:'flex',gap:12,marginBottom:16 }}>
             <button onClick={rejectBusiness} style={{
               flex:1,padding:'18px 0',borderRadius:16,border:'2px solid #e2e8f0',background:'white',
               fontSize:16,fontWeight:700,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:6,
@@ -508,15 +594,33 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
             }}><span style={{ fontSize:28 }}>✅</span>Yes!</button>
           </div>
           {nearbyIdx < nearbyList.length-1 && (
-            <p className="text-xs text-muted" style={{ textAlign:'center',marginTop:12 }}>
+            <p className="text-xs text-muted" style={{ textAlign:'center',marginBottom:12 }}>
               Tap ❌ to see next nearby ({nearbyList.length-nearbyIdx-1} more)
             </p>
           )}
-          {nearbyIdx === nearbyList.length-1 && (
-            <button className="btn btn-ghost btn-full" onClick={() => setStep(2)} style={{ marginTop:12 }}>
-              None of these — enter manually
-            </button>
-          )}
+
+          {/* Always show manual entry option with name field */}
+          <div style={{ borderTop:'1px solid var(--border)',paddingTop:16,marginTop:8 }}>
+            <p className="text-xs text-muted" style={{ marginBottom:8 }}>Not finding it? Type the name:</p>
+            <div style={{ display:'flex',gap:8 }}>
+              <input
+                className="form-input"
+                value={form.business_name}
+                onChange={set('business_name')}
+                placeholder="Type store name..."
+                style={{ flex:1,fontSize:15,padding:'12px 14px' }}
+              />
+              <button
+                onClick={() => { if (form.business_name.trim()) setStep(3); else setStep(2) }}
+                style={{
+                  padding:'12px 18px',borderRadius:10,border:'none',
+                  background:'var(--blue)',color:'white',fontWeight:700,
+                  fontSize:14,cursor:'pointer',flexShrink:0,
+                }}>
+                Next →
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     )
