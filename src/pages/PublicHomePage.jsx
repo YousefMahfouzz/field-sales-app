@@ -96,7 +96,7 @@ export default function PublicHomePage() {
             Looking for a custom price list?
           </p>
           <svg
-            width="28" height="28" viewBox="0 0 28 28" fill="none"
+            width="44" height="44" viewBox="0 0 28 28" fill="none"
             style={{ animation:'bounce 1.6s ease-in-out infinite' }}>
             <path d="M14 4 L14 22 M6 15 L14 23 L22 15"
               stroke="rgba(99,102,241,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -257,7 +257,7 @@ export default function PublicHomePage() {
                   • <strong style={{ color:'white' }}>Type of business</strong> (beauty supply, gas station, convenience store, etc.)
                 </p>
               </div>
-              <a href="mailto:youseftmbusiness@gmail.com?subject=Price List Request&body=Store Name: %0AStore Address: %0AType of Business: %0A%0AAdditional Notes: "
+              <a href="mailto:orders@kanzsupply.com?subject=Price List Request&body=Store Name: %0AStore Address: %0AType of Business: %0A%0AAdditional Notes: "
                 onClick={() => setShowInquiry(false)}
                 style={{
                   display:'block', width:'100%', padding:'15px', borderRadius:12, border:'none',
@@ -268,7 +268,7 @@ export default function PublicHomePage() {
                 📧 Open Email App
               </a>
               <p style={{ color:'rgba(255,255,255,0.3)', fontSize:12, textAlign:'center', marginTop:12 }}>
-                youseftmbusiness@gmail.com
+                orders@kanzsupply.com
               </p>
               <button onClick={() => setShowInquiry(false)} style={{ width:'100%', marginTop:8, padding:'12px', borderRadius:12, border:'1px solid rgba(255,255,255,0.12)', background:'transparent', color:'rgba(255,255,255,0.4)', fontSize:14, cursor:'pointer' }}>
                 Close
