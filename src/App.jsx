@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { SettingsProvider } from './hooks/useSettings'
-import { ToastProvider } from './components/Toast'
+import { ToastProvider, showToast } from './components/Toast'
 import { useState, useEffect, useRef } from 'react'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
@@ -87,7 +87,7 @@ function AppRoutes() {
       clearTimeout(timerRef.current)
       timerRef.current = setTimeout(() => {
         signOut()
-        alert('You were signed out after 30 minutes of inactivity.')
+        showToast('Signed out – 30 min inactive', 'warning', 3500)
       }, TIMEOUT_MS)
     }
 
