@@ -393,50 +393,113 @@ export default function MapPage() {
         />
       )}
 
-      {/* FAB: Find Nearby Stores — shifts up when route bar visible */}
-      <button
-        onClick={handleFindNearby}
-        disabled={poiLoading}
-        style={{
-          position: 'fixed',
-          bottom: selectedPois.length > 0
-            ? 'calc(var(--nav-height) + var(--safe-bottom) + 72px)'
-            : 'calc(var(--nav-height) + var(--safe-bottom) + 68px)',
-          left: '50%',
-          transform: 'translateX(-50%) translateZ(0)',
-          zIndex: 40,
-          background: poiVisible ? '#7c3aed' : 'white',
-          color: poiVisible ? 'white' : '#7c3aed',
-          border: poiVisible ? 'none' : '2px solid #7c3aed',
-          borderRadius: 28,
-          padding: '10px 20px',
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-          whiteSpace: 'nowrap',
-          fontFamily: 'var(--font)',
-          transition: 'bottom 0.2s ease',
-        }}
-      >
-        {poiLoading ? '🔍 Searching...' : poiVisible ? '✕ Clear Stores' : '🔍 Find Nearby Stores'}
-      </button>
+      {/* ── BOTTOM STACK (from bottom up): nav → route bar → Find Nearby → Add Customer → popups ── */}
 
-      {/* FAB: Add Customer — hide when stores are selected to avoid overlap */}
-      {selectedPois.length === 0 && (
-        <button className="fab" onClick={handleCheckInHere} disabled={gpsLoading}>
-          {gpsLoading ? 'Getting location...' : '+ Add Customer Here'}
-        </button>
+      {/* Selected stores route bar — compact strip right above bottom nav */}
+      {selectedPois.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 'calc(var(--nav-height) + var(--safe-bottom))',
+          left: 0, right: 0, zIndex: 55,
+          background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+          padding: '10px 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ color: 'white', fontWeight: 800, fontSize: 14 }}>
+              {selectedPois.length} store{selectedPois.length !== 1 ? 's' : ''} selected
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {selectedPois.map(p => p.name.split(' ').slice(0,2).join(' ')).join(', ')}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setSelectedPois([])}
+              style={{ padding: '8px 12px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.4)', background: 'transparent', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+              Clear
+            </button>
+            <button onClick={() => {
+              const origin = searchCenter
+                ? `${searchCenter.lat},${searchCenter.lng}`
+                : `${selectedPois[0].lat},${selectedPois[0].lng}`
+              const lastStop = selectedPois[selectedPois.length - 1]
+              const destination = `${lastStop.lat},${lastStop.lng}`
+              const waypoints = selectedPois.slice(0, -1)
+                .map(p => `${p.lat},${p.lng}`)
+                .join('|')
+              let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`
+              if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`
+              window.open(url, '_blank')
+            }}
+              style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: 'white', color: '#7c3aed', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+              🗺️ Route
+            </button>
+          </div>
+        </div>
       )}
 
+      {/* FAB row: Find Nearby + Add Customer side by side */}
+      <div style={{
+        position: 'fixed',
+        bottom: selectedPois.length > 0
+          ? 'calc(var(--nav-height) + var(--safe-bottom) + 56px)'
+          : 'calc(var(--nav-height) + var(--safe-bottom) + 12px)',
+        left: '50%',
+        transform: 'translateX(-50%) translateZ(0)',
+        zIndex: 40,
+        display: 'flex', gap: 8,
+        transition: 'bottom 0.2s ease',
+      }}>
+        <button
+          onClick={handleFindNearby}
+          disabled={poiLoading}
+          style={{
+            background: poiVisible ? '#7c3aed' : 'white',
+            color: poiVisible ? 'white' : '#7c3aed',
+            border: poiVisible ? 'none' : '2px solid #7c3aed',
+            borderRadius: 28,
+            padding: '10px 16px',
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+            whiteSpace: 'nowrap',
+            fontFamily: 'var(--font)',
+          }}
+        >
+          {poiLoading ? '🔍...' : poiVisible ? '✕ Clear' : '🔍 Find Stores'}
+        </button>
+        <button
+          onClick={handleCheckInHere}
+          disabled={gpsLoading}
+          style={{
+            background: 'var(--blue)',
+            color: 'white',
+            border: 'none',
+            borderRadius: 28,
+            padding: '10px 16px',
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(53,99,233,0.4)',
+            whiteSpace: 'nowrap',
+            fontFamily: 'var(--font)',
+          }}
+        >
+          {gpsLoading ? '📡...' : '+ Add Customer'}
+        </button>
+      </div>
 
-      {/* Customer popup */}
+      {/* Customer popup — above FABs */}
       {selectedCustomer && !selectedPoi && (() => {
         const { color, label } = getCustomerColor(selectedCustomer)
+        const popupBottom = selectedPois.length > 0
+          ? 'calc(var(--nav-height) + var(--safe-bottom) + 108px)'
+          : 'calc(var(--nav-height) + var(--safe-bottom) + 60px)'
         return (
           <div style={{
             position: 'absolute',
-            bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 12px)',
+            bottom: popupBottom,
             left: 12, right: 12, zIndex: 100,
             background: '#ffffff',
             borderRadius: 18,
@@ -497,13 +560,13 @@ export default function MapPage() {
         )
       })()}
 
-      {/* POI store popup — sits above route bar if visible */}
+      {/* POI store popup — above FABs and route bar */}
       {selectedPoi && (
         <div style={{
           position: 'absolute',
           bottom: selectedPois.length > 0
-            ? 'calc(var(--nav-height) + var(--safe-bottom) + 70px)'
-            : 'calc(var(--nav-height) + var(--safe-bottom) + 12px)',
+            ? 'calc(var(--nav-height) + var(--safe-bottom) + 108px)'
+            : 'calc(var(--nav-height) + var(--safe-bottom) + 60px)',
           left: 12, right: 12, zIndex: 100,
           background: '#ffffff',
           borderRadius: 18,
@@ -554,50 +617,6 @@ export default function MapPage() {
                 border: `1.5px solid ${selectedPois.some(p => p.name === selectedPoi.name && p.lat === selectedPoi.lat) ? '#fca5a5' : '#bbf7d0'}`,
               }}>
               {selectedPois.some(p => p.name === selectedPoi.name && p.lat === selectedPoi.lat) ? '✕ Remove' : '✓ Select'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Selected stores route bar — compact, right above bottom nav */}
-      {selectedPois.length > 0 && (
-        <div style={{
-          position: 'fixed',
-          bottom: 'calc(var(--nav-height) + var(--safe-bottom))',
-          left: 0, right: 0, zIndex: 55,
-          background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
-          padding: '8px 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ color: 'white', fontWeight: 800, fontSize: 14 }}>
-              {selectedPois.length} store{selectedPois.length !== 1 ? 's' : ''} selected
-            </p>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {selectedPois.map(p => p.name.split(' ').slice(0,2).join(' ')).join(', ')}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setSelectedPois([])}
-              style={{ padding: '8px 12px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.4)', background: 'transparent', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-              Clear
-            </button>
-            <button onClick={() => {
-              // Build Google Maps URL with all selected stores as waypoints
-              const origin = searchCenter
-                ? `${searchCenter.lat},${searchCenter.lng}`
-                : `${selectedPois[0].lat},${selectedPois[0].lng}`
-              const lastStop = selectedPois[selectedPois.length - 1]
-              const destination = `${lastStop.lat},${lastStop.lng}`
-              const waypoints = selectedPois.slice(0, -1)
-                .map(p => `${p.lat},${p.lng}`)
-                .join('|')
-              let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`
-              if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`
-              window.open(url, '_blank')
-            }}
-              style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: 'white', color: '#7c3aed', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
-              🗺️ Route
             </button>
           </div>
         </div>
