@@ -30,6 +30,13 @@ const EXCLUDED_NAMES = [
   'urgent care', 'hospital', 'surgery center', 'medspa', 'med spa',
   // Pharmacy chains
   'cvs', 'walgreens', 'rite aid',
+  // Wine-only stores
+  'wine bar', 'wine shop', 'wine cellar', 'wine merchant', 'wine house',
+  'wine & spirits', 'wine and spirits', 'wine boutique', 'wine store',
+  'total wine', 'spec\'s', 'binny\'s',
+  // Hair extension / wig suppliers (not beauty supply retail)
+  'hair extension', 'hair extensions', 'wig ', 'wigs ', 'wig outlet',
+  'hair wholesale', 'hair vendor', 'hair distributor', 'lace front',
 ]
 function isExcluded(name) {
   const n = (name || '').toLowerCase()
@@ -211,7 +218,7 @@ export default function MapPage() {
         { type: 'convenience_store', label: '🏪', color: '#7c3aed' },
         { type: 'gas_station',       label: '⛽', color: '#f59e0b' },
         { type: 'grocery_or_supermarket', label: '🛒', color: '#16a34a' },
-        { type: 'liquor_store',      label: '🍺', color: '#dc2626' },
+        { type: 'liquor_store',      label: '🏬', color: '#dc2626' },
         // Use keyword search for beauty supply stores (not salons/dermatologists)
         { keyword: 'beauty supply store', label: '💄', color: '#ec4899', typeTag: 'beauty_supply' },
       ]
@@ -360,7 +367,7 @@ export default function MapPage() {
             <span>🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length}</span>
             <span>⛽ {poiMarkers.filter(p=>p.type==='gas_station').length}</span>
             <span>🛒 {poiMarkers.filter(p=>p.type==='grocery_or_supermarket').length}</span>
-            <span>🍺 {poiMarkers.filter(p=>p.type==='liquor_store').length}</span>
+            <span>🏬 {poiMarkers.filter(p=>p.type==='liquor_store').length}</span>
             <span>💄 {poiMarkers.filter(p=>p.type==='beauty_supply').length}</span>
             <span style={{ color: 'var(--text-muted)' }}>({poiMarkers.length} total)</span>
           </div>
