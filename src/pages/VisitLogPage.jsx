@@ -315,7 +315,7 @@ export default function VisitLogPage() {
         </div>
       )}
 
-      <div className="page" style={{ paddingTop: 12, paddingBottom: 160 }}>
+      <div className="page" style={{ paddingTop: 12, paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 140px)' }}>
         <ProductSelector products={products} onAdd={addSaleItem} addedItems={saleItems} />
       </div>
 
@@ -460,7 +460,7 @@ export default function VisitLogPage() {
         <h1>When to come back?</h1>
         <div style={{ width: 36 }} />
       </div>
-      <div className="page" style={{ paddingTop: 20, paddingBottom: 180 }}>
+      <div className="page" style={{ paddingTop: 20, paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 140px)' }}>
         <p className="text-sm text-muted" style={{ marginBottom: 16 }}>
           Set a follow-up date. This will update their next visit date.
         </p>
