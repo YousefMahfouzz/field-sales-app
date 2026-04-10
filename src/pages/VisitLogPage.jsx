@@ -292,7 +292,7 @@ export default function VisitLogPage() {
 
   // ─── PRODUCT SELECTOR MODAL ───
   if (showProducts) return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
+    <div>
       <div className="page-header">
         <button onClick={() => setShowProducts(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }}>←</button>
         <h1>{'Select Products'}</h1>
@@ -304,6 +304,7 @@ export default function VisitLogPage() {
         <div style={{
           padding: '8px 16px', background: 'var(--green-light)', borderBottom: '1px solid #bbf7d0',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position: 'sticky', top: 56, zIndex: 30,
         }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
             🛒 {saleItems.length} item{saleItems.length !== 1 ? 's' : ''} · ${saleItems.reduce((s, i) => s + i.qty * i.unit_price, 0).toFixed(2)}
@@ -314,12 +315,17 @@ export default function VisitLogPage() {
         </div>
       )}
 
-      <div style={{ flex: 1, padding: '12px 16px 0', overflowY: 'auto' }}>
+      <div className="page" style={{ paddingTop: 12, paddingBottom: 90 }}>
         <ProductSelector products={products} onAdd={addSaleItem} addedItems={saleItems} />
       </div>
 
-      {/* Sticky Done button */}
-      <div style={{ padding: '12px 16px calc(12px + var(--safe-bottom))', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+      {/* Fixed Done button — always visible */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+        padding: '12px 16px calc(12px + var(--safe-bottom))',
+        borderTop: '1px solid var(--border)', background: 'var(--surface)',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+      }}>
         <button
           className="btn btn-primary btn-full"
           onClick={() => setShowProducts(false)}
