@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import Icon from '../components/Icon'
 import { supabase } from '../lib/supabase'
+import { reverseGeocodeArea } from '../lib/geo'
+import { showToast } from '../components/Toast'
 
 function Toggle({ label, sub, value, onChange }) {
   return (
@@ -14,6 +16,127 @@ function Toggle({ label, sub, value, onChange }) {
       <div style={{ width:44, height:26, borderRadius:13, background: value ? 'var(--blue)' : '#d1d5db', position:'relative', flexShrink:0, transition:'background 0.2s' }}>
         <div style={{ position:'absolute', top:3, left: value ? 21 : 3, width:20, height:20, borderRadius:'50%', background:'white', boxShadow:'0 1px 3px rgba(0,0,0,0.2)', transition:'left 0.2s' }} />
       </div>
+    </div>
+  )
+}
+
+// Smart area detection from address
+function detectArea(address) {
+  if (!address) return ''
+  const addr = address.toLowerCase()
+  const areas = [
+    { match: ['east new orleans', 'new orleans east', 'chef menteur', 'read blvd', 'bullard', 'lake forest'], area: 'East New Orleans' },
+    { match: ['metairie', 'veterans memorial', 'causeway blvd', 'severn ave'], area: 'Metairie' },
+    { match: ['kenner', 'williams blvd'], area: 'Kenner' },
+    { match: ['harvey', 'lapalco', 'manhattan blvd'], area: 'Westbank' },
+    { match: ['gretna', 'belle chasse', 'terrytown', 'marrero', 'westwego'], area: 'Westbank' },
+    { match: ['chalmette', 'arabi', 'meraux', 'violet'], area: 'Chalmette' },
+    { match: ['slidell', 'pearl river'], area: 'Northshore' },
+    { match: ['covington', 'mandeville', 'madisonville', 'abita'], area: 'Northshore' },
+    { match: ['hammond', 'ponchatoula', 'amite'], area: 'Northshore' },
+    { match: ['laplace', 'reserve', 'gramercy', 'gonzales'], area: 'River Parishes' },
+    { match: ['baton rouge'], area: 'Baton Rouge' },
+    { match: ['baker', 'zachary', 'denham springs'], area: 'Baton Rouge' },
+    { match: ['shreveport', 'bossier'], area: 'Shreveport' },
+    { match: ['monroe', 'west monroe'], area: 'Monroe' },
+    { match: ['lafayette', 'broussard', 'scott'], area: 'Lafayette' },
+    { match: ['lake charles', 'sulphur'], area: 'Lake Charles' },
+    { match: ['houma', 'thibodaux'], area: 'Houma' },
+    { match: ['mid-city', 'mid city', 'tulane', 'carrollton'], area: 'Mid-City' },
+    { match: ['uptown', 'magazine st', 'prytania'], area: 'Uptown' },
+    { match: ['french quarter', 'bourbon', 'royal st', 'decatur'], area: 'French Quarter' },
+    { match: ['gentilly', 'elysian fields'], area: 'Gentilly' },
+    { match: ['algiers'], area: 'Algiers' },
+    { match: ['new orleans', 'nola'], area: 'New Orleans' },
+    { match: ['biloxi', 'gulfport', 'ocean springs', 'pascagoula', 'moss point'], area: 'MS Gulf Coast' },
+    { match: ['hattiesburg'], area: 'Hattiesburg MS' },
+    { match: ['jackson, ms', 'jackson,ms'], area: 'Jackson MS' },
+    { match: ['mobile, al', 'mobile,al', 'prichard', 'saraland'], area: 'Mobile AL' },
+    { match: ['cleveland', 'east cleveland'], area: 'Cleveland' },
+    { match: ['akron'], area: 'Akron' },
+    { match: ['euclid'], area: 'Euclid' },
+    { match: ['parma'], area: 'Parma' },
+    { match: ['lorain'], area: 'Lorain' },
+    { match: ['canton'], area: 'Canton' },
+    { match: ['maple heights'], area: 'Maple Heights' },
+    { match: ['warrensville'], area: 'Warrensville' },
+  ]
+  for (const { match, area } of areas) {
+    if (match.some(m => addr.includes(m))) return area
+  }
+  return ''
+}
+
+function FixAreasButton({ userId }) {
+  const [running, setRunning] = useState(false)
+  const [progress, setProgress] = useState('')
+
+  const handleFix = async () => {
+    setRunning(true)
+    setProgress('Loading customers...')
+    try {
+      // Get all customers with no area or empty area
+      const { data: customers } = await supabase
+        .from('customers')
+        .select('id,business_name,address,lat,lng,area')
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+      
+      const noArea = (customers || []).filter(c => !c.area || !c.area.trim())
+      if (noArea.length === 0) {
+        showToast('All customers already have areas!', 'success')
+        setRunning(false)
+        setProgress('')
+        return
+      }
+
+      setProgress(`Found ${noArea.length} without area, fixing...`)
+      let fixed = 0
+
+      for (const c of noArea) {
+        // Try smart detection from address first
+        let area = detectArea(c.address)
+
+        // If no match and has GPS, reverse geocode
+        if (!area && c.lat && c.lng) {
+          const geocoded = await reverseGeocodeArea(c.lat, c.lng)
+          area = detectArea(geocoded) || geocoded || ''
+        }
+
+        if (area) {
+          await supabase.from('customers').update({ area }).eq('id', c.id)
+          fixed++
+          setProgress(`Fixed ${fixed}/${noArea.length}: ${c.business_name || 'customer'} → ${area}`)
+        } else {
+          setProgress(`Skipped ${c.business_name || 'customer'} (no GPS/address)`)
+        }
+
+        // Small delay to not hammer the geocoder
+        await new Promise(r => setTimeout(r, 300))
+      }
+
+      showToast(`✅ Fixed ${fixed} of ${noArea.length} customers`)
+      setProgress(`Done – ${fixed} updated`)
+    } catch (e) {
+      showToast('Error: ' + e.message, 'error')
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <button
+        className="btn btn-ghost btn-full"
+        onClick={handleFix}
+        disabled={running}
+        style={{ color: '#d97706', borderColor: '#d97706' }}
+      >
+        {running ? '⏳ Fixing areas...' : '📍 Fix Missing Areas'}
+      </button>
+      {progress && (
+        <p className="text-xs text-muted" style={{ marginTop: 6, textAlign: 'center' }}>{progress}</p>
+      )}
     </div>
   )
 }
@@ -148,6 +271,10 @@ export default function SettingsPage() {
           <button className="btn btn-ghost btn-full" onClick={() => navigate('/backup')} style={{ marginBottom:10 }}>
             Backup & Restore
           </button>
+
+          {/* Fix missing areas tool */}
+          <FixAreasButton userId={user?.id} />
+
           <button className="btn btn-ghost btn-full" onClick={signOut} style={{ color:'var(--red)', borderColor:'var(--red)' }}>
             Sign Out
           </button>
