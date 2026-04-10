@@ -216,9 +216,8 @@ export default function MapPage() {
 
       const types = [
         { type: 'convenience_store', label: '🏪', color: '#7c3aed' },
-        { type: 'gas_station',       label: '⛽', color: '#f59e0b' },
         { type: 'grocery_or_supermarket', label: '🛒', color: '#16a34a' },
-        { type: 'liquor_store',      label: '🏬', color: '#dc2626' },
+        { type: 'liquor_store',      label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
         // Use keyword search for beauty supply stores (not salons/dermatologists)
         { keyword: 'beauty supply store', label: '💄', color: '#ec4899', typeTag: 'beauty_supply' },
       ]
@@ -364,11 +363,9 @@ export default function MapPage() {
         {/* Hint when POIs visible */}
         {poiVisible && (
           <div style={{ marginTop: 6, fontSize: 11, color: '#7c3aed', fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span>🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length}</span>
-            <span>⛽ {poiMarkers.filter(p=>p.type==='gas_station').length}</span>
-            <span>🛒 {poiMarkers.filter(p=>p.type==='grocery_or_supermarket').length}</span>
-            <span>🏬 {poiMarkers.filter(p=>p.type==='liquor_store').length}</span>
-            <span>💄 {poiMarkers.filter(p=>p.type==='beauty_supply').length}</span>
+            <span>🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length} convenience</span>
+            <span>🛒 {poiMarkers.filter(p=>p.type==='grocery_or_supermarket').length} grocery/liquor</span>
+            <span>💄 {poiMarkers.filter(p=>p.type==='beauty_supply').length} beauty</span>
             <span style={{ color: 'var(--text-muted)' }}>({poiMarkers.length} total)</span>
           </div>
         )}
