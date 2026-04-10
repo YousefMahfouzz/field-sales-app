@@ -70,7 +70,8 @@ export default function VisitLogPage() {
         image_url: product.image_url,
       }]
     })
-    setShowProducts(false)
+    // Don't close – let user keep adding more products
+    showToast(`✅ ${product.name} added`)
   }
 
   const removeSaleItem = idx => setSaleItems(prev => prev.filter((_, i) => i !== idx))
@@ -291,14 +292,43 @@ export default function VisitLogPage() {
 
   // ─── PRODUCT SELECTOR MODAL ───
   if (showProducts) return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="page-header">
         <button onClick={() => setShowProducts(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }}>←</button>
-        <h1>{'Select Product'}</h1>
+        <h1>{'Select Products'}</h1>
         <div style={{ width: 36 }} />
       </div>
-      <div className="page" style={{ paddingTop: 12 }}>
-        <ProductSelector products={products} onAdd={addSaleItem} />
+
+      {/* Running cart summary */}
+      {saleItems.length > 0 && (
+        <div style={{
+          padding: '8px 16px', background: 'var(--green-light)', borderBottom: '1px solid #bbf7d0',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
+            🛒 {saleItems.length} item{saleItems.length !== 1 ? 's' : ''} · ${saleItems.reduce((s, i) => s + i.qty * i.unit_price, 0).toFixed(2)}
+          </p>
+          <p className="text-xs text-muted">
+            {saleItems.map(i => i.product_name.split(' ')[0]).join(', ')}
+          </p>
+        </div>
+      )}
+
+      <div style={{ flex: 1, padding: '12px 16px 0', overflowY: 'auto' }}>
+        <ProductSelector products={products} onAdd={addSaleItem} addedItems={saleItems} />
+      </div>
+
+      {/* Sticky Done button */}
+      <div style={{ padding: '12px 16px calc(12px + var(--safe-bottom))', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+        <button
+          className="btn btn-primary btn-full"
+          onClick={() => setShowProducts(false)}
+          style={{ fontSize: 16, padding: 14 }}
+        >
+          {saleItems.length > 0
+            ? `Done · ${saleItems.length} item${saleItems.length !== 1 ? 's' : ''} · $${saleItems.reduce((s, i) => s + i.qty * i.unit_price, 0).toFixed(2)}`
+            : 'Done'}
+        </button>
       </div>
     </div>
   )
