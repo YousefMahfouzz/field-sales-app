@@ -5,6 +5,7 @@ import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 import { loadGoogleMaps } from '../lib/mapsLoader'
 import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/customerAvailability'
+import { showToast } from '../components/Toast'
 import Icon from '../components/Icon'
 
 const EXCLUDED_NEARBY = ['circle k', 'circlek']
@@ -134,13 +135,13 @@ export default function MapPage() {
       if (nearby.length > 0) setNearbyCustomers(nearby)
       else navigate(`/customers/new?lat=${lat}&lng=${lng}`)
     } catch {
-      alert('Could not get location.')
+      showToast('Could not get location – enable GPS', 'error')
     } finally {
       setGpsLoading(false)
     }
   }
 
-  const [searchRadius, setSearchRadius] = useState(3000) // meters, default 3km
+  const [searchRadius, setSearchRadius] = useState(3219) // meters, default 2 miles
   const [searchCenter, setSearchCenter] = useState(null) // tapped point or current location
   const searchCircleRef = useRef(null) // circle showing search radius
 
@@ -179,9 +180,11 @@ export default function MapPage() {
       mapInstance.current.fitBounds(searchCircleRef.current.getBounds())
 
       const types = [
-        { type: 'gas_station',     label: '⛽', color: '#f59e0b' },
         { type: 'convenience_store', label: '🏪', color: '#7c3aed' },
-        { type: 'beauty_salon',    label: '💄', color: '#ec4899' },
+        { type: 'gas_station',       label: '⛽', color: '#f59e0b' },
+        { type: 'grocery_or_supermarket', label: '🛒', color: '#16a34a' },
+        { type: 'liquor_store',      label: '🍺', color: '#dc2626' },
+        { type: 'beauty_salon',      label: '💄', color: '#ec4899' },
       ]
 
       const mapDiv = document.createElement('div')
@@ -233,11 +236,12 @@ export default function MapPage() {
       setPoiVisible(true)
 
       if (newMarkers.length === 0) {
-        alert(`No gas stations, convenience stores or beauty salons found within ${searchRadius >= 1000 ? (searchRadius/1000).toFixed(1)+'km' : searchRadius+'m'}. Try a larger radius.`)
+        const miles = (searchRadius / 1609).toFixed(1)
+        showToast(`No stores within ${miles} mi – try larger radius`, 'warning')
         clearPoiMarkers()
       }
     } catch (e) {
-      alert('Search failed: ' + e.message)
+      showToast('Search failed: ' + e.message, 'error')
     } finally {
       setPoiLoading(false)
     }
@@ -252,7 +256,7 @@ export default function MapPage() {
       try {
         const pos = await getCurrentPosition()
         await searchPOIsAt(pos.coords.latitude, pos.coords.longitude)
-      } catch { alert('Could not get location.') }
+      } catch { showToast('Could not get location', 'error') }
     } else {
       await searchPOIsAt(center.lat(), center.lng())
     }
@@ -277,15 +281,15 @@ export default function MapPage() {
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Radius selector */}
+            {/* Radius selector — miles */}
             <select value={searchRadius} onChange={e => { setSearchRadius(Number(e.target.value)); if(poiVisible) clearPoiMarkers() }}
               style={{ fontSize: 12, padding: '4px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--white)', color: 'var(--text)', fontWeight: 600 }}>
-              <option value={1000}>1 km</option>
-              <option value={2000}>2 km</option>
-              <option value={3000}>3 km</option>
-              <option value={5000}>5 km</option>
-              <option value={8000}>8 km</option>
-              <option value={16000}>10 mi</option>
+              <option value={805}>0.5 mi</option>
+              <option value={1609}>1 mi</option>
+              <option value={3219}>2 mi</option>
+              <option value={4828}>3 mi</option>
+              <option value={8047}>5 mi</option>
+              <option value={16093}>10 mi</option>
             </select>
             <span style={{ fontSize:13, color:'var(--text-muted)' }}>{customers.length} customers</span>
           </div>
@@ -315,10 +319,13 @@ export default function MapPage() {
 
         {/* Hint when POIs visible */}
         {poiVisible && (
-          <div style={{ marginTop: 6, fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>
-            ⛽ {poiMarkers.filter(p=>p.type==='gas_station').length} gas &nbsp;
-            🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length} convenience &nbsp;
-            💄 {poiMarkers.filter(p=>p.type==='beauty_salon').length} beauty
+          <div style={{ marginTop: 6, fontSize: 11, color: '#7c3aed', fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <span>🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length}</span>
+            <span>⛽ {poiMarkers.filter(p=>p.type==='gas_station').length}</span>
+            <span>🛒 {poiMarkers.filter(p=>p.type==='grocery_or_supermarket').length}</span>
+            <span>🍺 {poiMarkers.filter(p=>p.type==='liquor_store').length}</span>
+            <span>💄 {poiMarkers.filter(p=>p.type==='beauty_salon').length}</span>
+            <span style={{ color: 'var(--text-muted)' }}>({poiMarkers.length} total)</span>
           </div>
         )}
       </div>
@@ -341,6 +348,32 @@ export default function MapPage() {
           }}
         />
       )}
+
+      {/* FAB: Find Nearby Stores */}
+      <button
+        onClick={handleFindNearby}
+        disabled={poiLoading}
+        style={{
+          position: 'fixed',
+          bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 68px)',
+          left: '50%',
+          transform: 'translateX(-50%) translateZ(0)',
+          zIndex: 40,
+          background: poiVisible ? '#7c3aed' : 'white',
+          color: poiVisible ? 'white' : '#7c3aed',
+          border: poiVisible ? 'none' : '2px solid #7c3aed',
+          borderRadius: 28,
+          padding: '10px 20px',
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: 'pointer',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          whiteSpace: 'nowrap',
+          fontFamily: 'var(--font)',
+        }}
+      >
+        {poiLoading ? '🔍 Searching...' : poiVisible ? '✕ Clear Stores' : '🔍 Find Nearby Stores'}
+      </button>
 
       {/* FAB: Add Customer */}
       <button className="fab" onClick={handleCheckInHere} disabled={gpsLoading}>

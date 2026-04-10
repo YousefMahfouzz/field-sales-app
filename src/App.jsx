@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { SettingsProvider } from './hooks/useSettings'
+import { ToastProvider } from './components/Toast'
 import { useState, useEffect, useRef } from 'react'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
@@ -144,11 +145,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <SettingsProvider>
+    <ToastProvider>
     <BrowserRouter>
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>
+    </ToastProvider>
     </SettingsProvider>
   )
 }

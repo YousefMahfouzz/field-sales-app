@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useCustomers } from '../hooks/useCustomers'
 import { supabase } from '../lib/supabase'
+import { showToast } from '../components/Toast'
 import Icon from '../components/Icon'
 
 // ── Reschedule Modal ──────────────────────────────────────────────
@@ -52,7 +53,7 @@ function RescheduleModal({ overdue, onClose, onDone}) {
       ))
       setDone(true)
       setTimeout(() => { onDone(); onClose() }, 1200)
-    } catch (e) { alert(e.message) }
+    } catch (e) { showToast('❌ ' + e.message, 'error') }
     finally { setSaving(false) }
   }
 

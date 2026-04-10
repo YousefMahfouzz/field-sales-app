@@ -5,6 +5,7 @@ import { getCurrentPosition, findNearbyCustomers } from '../lib/geo'
 import CustomerCard from '../components/CustomerCard'
 import NearbyCustomerModal from '../components/NearbyCustomerModal'
 import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/customerAvailability'
+import { showToast } from '../components/Toast'
 import Icon from '../components/Icon'
 
 // STATUS_LABELS defined inside component for Arabic support
@@ -71,7 +72,7 @@ export default function CustomersPage() {
       if (nearby.length > 0) setNearbyCustomers(nearby)
       else navigate(`/customers/new?lat=${lat}&lng=${lng}`)
     } catch {
-      alert('Could not get location. Please allow location access.')
+      showToast('Could not get location – enable GPS', 'error')
     } finally {
       setGpsLoading(false)
     }

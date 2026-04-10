@@ -5,6 +5,7 @@ import { useVisits } from '../hooks/useVisits'
 import { useProducts } from '../hooks/useProducts'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import { showToast } from '../components/Toast'
 import ProductSelector from '../components/ProductSelector'
 
 export default function VisitLogPage() {
@@ -145,9 +146,10 @@ export default function VisitLogPage() {
       await updateCustomer(customerId, customerUpdates)
 
       setSavedVisitId(visit?.id || null)
+      showToast(hasSale ? `💰 Sale saved – $${totalSale.toFixed(2)}` : '✅ Visit logged')
       setDone(true)
     } catch (err) {
-      alert('Error: ' + err.message)
+      showToast('❌ ' + err.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -178,7 +180,7 @@ export default function VisitLogPage() {
       }
       navigate(`/customers/${customerId}`)
     } catch (err) {
-      alert('Undo failed: ' + err.message)
+      showToast('Undo failed: ' + err.message, 'error')
     } finally {
       setUndoing(false)
     }

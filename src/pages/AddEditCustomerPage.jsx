@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth'
 import { getCurrentPosition, reverseGeocodeArea } from '../lib/geo'
 import { loadGoogleMaps, loadPlaces } from '../lib/mapsLoader'
 import { supabase } from '../lib/supabase'
+import { showToast } from '../components/Toast'
 import ProductSelector from '../components/ProductSelector'
 
 // ─────────────────────────────────────────────
@@ -192,7 +193,7 @@ export default function AddEditCustomerPage() {
           <div style={{ width:36 }} />
         </div>
         <EditCustomerForm customer={customer}
-          onSave={async payload => { await updateCustomer(id, payload); navigate(`/customers/${id}`) }}
+          onSave={async payload => { await updateCustomer(id, payload); showToast('✅ Customer updated'); navigate(`/customers/${id}`) }}
           onCancel={() => navigate(-1)}
         />
       </div>
@@ -339,7 +340,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
         if (area) setForm(f => ({ ...f, area: f.area || area }))
       })
       await fetchNearbyPOI(parseFloat(lat), parseFloat(lng))
-    } catch { alert('Could not get location. Please enable location access.') }
+    } catch { showToast('Could not get location – enable GPS', 'error') }
     finally { setGpsLoading(false) }
   }
 
@@ -411,6 +412,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
           }
         }
       }
+      showToast('✅ Customer added')
       navigate(`/customers/${newCustomer.id}`)
     } catch (err) { setError(err.message) }
     finally { setLoading(false) }
