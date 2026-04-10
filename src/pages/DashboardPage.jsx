@@ -195,22 +195,21 @@ export default function DashboardPage() {
   const today = todayCT()
   // Reliable CT midnight → UTC ISO string (handles DST automatically)
   const ctMidnightToUTC = (ctDateStr) => {
-    // Create a formatter that gives us the UTC offset for America/Chicago at a given moment
+    // Get the UTC offset for America/Chicago on this date
     const probe = new Date(`${ctDateStr}T12:00:00Z`) // noon UTC on that date
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/Chicago',
       timeZoneName: 'shortOffset',
     }).formatToParts(probe)
     const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || 'GMT-6'
-    // Extract offset hours from "GMT-5" or "GMT-6"
+    // Parse "GMT-5" or "GMT-6"
     const match = tzPart.match(/([+-])(\d+)(?::(\d+))?/)
-    const sign = match?.[1] === '+' ? -1 : 1 // invert: GMT-6 means CT is behind, so midnight CT = +6h UTC
+    const offsetSign = match?.[1] === '-' ? 1 : -1 // GMT-5 means CT is behind UTC, so add hours to get UTC
     const offsetH = parseInt(match?.[2] || '6')
     const offsetM = parseInt(match?.[3] || '0')
-    const totalMinutes = sign * (offsetH * 60 + offsetM)
-    // Midnight CT in UTC = ctDateStr midnight + offset
+    // Midnight CT in UTC: if CT is GMT-5, midnight CT = 05:00 UTC
     const midnight = new Date(`${ctDateStr}T00:00:00Z`)
-    midnight.setMinutes(midnight.getMinutes() - totalMinutes)
+    midnight.setMinutes(midnight.getMinutes() + offsetSign * (offsetH * 60 + offsetM))
     return midnight.toISOString()
   }
   const weekAgo = (() => { const d = new Date(Date.now() - 7*24*60*60*1000); return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })()
