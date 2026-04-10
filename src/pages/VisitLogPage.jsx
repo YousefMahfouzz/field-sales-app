@@ -315,14 +315,14 @@ export default function VisitLogPage() {
         </div>
       )}
 
-      <div className="page" style={{ paddingTop: 12, paddingBottom: 90 }}>
+      <div className="page" style={{ paddingTop: 12, paddingBottom: 160 }}>
         <ProductSelector products={products} onAdd={addSaleItem} addedItems={saleItems} />
       </div>
 
-      {/* Fixed Done button — always visible */}
+      {/* Fixed Done button — above bottom nav */}
       <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-        padding: '12px 16px calc(12px + var(--safe-bottom))',
+        position: 'fixed', bottom: 'calc(var(--nav-height) + var(--safe-bottom))', left: 0, right: 0, zIndex: 50,
+        padding: '12px 16px',
         borderTop: '1px solid var(--border)', background: 'var(--surface)',
         boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
       }}>
@@ -460,7 +460,7 @@ export default function VisitLogPage() {
         <h1>When to come back?</h1>
         <div style={{ width: 36 }} />
       </div>
-      <div className="page" style={{ paddingTop: 20, paddingBottom: 120 }}>
+      <div className="page" style={{ paddingTop: 20, paddingBottom: 180 }}>
         <p className="text-sm text-muted" style={{ marginBottom: 16 }}>
           Set a follow-up date. This will update their next visit date.
         </p>
@@ -511,10 +511,10 @@ export default function VisitLogPage() {
         </div>
       </div>
 
-      {/* Fixed bottom buttons — always visible */}
+      {/* Fixed bottom buttons — above bottom nav */}
       <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-        padding: '12px 16px calc(12px + var(--safe-bottom))',
+        position: 'fixed', bottom: 'calc(var(--nav-height) + var(--safe-bottom))', left: 0, right: 0, zIndex: 50,
+        padding: '12px 16px',
         borderTop: '1px solid var(--border)', background: 'var(--surface)',
         boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
       }}>
