@@ -46,6 +46,31 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" />
 }
 
+function OfflineBanner() {
+  const [offline, setOffline] = React.useState(!navigator.onLine)
+  React.useEffect(() => {
+    const on = () => setOffline(false)
+    const off = () => setOffline(true)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+  if (!offline) return null
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+      background: '#92400e', color: 'white', textAlign: 'center',
+      padding: '8px 16px', fontSize: 13, fontWeight: 600,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+      </svg>
+      You're offline — saved data still accessible, new changes will sync when reconnected
+    </div>
+  )
+}
+
 function AppRoutes() {
   const { user, signOut } = useAuth()
   const location = useLocation()

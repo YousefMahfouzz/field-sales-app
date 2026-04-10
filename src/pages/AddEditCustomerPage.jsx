@@ -248,36 +248,50 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
       const ok = await loadPlaces()
       if (!ok) { setStep(2); return }
 
-      const mapDiv = document.createElement('div')
-      const tempMap = new window.google.maps.Map(mapDiv, { center: { lat, lng }, zoom: 15 })
-      const service = new window.google.maps.places.PlacesService(tempMap)
-      const types = ['convenience_store', 'gas_station', 'beauty_salon']
-      const ORDER = { convenience_store: 0, gas_station: 1, beauty_salon: 2 }
+      const types = [
+        'convenience_store', 'gas_station', 'beauty_salon',
+        'grocery_store', 'supermarket', 'hair_care', 'beauty_store',
+      ]
+      const ORDER = {
+        convenience_store: 0, gas_station: 1, beauty_salon: 2,
+        grocery_store: 3, supermarket: 3, hair_care: 2, beauty_store: 2,
+      }
 
-      // Search helper — try tight radius first, widen if nothing found
+      // Search helper — use legacy PlacesService (most compatible across API versions)
       const searchWithRadius = async (radius) => {
         const all = []
-        let remaining = types.length
+        const mapDiv = document.createElement('div')
+        const tempMap = new window.google.maps.Map(mapDiv, { center: { lat, lng }, zoom: 15 })
+        const service = new window.google.maps.places.PlacesService(tempMap)
+
+        // Deduplicated types to avoid redundant calls
+        const searchTypes = [...new Set(types)]
+        let remaining = searchTypes.length
+
         await new Promise(resolve => {
-          const timeout = setTimeout(resolve, 10000)
-          types.forEach(type => {
-            service.nearbySearch({ location: { lat, lng }, radius, type }, (places, status) => {
-              const OK = window.google.maps.places.PlacesService.OK
-              if (status === OK && places) {
-                for (const p of places.slice(0, 5)) {
-                  if (isExcl(p.name)) continue
-                  if (all.find(x => x.name === p.name)) continue
-                  const dlat = lat - p.geometry.location.lat()
-                  const dlng = lng - p.geometry.location.lng()
-                  all.push({
-                    name: p.name, address: p.vicinity, type,
-                    dist: Math.round(Math.sqrt(dlat*dlat + dlng*dlng) * 111000),
-                    rating: p.rating
-                  })
+          const timeout = setTimeout(resolve, 12000)
+          searchTypes.forEach(type => {
+            service.nearbySearch(
+              { location: { lat, lng }, radius, keyword: '', type },
+              (places, status, pagination) => {
+                const OK = window.google.maps.places.PlacesServiceStatus.OK
+                if (status === OK && places) {
+                  for (const p of places.slice(0, 8)) {
+                    if (isExcl(p.name)) continue
+                    if (all.find(x => x.place_id === p.place_id)) continue
+                    const dlat = lat - p.geometry.location.lat()
+                    const dlng = lng - p.geometry.location.lng()
+                    all.push({
+                      name: p.name, address: p.vicinity, type,
+                      place_id: p.place_id,
+                      dist: Math.round(Math.sqrt(dlat*dlat + dlng*dlng) * 111000),
+                      rating: p.rating
+                    })
+                  }
                 }
+                if (--remaining === 0) { clearTimeout(timeout); resolve() }
               }
-              if (--remaining === 0) { clearTimeout(timeout); resolve() }
-            })
+            )
           })
         })
         return all
@@ -596,8 +610,74 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
             <input className="form-input" type="date" value={callbackDate} min={today} onChange={e => setCallbackDate(e.target.value)} />
           </div>
           <div className="form-group">
-            <label className="form-label">Best time to visit</label>
-            <input className="form-input" value={callbackNote} onChange={e => setCallbackNote(e.target.value)} placeholder="e.g. Come Monday morning, weekdays only..." />
+            <label className="form-label" style={{fontWeight:700,fontSize:15}}>Best time to visit</label>
+            <p style={{fontSize:12,color:'var(--text-muted)',marginBottom:10,marginTop:2}}>
+              Tap one — helps you show up at the right time
+            </p>
+            {/* Popular / most used */}
+            <p style={{fontSize:11,fontWeight:700,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Popular</p>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:12}}>
+              {[
+                'Mornings (8–11am)','After 10am','Midday (11–2pm)',
+                'Afternoons (12–4pm)','After 2pm','Late afternoon (3–6pm)',
+                'Weekdays only','Anytime',
+              ].map(t => (
+                <button key={t} type="button"
+                  onClick={() => setForm(f => ({ ...f, best_time: f.best_time === t ? '' : t }))}
+                  style={{
+                    padding:'8px 14px', borderRadius:20, fontSize:13, cursor:'pointer', fontWeight:600,
+                    background: form.best_time === t ? 'var(--blue)' : 'var(--surface)',
+                    color: form.best_time === t ? 'white' : 'var(--text)',
+                    border: `2px solid ${form.best_time === t ? 'var(--blue)' : 'var(--border)'}`,
+                    transition:'all 0.12s',
+                  }}>{t}</button>
+              ))}
+            </div>
+            {/* Specific days */}
+            <p style={{fontSize:11,fontWeight:700,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Specific Days</p>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:12}}>
+              {[
+                'Mon, Wed, Fri','Tue & Thu','Mon–Fri 9–5',
+                'Saturdays','Weekends','Avoid Mondays','Avoid Fridays',
+              ].map(t => (
+                <button key={t} type="button"
+                  onClick={() => setForm(f => ({ ...f, best_time: f.best_time === t ? '' : t }))}
+                  style={{
+                    padding:'8px 14px', borderRadius:20, fontSize:13, cursor:'pointer', fontWeight:500,
+                    background: form.best_time === t ? '#7c3aed' : 'var(--surface)',
+                    color: form.best_time === t ? 'white' : 'var(--text)',
+                    border: `1.5px solid ${form.best_time === t ? '#7c3aed' : 'var(--border)'}`,
+                    transition:'all 0.12s',
+                  }}>{t}</button>
+              ))}
+            </div>
+            {/* Special conditions */}
+            <p style={{fontSize:11,fontWeight:700,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Conditions</p>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:12}}>
+              {[
+                'When owner is in','Call first','Morning rush over',
+                'After lunch rush','Not during rush hour','Early bird (before 9am)',
+              ].map(t => (
+                <button key={t} type="button"
+                  onClick={() => setForm(f => ({ ...f, best_time: f.best_time === t ? '' : t }))}
+                  style={{
+                    padding:'8px 14px', borderRadius:20, fontSize:13, cursor:'pointer', fontWeight:500,
+                    background: form.best_time === t ? '#059669' : 'var(--surface)',
+                    color: form.best_time === t ? 'white' : 'var(--text)',
+                    border: `1.5px solid ${form.best_time === t ? '#059669' : 'var(--border)'}`,
+                    transition:'all 0.12s',
+                  }}>{t}</button>
+              ))}
+            </div>
+            {form.best_time && (
+              <div style={{background:'var(--blue)',color:'white',borderRadius:10,padding:'8px 14px',marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:13,fontWeight:600}}>{form.best_time}</span>
+                <button type="button" onClick={() => setForm(f => ({...f, best_time:''}))}
+                  style={{background:'none',border:'none',color:'white',fontSize:18,cursor:'pointer',padding:'0 4px'}}>×</button>
+              </div>
+            )}
+            <input className="form-input" value={form.best_time} onChange={e => setForm(f => ({...f, best_time: e.target.value}))}
+              placeholder="Or type custom... e.g. Tuesdays after noon" style={{fontSize:14}} />
           </div>
           <button className="btn btn-primary btn-full" onClick={() => setStep(6)} disabled={!callbackDate} style={{ padding:'14px',fontSize:16 }}>Next →</button>
           <button className="btn btn-ghost btn-full" onClick={() => setStep(6)} style={{ marginTop:8 }}>Skip, just log</button>
@@ -647,25 +727,6 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
         <div className="form-group">
           <label className="form-label">Name + role <span className="text-muted" style={{ fontWeight:400 }}>(optional)</span></label>
           <input className="form-input" value={form.decision_maker} onChange={set('decision_maker')} placeholder="e.g. Mike (owner), Sarah (manager)" />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Best time to visit <span className="text-muted" style={{ fontWeight:400 }}>(optional)</span></label>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:8 }}>
-            {['Mornings (8–12)','Afternoons (12–4)','Evenings (4–7)','Weekdays','Weekends','Mon–Fri 9–5','Anytime'].map(t => (
-              <button key={t} type="button" onClick={() => setForm(f => ({ ...f, best_time: f.best_time === t ? '' : t }))}
-                style={{ padding:'7px 13px', borderRadius:20, fontSize:13, cursor:'pointer', fontWeight:500,
-                  background: form.best_time === t ? 'var(--blue)' : 'var(--gray-light)',
-                  color: form.best_time === t ? 'white' : 'var(--text)',
-                  border: `1.5px solid ${form.best_time === t ? 'var(--blue)' : 'var(--border)'}` }}>
-                {t}
-              </button>
-            ))}
-          </div>
-          <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder={'Or type custom time...'} style={{ fontSize:14 }} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Best time to visit <span className="text-muted" style={{ fontWeight:400 }}>(optional)</span></label>
-          <input className="form-input" value={form.best_time} onChange={set('best_time')} placeholder="e.g. Mornings, Tuesdays after 10am..." />
         </div>
         <div style={{ background:'var(--gray-light)',borderRadius:12,padding:'12px 14px',marginBottom:16 }}>
           <p style={{ fontWeight:700,fontSize:14,marginBottom:4 }}>{form.business_name}</p>
