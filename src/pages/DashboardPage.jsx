@@ -239,10 +239,8 @@ export default function DashboardPage() {
       // Filter today using CT timezone comparison
       const todayV = v.filter(x => x.created_at &&
         new Date(x.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) === todayStr)
-      const sales  = v.filter(x => x.had_sale)
-      const rev    = sales.reduce((s, x) => s + (x.sale_amount || 0), 0)
-      const cst    = sales.reduce((s, x) => s + (x.cost || 0), 0)
-      // Also pull today's revenue from sale_items (more accurate)
+
+      // Pull today's revenue from sale_items (accurate computed columns)
       const { data: todaySales } = await supabase
         .from('sale_items').select('total_price,total_profit')
         .eq('user_id', user.id)
@@ -250,14 +248,25 @@ export default function DashboardPage() {
         .lte('created_at', new Date().toISOString())
       const todayRev  = (todaySales||[]).reduce((s,i) => s+(i.total_price||0), 0)
       const todayProf = (todaySales||[]).reduce((s,i) => s+(i.total_profit||0), 0)
+
+      // Pull week's revenue from sale_items too (accurate, not from visits.sale_amount)
+      const { data: weekSales } = await supabase
+        .from('sale_items').select('total_price,total_cost,total_profit')
+        .eq('user_id', user.id)
+        .gte('created_at', ctMidnightToUTC(weekAgo))
+        .lte('created_at', new Date().toISOString())
+      const weekRev    = (weekSales||[]).reduce((s,i) => s+(i.total_price||0), 0)
+      const weekCost   = (weekSales||[]).reduce((s,i) => s+(i.total_cost||0), 0)
+      const weekProfit = (weekSales||[]).reduce((s,i) => s+(i.total_profit||0), 0)
+
       setStats({
         todayVisits:  todayV.length,
         todayRevenue: todayRev,
         todayProfit:  todayProf,
         weekVisits:   v.length,
-        weekSales:    sales.length,
-        weekRevenue:  rev,
-        weekProfit:   rev - cst,
+        weekSales:    v.filter(x => x.had_sale).length,
+        weekRevenue:  weekRev,
+        weekProfit:   weekProfit,
       })
       setRecentVisits(v.slice(0, 6))
 
