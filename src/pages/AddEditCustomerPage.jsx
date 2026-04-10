@@ -698,7 +698,27 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
   if (step === 5) {
     if (saleOutcome === 'come_back') return (
       <div>
-        <Header title="When to come back?" />
+        <div>
+          <div className="page-header">
+            <button onClick={goBack} style={{ background:'none',border:'none',fontSize:22,cursor:'pointer' }}>←</button>
+            <div style={{ flex:1 }} />
+            <button
+              onClick={() => setStep(6)}
+              disabled={!callbackDate}
+              style={{
+                background: callbackDate ? 'var(--blue)' : 'var(--gray-light)',
+                color: callbackDate ? 'white' : 'var(--text-muted)',
+                border: 'none', borderRadius: 8, padding: '6px 14px',
+                fontSize: 14, fontWeight: 700,
+                cursor: callbackDate ? 'pointer' : 'default',
+              }}
+            >Next →</button>
+          </div>
+          <StepBar current={step} total={TOTAL} />
+          <div style={{ padding:'0 20px 18px' }}>
+            <h2 style={{ fontSize:22,fontWeight:800,marginBottom:4 }}>When to come back?</h2>
+          </div>
+        </div>
         <div style={{ padding:'0 20px' }}>
           <div style={{ display:'flex',gap:8,flexWrap:'wrap',marginBottom:14 }}>
             {[{l:'Tomorrow',d:1},{l:'In 2 days',d:2},{l:'This week',d:4},{l:'Next week',d:7},{l:'2 weeks',d:14},{l:'Next month',d:30}].map(({l,d}) => {
@@ -715,12 +735,27 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
             <label className="form-label">Or pick date</label>
             <input className="form-input" type="date" value={callbackDate} min={today} onChange={e => setCallbackDate(e.target.value)} />
           </div>
+
+          {callbackDate && (
+            <div style={{ background: 'var(--blue-light)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, border: '1px solid #bfdbfe' }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
+                📅 {new Date(callbackDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </p>
+            </div>
+          )}
+
+          <div className="form-group">
+            <label className="form-label">What they said (optional)</label>
+            <input className="form-input" value={callbackNote} onChange={e => setCallbackNote(e.target.value)}
+              placeholder="e.g. Come back Monday morning, ask for Mike" />
+          </div>
+
           <div className="form-group">
             <label className="form-label" style={{fontWeight:700,fontSize:15}}>Best time to visit</label>
             <p style={{fontSize:12,color:'var(--text-muted)',marginBottom:10,marginTop:2}}>
-              Tap one — helps you show up at the right time
+              Tap one – helps you show up at the right time
             </p>
-            {/* Popular / most used */}
+            {/* Popular */}
             <p style={{fontSize:11,fontWeight:700,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Popular</p>
             <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:12}}>
               {[
@@ -735,7 +770,6 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
                     background: form.best_time === t ? 'var(--blue)' : 'var(--surface)',
                     color: form.best_time === t ? 'white' : 'var(--text)',
                     border: `2px solid ${form.best_time === t ? 'var(--blue)' : 'var(--border)'}`,
-                    transition:'all 0.12s',
                   }}>{t}</button>
               ))}
             </div>
@@ -753,11 +787,10 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
                     background: form.best_time === t ? '#7c3aed' : 'var(--surface)',
                     color: form.best_time === t ? 'white' : 'var(--text)',
                     border: `1.5px solid ${form.best_time === t ? '#7c3aed' : 'var(--border)'}`,
-                    transition:'all 0.12s',
                   }}>{t}</button>
               ))}
             </div>
-            {/* Special conditions */}
+            {/* Conditions */}
             <p style={{fontSize:11,fontWeight:700,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Conditions</p>
             <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:12}}>
               {[
@@ -771,7 +804,6 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
                     background: form.best_time === t ? '#059669' : 'var(--surface)',
                     color: form.best_time === t ? 'white' : 'var(--text)',
                     border: `1.5px solid ${form.best_time === t ? '#059669' : 'var(--border)'}`,
-                    transition:'all 0.12s',
                   }}>{t}</button>
               ))}
             </div>
@@ -785,8 +817,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
             <input className="form-input" value={form.best_time} onChange={e => setForm(f => ({...f, best_time: e.target.value}))}
               placeholder="Or type custom... e.g. Tuesdays after noon" style={{fontSize:14}} />
           </div>
-          <button className="btn btn-primary btn-full" onClick={() => setStep(6)} disabled={!callbackDate} style={{ padding:'14px',fontSize:16 }}>Next →</button>
-          <button className="btn btn-ghost btn-full" onClick={() => setStep(6)} style={{ marginTop:8 }}>Skip, just log</button>
+          <button className="btn btn-ghost btn-full" onClick={() => setStep(6)} style={{ marginTop:8, marginBottom: 40 }}>Skip, just log</button>
         </div>
       </div>
     )
