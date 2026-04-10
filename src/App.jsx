@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { SettingsProvider } from './hooks/useSettings'
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import CustomersPage from './pages/CustomersPage'
@@ -36,19 +36,19 @@ import BottomNav from './components/BottomNav'
 // Routes to public homepage if not logged in, app dashboard if logged in
 function PublicOrApp() {
   const { user, loading } = useAuth()
-  if (loading) return <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',fontSize:24 }}>⏳</div>
+  if (loading) return <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100dvh',fontSize:24 }}>⏳</div>
   return user ? <DashboardPage /> : <PublicHomePage />
 }
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',fontSize:24 }}>⏳</div>
+  if (loading) return <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100dvh',fontSize:24 }}>⏳</div>
   return user ? children : <Navigate to="/login" />
 }
 
 function OfflineBanner() {
-  const [offline, setOffline] = React.useState(!navigator.onLine)
-  React.useEffect(() => {
+  const [offline, setOffline] = useState(!navigator.onLine)
+  useEffect(() => {
     const on = () => setOffline(false)
     const off = () => setOffline(true)
     window.addEventListener('online', on)
@@ -102,6 +102,7 @@ function AppRoutes() {
 
   return (
     <>
+      <OfflineBanner />
               <Routes>
           <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
           <Route path="/" element={<PublicOrApp />} />

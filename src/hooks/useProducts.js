@@ -36,11 +36,10 @@ export function useProducts() {
   }
 
   const updateProduct = async (id, updates) => {
-    const { error, count } = await supabase
+    const { error } = await supabase
       .from('products')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select('id') // need select to get count
     if (error) throw error
     // Re-fetch the updated product fresh from DB
     const { data, error: fetchErr } = await supabase

@@ -192,27 +192,25 @@ export default function DashboardPage() {
   // CT day boundaries — compute fresh each render so day change auto-updates
   const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   const today = todayCT()
-  // Reliable CT → UTC converter using Intl API (handles DST automatically)
+  // Reliable CT midnight → UTC ISO string (handles DST automatically)
   const ctMidnightToUTC = (ctDateStr) => {
-    // Parse the CT date and find midnight CT in UTC
-    const [y,m,d] = ctDateStr.split('-').map(Number)
-    // Create a date at noon CT to avoid DST edge cases, then find that day's midnight
-    const noonCT = new Date(`${ctDateStr}T18:00:00Z`) // noon CT ≈ 18:00 UTC (rough)
-    const ctDateAtNoon = noonCT.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-    // Binary search for CT midnight: find UTC time where CT date changes
-    // Simpler: use the fact that CT is either UTC-5 or UTC-6
-    // Get the actual offset by checking what UTC time corresponds to CT midnight
-    const testMidnight = new Date(`${ctDateStr}T00:00:00`)
-    // Format as if it were UTC and see what CT gives
-    const jan = new Date(`${y}-01-15T12:00:00Z`)
-    const jul = new Date(`${y}-07-15T12:00:00Z`)
-    const janOffset = -jan.toLocaleString('en-US', { timeZone: 'America/Chicago', timeZoneName: 'shortOffset' }).match(/GMT([+-]\d+)/)?.[1] || 6
-    const julOffset = -jul.toLocaleString('en-US', { timeZone: 'America/Chicago', timeZoneName: 'shortOffset' }).match(/GMT([+-]\d+)/)?.[1] || 5
-    // Check if this date is DST (summer = CDT = UTC-5) or CST (winter = UTC-6)
-    const testDate = new Date(`${ctDateStr}T12:00:00Z`)
-    const isDST = testDate.toLocaleString('en-US', { timeZone: 'America/Chicago', timeZoneName: 'short' }).includes('CDT')
-    const offsetHours = isDST ? 5 : 6
-    return `${ctDateStr}T${String(offsetHours).padStart(2,'0')}:00:00.000Z`
+    // Create a formatter that gives us the UTC offset for America/Chicago at a given moment
+    const probe = new Date(`${ctDateStr}T12:00:00Z`) // noon UTC on that date
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      timeZoneName: 'shortOffset',
+    }).formatToParts(probe)
+    const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || 'GMT-6'
+    // Extract offset hours from "GMT-5" or "GMT-6"
+    const match = tzPart.match(/([+-])(\d+)(?::(\d+))?/)
+    const sign = match?.[1] === '+' ? -1 : 1 // invert: GMT-6 means CT is behind, so midnight CT = +6h UTC
+    const offsetH = parseInt(match?.[2] || '6')
+    const offsetM = parseInt(match?.[3] || '0')
+    const totalMinutes = sign * (offsetH * 60 + offsetM)
+    // Midnight CT in UTC = ctDateStr midnight + offset
+    const midnight = new Date(`${ctDateStr}T00:00:00Z`)
+    midnight.setMinutes(midnight.getMinutes() - totalMinutes)
+    return midnight.toISOString()
   }
   const weekAgo = (() => { const d = new Date(Date.now() - 7*24*60*60*1000); return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })()
 

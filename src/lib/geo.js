@@ -16,6 +16,7 @@ export function getDistance(lat1, lng1, lat2, lng2) {
 // Find customers within radius meters of a point
 export function findNearbyCustomers(customers, lat, lng, radiusMeters = 20000) {
   return customers.filter((c) => {
+    if (c.lat == null || c.lng == null) return false
     const dist = getDistance(lat, lng, c.lat, c.lng)
     return dist <= radiusMeters
   })

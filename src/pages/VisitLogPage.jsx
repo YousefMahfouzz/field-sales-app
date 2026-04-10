@@ -34,6 +34,20 @@ export default function VisitLogPage() {
   const [showProducts, setShowProducts] = useState(false)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [visitGps, setVisitGps] = useState(null)
+  const [savedVisitId, setSavedVisitId] = useState(null)
+  const [undoing, setUndoing] = useState(false)
+
+  // Silently capture GPS when visit page opens
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setVisitGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {}, // silently fail
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      )
+    }
+  }, [])
 
   const today = new Date().toISOString().split('T')[0]
   const totalSale = saleItems.reduce((s, i) => s + i.qty * i.unit_price, 0)
@@ -76,6 +90,8 @@ export default function VisitLogPage() {
         sale_amount: hasSale ? totalSale : 0,
         cost: hasSale ? totalCost : 0,
         callback_date: callbackDate || null,
+        visit_lat: visitGps?.lat || null,
+        visit_lng: visitGps?.lng || null,
       }
 
       // Insert visit
@@ -128,6 +144,7 @@ export default function VisitLogPage() {
       // No sale + no callback date: leave next_visit_date as-is (keep whatever was manually set)
       await updateCustomer(customerId, customerUpdates)
 
+      setSavedVisitId(visit?.id || null)
       setDone(true)
     } catch (err) {
       alert('Error: ' + err.message)
@@ -136,9 +153,40 @@ export default function VisitLogPage() {
     }
   }
 
+  // ─── UNDO ───
+  const handleUndo = async () => {
+    if (!savedVisitId) return
+    setUndoing(true)
+    try {
+      // Soft-delete the visit
+      await supabase.from('visits').update({ deleted_at: new Date().toISOString() }).eq('id', savedVisitId)
+      // Delete associated sale items
+      await supabase.from('sale_items').delete().eq('visit_id', savedVisitId)
+      // Restore stock for sold items
+      for (const item of saleItems) {
+        const product = products.find(p => p.id === item.product_id)
+        if (product) {
+          await updateProduct(item.product_id, { stock_qty: (product.stock_qty || 0) + item.qty })
+        }
+      }
+      // Revert customer sale totals
+      if (saleItems.length > 0) {
+        await updateCustomer(customerId, {
+          sale_amount: Math.max(0, (customer?.sale_amount || 0) - totalSale),
+          cost: Math.max(0, (customer?.cost || 0) - totalCost),
+        })
+      }
+      navigate(`/customers/${customerId}`)
+    } catch (err) {
+      alert('Undo failed: ' + err.message)
+    } finally {
+      setUndoing(false)
+    }
+  }
+
   // ─── DONE SCREEN ───
   if (done) return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
       <div style={{ fontSize: 64, marginBottom: 12 }}>
         {outcome === 'come_back' ? '📅' : outcome === 'avoid' ? '⛔' : saleItems.length > 0 ? '💰' : '✅'}
       </div>
@@ -175,6 +223,19 @@ export default function VisitLogPage() {
         <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/')}>🏠 Home</button>
         <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => navigate(`/customers/${customerId}`)}>👤 Profile</button>
       </div>
+      {savedVisitId && (
+        <button
+          onClick={handleUndo}
+          disabled={undoing}
+          style={{
+            marginTop: 16, background: 'none', border: 'none',
+            color: 'var(--red)', fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', opacity: undoing ? 0.5 : 0.7,
+            textDecoration: 'underline',
+          }}>
+          {undoing ? 'Undoing...' : '↩ Undo this visit'}
+        </button>
+      )}
     </div>
   )
 
@@ -320,13 +381,20 @@ export default function VisitLogPage() {
 
         {/* Quick date options */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-          {[
-            { label: 'Tomorrow', days: 1 },
-            { label: 'In 2 days', days: 2 },
-            { label: 'This week', days: 3 },
-            { label: 'Next week', days: 7 },
-            { label: '2 weeks', days: 14 },
-          ].map(({ label, days }) => {
+          {(() => {
+            const now = new Date()
+            const dow = now.getDay() // 0=Sun, 5=Fri, 6=Sat
+            const daysToFriday = dow <= 5 ? (5 - dow) : 6 // days until this Friday
+            const daysToNextMon = dow === 0 ? 1 : (8 - dow) // days until next Monday
+            return [
+              { label: 'Tomorrow', days: 1 },
+              { label: 'In 2 days', days: 2 },
+              ...(daysToFriday > 2 ? [{ label: 'This Friday', days: daysToFriday }] : []),
+              { label: 'Next Monday', days: daysToNextMon },
+              { label: '2 weeks', days: 14 },
+              { label: '1 month', days: 30 },
+            ]
+          })().map(({ label, days }) => {
             const d = new Date(); d.setDate(d.getDate() + days)
             const val = d.toISOString().split('T')[0]
             return (

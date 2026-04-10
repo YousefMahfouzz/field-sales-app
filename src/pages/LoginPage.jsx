@@ -59,7 +59,7 @@ export default function LoginPage() {
   const labelStyle = { display:'block', fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.5)', marginBottom:6, letterSpacing:'0.5px', textTransform:'uppercase' }
 
   return (
-    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'32px 24px', background:'#0a0a0a' }}>
+    <div style={{ minHeight:'100dvh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'32px 24px', background:'#0a0a0a' }}>
       <div style={{ textAlign:'center', marginBottom:40 }}>
         <div style={{ width:56, height:56, background:'linear-gradient(135deg,#6366f1,#2563eb)', borderRadius:16, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, margin:'0 auto 14px', boxShadow:'0 8px 24px rgba(99,102,241,0.4)' }}>🛒</div>
         <h1 style={{ fontSize:24, fontWeight:900, color:'white', marginBottom:4, letterSpacing:'-0.5px' }}>Kanz Supply</h1>

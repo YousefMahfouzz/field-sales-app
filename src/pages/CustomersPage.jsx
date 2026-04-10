@@ -12,8 +12,9 @@ import Icon from '../components/Icon'
 export default function CustomersPage() {
   const navigate = useNavigate()
     const [searchParams] = useSearchParams()
-  const { customers, loading } = useCustomers()
+  const { customers, loading, fetchCustomers } = useCustomers()
   const [search, setSearch] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
   const [sortBy, setSortBy] = useState('next_visit')
   const [groupByArea, setGroupByArea] = useState(true)
   const [smartFilter, setSmartFilter] = useState('all')
@@ -99,12 +100,12 @@ export default function CustomersPage() {
           <div style={{ display: 'flex', gap: 6 }}>
             {dueTodayCount > 0 && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', borderRadius: 10, padding: '2px 7px', border: '1px solid #bfdbfe' }}>
-                {dueTodayCount} 'due today'
+                {dueTodayCount} due today
               </span>
             )}
             {overdueCount > 0 && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: '#fef2f2', borderRadius: 10, padding: '2px 7px', border: '1px solid #fca5a5' }}>
-                {overdueCount} 'overdue'
+                {overdueCount} overdue
               </span>
             )}
           </div>
@@ -119,11 +120,24 @@ export default function CustomersPage() {
     )
   }
 
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetchCustomers()
+    setRefreshing(false)
+  }
+
   return (
     <div>
       <div className="page-header">
         <h1>{'Customers'}</h1>
-        <button className="btn btn-primary btn-sm" onClick={() => navigate('/customers/new')}>+ Add</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button onClick={handleRefresh} disabled={refreshing} style={{
+            background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '4px 6px',
+            opacity: refreshing ? 0.5 : 1, transition: 'transform 0.3s',
+            transform: refreshing ? 'rotate(360deg)' : 'none',
+          }} title="Refresh">🔄</button>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate('/customers/new')}>+ Add</button>
+        </div>
       </div>
 
       {/* Smart filters */}
