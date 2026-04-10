@@ -8,25 +8,26 @@ import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/custom
 import { showToast } from '../components/Toast'
 import Icon from '../components/Icon'
 
-// ── Exclude chain stores, medical offices, and big-box retailers ──
+// ── Exclude corporate chains, medical offices, and big-box retailers ──
+// NOTE: Shell, Chevron, Exxon, Valero, Citgo, Marathon, BP are NOT excluded
+// because many Gulf Coast gas stations under these brands are independently owned.
 const EXCLUDED_NAMES = [
-  // Gas station chains (not independent)
+  // Corporate-operated gas station chains (never independent)
   'circle k', 'racetrac', 'racetrack', 'race trac', 'qt ', 'quiktrip', 'loves travel',
   'buc-ee', 'bucees', 'pilot travel', 'flying j', 'wawa', 'sheetz', 'speedway',
-  'marathon', 'bp ', 'chevron', 'exxon', 'mobil', 'shell ', 'valero', 'citgo',
   'murphy usa', 'murphyusa', 'sams fuel', "sam's fuel", 'costco gas', 'kroger fuel',
   // Big-box grocery (not independent)
   'walmart', 'wal-mart', 'target', 'costco', 'sams club', "sam's club",
   'whole foods', 'trader joe', 'aldi', 'lidl', 'kroger', 'publix', 'safeway',
   'albertsons', 'winn-dixie', 'winn dixie', 'food lion',
   // Beauty chains (not beauty supply stores)
-  'ulta', 'ultra beauty', 'sephora', 'sally beauty', 'bath & body',
+  'ulta ', 'ulta beauty', 'sephora', 'sally beauty', 'bath & body',
   'bath and body', 'the body shop', 'bluemercury', 'morphe',
   // Medical / dermatology (not retail)
   'dermatolog', 'derma ', 'derm ', 'skin care clinic', 'skin clinic',
-  'medical', 'doctor', ' md', ' m.d', 'physician', 'pediatr', 'dentist',
+  'medical center', 'doctor', ' md', ' m.d', 'physician', 'pediatr', 'dentist',
   'dental', 'orthodont', 'chiropract', 'optometr', 'ophthalmol',
-  'urgent care', 'hospital', 'clinic', 'surgery center', 'medspa', 'med spa',
+  'urgent care', 'hospital', 'surgery center', 'medspa', 'med spa',
   // Pharmacy chains
   'cvs', 'walgreens', 'rite aid',
 ]
