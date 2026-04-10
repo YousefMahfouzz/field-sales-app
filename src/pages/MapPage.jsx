@@ -67,11 +67,14 @@ export default function MapPage() {
     }
   }, [])
   const [poiLoading, setPoiLoading] = useState(false)
-  const [poiMarkers, setPoiMarkers] = useState([])
+  const [poiMarkers, setPoiMarkers] = useState([]) // { name, type, label, lat, lng, vicinity, rating }
   const [poiVisible, setPoiVisible] = useState(false)
   const poiMarkersRef = useRef([])
   const [mapError, setMapError] = useState('')
   const currentLocMarker = useRef(null)
+  const activeInfoWindow = useRef(null) // track open info window to auto-close
+  const [selectedPoi, setSelectedPoi] = useState(null) // tapped POI store
+  const [selectedPois, setSelectedPois] = useState([]) // stores selected for route
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -141,7 +144,7 @@ export default function MapPage() {
           strokeWeight: 2,
         },
       })
-      marker.addListener('click', () => setSelectedCustomer(customer))
+      marker.addListener('click', () => { setSelectedPoi(null); setSelectedCustomer(customer) })
       markersRef.current.push(marker)
     })
   }, [customers, smartFilter, mapReady])
@@ -172,6 +175,9 @@ export default function MapPage() {
     poiMarkersRef.current = []
     setPoiVisible(false)
     setPoiMarkers([])
+    setSelectedPoi(null)
+    setSelectedPois([])
+    if (activeInfoWindow.current) { activeInfoWindow.current.close(); activeInfoWindow.current = null }
     if (searchCircleRef.current) { searchCircleRef.current.setMap(null); searchCircleRef.current = null }
   }, [])
 
@@ -224,6 +230,17 @@ export default function MapPage() {
             if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
               for (const place of places.slice(0, 20)) {
                 if (isExcluded(place.name)) continue
+                const plat = place.geometry.location.lat()
+                const plng = place.geometry.location.lng()
+                const poiData = {
+                  name: place.name,
+                  type: typeTag || type,
+                  label,
+                  lat: plat,
+                  lng: plng,
+                  vicinity: place.vicinity || '',
+                  rating: place.rating || null,
+                }
                 const marker = new window.google.maps.Marker({
                   position: place.geometry.location,
                   map: mapInstance.current,
@@ -237,20 +254,14 @@ export default function MapPage() {
                   label: { text: label, fontSize: '13px' },
                   zIndex: 10,
                 })
-                const infoWindow = new window.google.maps.InfoWindow({
-                  content: `<div style="font-family:sans-serif;padding:6px 4px;max-width:220px">
-                    <strong style="font-size:14px">${place.name}</strong><br/>
-                    <span style="color:#64748b;font-size:12px">${place.vicinity || ''}</span>
-                    ${place.rating ? `<br/><span style="font-size:12px">⭐ ${place.rating}</span>` : ''}
-                    <br/><button onclick="window.open('https://www.google.com/maps/search/?q=${encodeURIComponent(place.name)}')" 
-                      style="margin-top:6px;padding:4px 10px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer;font-size:12px">
-                      View on Maps
-                    </button>
-                  </div>`,
+                marker.addListener('click', () => {
+                  // Close any previous customer popup
+                  setSelectedCustomer(null)
+                  // Show POI popup
+                  setSelectedPoi(poiData)
                 })
-                marker.addListener('click', () => infoWindow.open(mapInstance.current, marker))
                 poiMarkersRef.current.push(marker)
-                newMarkers.push({ name: place.name, type: typeTag || type, label })
+                newMarkers.push(poiData)
               }
             }
             resolve()
@@ -408,7 +419,7 @@ export default function MapPage() {
 
 
       {/* Customer popup */}
-      {selectedCustomer && (() => {
+      {selectedCustomer && !selectedPoi && (() => {
         const { color, label } = getCustomerColor(selectedCustomer)
         return (
           <div style={{
@@ -473,6 +484,111 @@ export default function MapPage() {
           </div>
         )
       })()}
+
+      {/* POI store popup */}
+      {selectedPoi && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 12px)',
+          left: 12, right: 12, zIndex: 100,
+          background: '#ffffff',
+          borderRadius: 18,
+          padding: 16,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)',
+          borderTop: '4px solid #7c3aed',
+        }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 10 }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 800, color:'#14171e', lineHeight:1.2, marginBottom: 2 }}>
+                {selectedPoi.name}
+              </h3>
+              <p style={{ fontSize: 12, color:'#7a8394' }}>{selectedPoi.vicinity}</p>
+              {selectedPoi.rating && <p style={{ fontSize: 12, marginTop: 2 }}>⭐ {selectedPoi.rating}</p>}
+            </div>
+            <button onClick={() => setSelectedPoi(null)}
+              style={{ background:'#f4f6f9', border:'none', borderRadius:'50%', width:30, height:30, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginLeft:8, color:'#7a8394' }}>
+              <Icon name="close" size={14} />
+            </button>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={() => {
+              window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedPoi.name + ' ' + selectedPoi.vicinity)}`, '_blank')
+            }}
+              style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'1.5px solid #d4d8e0', background:'white', color:'#14171e', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+              🗺️ Google Maps
+            </button>
+            <button onClick={() => {
+              navigate(`/customers/new?lat=${selectedPoi.lat}&lng=${selectedPoi.lng}&name=${encodeURIComponent(selectedPoi.name)}&address=${encodeURIComponent(selectedPoi.vicinity)}`)
+              }}
+              style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'none', background:'#3563e9', color:'white', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+              + Add Customer
+            </button>
+            <button onClick={() => {
+              const isSelected = selectedPois.some(p => p.name === selectedPoi.name && p.lat === selectedPoi.lat)
+              if (isSelected) {
+                setSelectedPois(prev => prev.filter(p => !(p.name === selectedPoi.name && p.lat === selectedPoi.lat)))
+              } else {
+                setSelectedPois(prev => [...prev, selectedPoi])
+              }
+              setSelectedPoi(null)
+            }}
+              style={{
+                flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:4, padding:'10px 0', borderRadius:10, cursor:'pointer', fontWeight:700, fontSize:13,
+                background: selectedPois.some(p => p.name === selectedPoi.name && p.lat === selectedPoi.lat) ? '#fee2e2' : '#f0fdf4',
+                color: selectedPois.some(p => p.name === selectedPoi.name && p.lat === selectedPoi.lat) ? '#dc2626' : '#16a34a',
+                border: `1.5px solid ${selectedPois.some(p => p.name === selectedPoi.name && p.lat === selectedPoi.lat) ? '#fca5a5' : '#bbf7d0'}`,
+              }}>
+              {selectedPois.some(p => p.name === selectedPoi.name && p.lat === selectedPoi.lat) ? '✕ Remove' : '✓ Select'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Selected stores route bar */}
+      {selectedPois.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 120px)',
+          left: 12, right: 12, zIndex: 45,
+          background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+          borderRadius: 16,
+          padding: '12px 16px',
+          boxShadow: '0 4px 20px rgba(124,58,237,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div>
+            <p style={{ color: 'white', fontWeight: 800, fontSize: 14 }}>
+              {selectedPois.length} store{selectedPois.length !== 1 ? 's' : ''} selected
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+              {selectedPois.map(p => p.name.split(' ').slice(0,2).join(' ')).join(', ')}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setSelectedPois([])}
+              style={{ padding: '8px 12px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.4)', background: 'transparent', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+              Clear
+            </button>
+            <button onClick={() => {
+              // Build Google Maps URL with all selected stores as waypoints
+              const origin = searchCenter
+                ? `${searchCenter.lat},${searchCenter.lng}`
+                : `${selectedPois[0].lat},${selectedPois[0].lng}`
+              const lastStop = selectedPois[selectedPois.length - 1]
+              const destination = `${lastStop.lat},${lastStop.lng}`
+              const waypoints = selectedPois.slice(0, -1)
+                .map(p => `${p.lat},${p.lng}`)
+                .join('|')
+              let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`
+              if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`
+              window.open(url, '_blank')
+            }}
+              style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: 'white', color: '#7c3aed', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+              🗺️ Route
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Nearby modal */}
       {nearbyCustomers.length > 0 && capturedLocation && (
