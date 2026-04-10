@@ -393,13 +393,15 @@ export default function MapPage() {
         />
       )}
 
-      {/* FAB: Find Nearby Stores */}
+      {/* FAB: Find Nearby Stores — shifts up when route bar visible */}
       <button
         onClick={handleFindNearby}
         disabled={poiLoading}
         style={{
           position: 'fixed',
-          bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 68px)',
+          bottom: selectedPois.length > 0
+            ? 'calc(var(--nav-height) + var(--safe-bottom) + 72px)'
+            : 'calc(var(--nav-height) + var(--safe-bottom) + 68px)',
           left: '50%',
           transform: 'translateX(-50%) translateZ(0)',
           zIndex: 40,
@@ -414,15 +416,18 @@ export default function MapPage() {
           boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
           whiteSpace: 'nowrap',
           fontFamily: 'var(--font)',
+          transition: 'bottom 0.2s ease',
         }}
       >
         {poiLoading ? '🔍 Searching...' : poiVisible ? '✕ Clear Stores' : '🔍 Find Nearby Stores'}
       </button>
 
-      {/* FAB: Add Customer */}
-      <button className="fab" onClick={handleCheckInHere} disabled={gpsLoading}>
-        {gpsLoading ? 'Getting location...' : '+ Add Customer Here'}
-      </button>
+      {/* FAB: Add Customer — hide when stores are selected to avoid overlap */}
+      {selectedPois.length === 0 && (
+        <button className="fab" onClick={handleCheckInHere} disabled={gpsLoading}>
+          {gpsLoading ? 'Getting location...' : '+ Add Customer Here'}
+        </button>
+      )}
 
 
       {/* Customer popup */}
@@ -492,17 +497,20 @@ export default function MapPage() {
         )
       })()}
 
-      {/* POI store popup */}
+      {/* POI store popup — sits above route bar if visible */}
       {selectedPoi && (
         <div style={{
           position: 'absolute',
-          bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 12px)',
+          bottom: selectedPois.length > 0
+            ? 'calc(var(--nav-height) + var(--safe-bottom) + 70px)'
+            : 'calc(var(--nav-height) + var(--safe-bottom) + 12px)',
           left: 12, right: 12, zIndex: 100,
           background: '#ffffff',
           borderRadius: 18,
           padding: 16,
           boxShadow: '0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)',
           borderTop: '4px solid #7c3aed',
+          transition: 'bottom 0.2s ease',
         }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 10 }}>
             <div style={{ flex:1, minWidth:0 }}>
@@ -551,23 +559,21 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* Selected stores route bar */}
+      {/* Selected stores route bar — compact, right above bottom nav */}
       {selectedPois.length > 0 && (
         <div style={{
           position: 'fixed',
-          bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 120px)',
-          left: 12, right: 12, zIndex: 45,
+          bottom: 'calc(var(--nav-height) + var(--safe-bottom))',
+          left: 0, right: 0, zIndex: 55,
           background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
-          borderRadius: 16,
-          padding: '12px 16px',
-          boxShadow: '0 4px 20px rgba(124,58,237,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
         }}>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ color: 'white', fontWeight: 800, fontSize: 14 }}>
               {selectedPois.length} store{selectedPois.length !== 1 ? 's' : ''} selected
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {selectedPois.map(p => p.name.split(' ').slice(0,2).join(' ')).join(', ')}
             </p>
           </div>
