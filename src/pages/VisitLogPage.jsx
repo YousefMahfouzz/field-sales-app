@@ -187,6 +187,26 @@ export default function VisitLogPage() {
   }
 
   // ─── DONE SCREEN ───
+  // Find next suggested customer (due today or available, excluding current)
+  const nextCustomer = (() => {
+    const today = new Date().toLocaleDateString('en-CA')
+    const hour = new Date().getHours() + new Date().getMinutes() / 60
+    const candidates = customers.filter(c =>
+      c.id !== customerId &&
+      c.status !== 'avoid' &&
+      c.status !== 'do_not_visit' &&
+      (c.next_visit_date === today || (c.next_visit_date && c.next_visit_date < today) || (!c.next_visit_date || c.next_visit_date <= today) && hour >= 10 && hour < 15)
+    )
+    // Prioritize: due today first, then overdue, then available
+    candidates.sort((a, b) => {
+      const aToday = a.next_visit_date === today ? 0 : 1
+      const bToday = b.next_visit_date === today ? 0 : 1
+      if (aToday !== bToday) return aToday - bToday
+      return (a.next_visit_date || '9999').localeCompare(b.next_visit_date || '9999')
+    })
+    return candidates[0] || null
+  })()
+
   if (done) return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
       <div style={{ fontSize: 64, marginBottom: 12 }}>
@@ -225,6 +245,34 @@ export default function VisitLogPage() {
         <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/')}>🏠 Home</button>
         <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => navigate(`/customers/${customerId}`)}>👤 Profile</button>
       </div>
+
+      {/* Next customer suggestion */}
+      {nextCustomer && (
+        <div style={{ width: '100%', maxWidth: 320, marginTop: 16 }}>
+          <p className="text-xs text-muted" style={{ marginBottom: 6, textAlign: 'center' }}>Next up</p>
+          <div
+            onClick={() => navigate(`/visit/${nextCustomer.id}`)}
+            style={{
+              padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
+              background: 'var(--blue-light)', border: '1.5px solid #bfdbfe',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--blue-dark)' }}>
+                {nextCustomer.business_name || nextCustomer.full_name}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                {nextCustomer.area || ''}
+                {nextCustomer.wants_next ? ` · 📋 ${nextCustomer.wants_next}` : ''}
+              </p>
+            </div>
+            <span style={{ color: 'var(--blue)', fontWeight: 700, fontSize: 13, flexShrink: 0, marginLeft: 8 }}>
+              Log Visit →
+            </span>
+          </div>
+        </div>
+      )}
       {savedVisitId && (
         <button
           onClick={handleUndo}

@@ -34,7 +34,7 @@ export function AreaBadge({ area }) {
   )
 }
 
-export default function CustomerCard({ customer, onQuickAction }) {
+export default function CustomerCard({ customer, onQuickAction, onQuickSale }) {
   const navigate = useNavigate()
   const isOverdue = customer.next_visit_date && new Date(customer.next_visit_date) < new Date()
   const isDueToday = customer.next_visit_date &&
@@ -76,10 +76,14 @@ export default function CustomerCard({ customer, onQuickAction }) {
             <><Icon name='phone' size={13} color='var(--blue)' strokeWidth={2} /> {customer.phone}</>
           </a>
         )}
-        {customer.area && (
-          <span className="text-sm text-muted">📍 {customer.area}</span>
-        )}
       </div>
+
+      {/* What they wanted last time */}
+      {customer.wants_next && (
+        <div style={{ marginBottom: 8, padding: '5px 10px', background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe' }}>
+          <p style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 600 }}>📋 {customer.wants_next}</p>
+        </div>
+      )}
 
       <div className="flex justify-between items-center">
         <div>
@@ -96,15 +100,29 @@ export default function CustomerCard({ customer, onQuickAction }) {
           )}
         </div>
 
-        <button
-          className="btn btn-sm btn-primary"
-          onClick={(e) => {
-            e.stopPropagation()
-            onQuickAction?.(customer)
-          }}
-        >
-          Log Visit
-        </button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            className="btn btn-sm"
+            style={{ background: 'var(--green)', color: 'white', fontSize: 12, padding: '5px 10px' }}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (onQuickSale) onQuickSale(customer)
+              else navigate(`/visit/${customer.id}?mode=sale`)
+            }}
+          >
+            💰 Sale
+          </button>
+          <button
+            className="btn btn-sm btn-primary"
+            style={{ fontSize: 12, padding: '5px 10px' }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onQuickAction?.(customer)
+            }}
+          >
+            📋 Visit
+          </button>
+        </div>
       </div>
     </div>
   )

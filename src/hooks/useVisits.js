@@ -11,7 +11,7 @@ export function useVisits() {
     setLoading(true)
     const { data } = await supabase
       .from('visits')
-      .select('*')
+      .select('*, sale_items(product_name, qty, unit_price, unit_cost)')
       .eq('customer_id', customerId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })

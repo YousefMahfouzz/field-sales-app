@@ -115,7 +115,7 @@ export default function CustomersPage() {
         <div style={{ height: 1, background: 'var(--border)', marginBottom: 8 }} />
         {/* Cards */}
         {items.map(c => (
-          <CustomerCard key={c.id} customer={c} onQuickAction={() => navigate(`/visit/${c.id}`)} />
+          <CustomerCard key={c.id} customer={c} onQuickAction={() => navigate(`/visit/${c.id}`)} onQuickSale={() => navigate(`/visit/${c.id}?mode=sale`)} />
         ))}
       </div>
     )
@@ -230,7 +230,7 @@ export default function CustomersPage() {
 
         {/* Flat list (search active or area grouping off) */}
         {!loading && !grouped && filtered.map(c => (
-          <CustomerCard key={c.id} customer={c} onQuickAction={() => navigate(`/visit/${c.id}`)} />
+          <CustomerCard key={c.id} customer={c} onQuickAction={() => navigate(`/visit/${c.id}`)} onQuickSale={() => navigate(`/visit/${c.id}?mode=sale`)} />
         ))}
       </div>
 

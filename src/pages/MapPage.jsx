@@ -8,10 +8,31 @@ import { getCustomerColor, applySmartFilter, SMART_FILTERS } from '../lib/custom
 import { showToast } from '../components/Toast'
 import Icon from '../components/Icon'
 
-const EXCLUDED_NEARBY = ['circle k', 'circlek']
+// ── Exclude chain stores, medical offices, and big-box retailers ──
+const EXCLUDED_NAMES = [
+  // Gas station chains (not independent)
+  'circle k', 'racetrac', 'racetrack', 'race trac', 'qt ', 'quiktrip', 'loves travel',
+  'buc-ee', 'bucees', 'pilot travel', 'flying j', 'wawa', 'sheetz', 'speedway',
+  'marathon', 'bp ', 'chevron', 'exxon', 'mobil', 'shell ', 'valero', 'citgo',
+  'murphy usa', 'murphyusa', 'sams fuel', "sam's fuel", 'costco gas', 'kroger fuel',
+  // Big-box grocery (not independent)
+  'walmart', 'wal-mart', 'target', 'costco', 'sams club', "sam's club",
+  'whole foods', 'trader joe', 'aldi', 'lidl', 'kroger', 'publix', 'safeway',
+  'albertsons', 'winn-dixie', 'winn dixie', 'food lion',
+  // Beauty chains (not beauty supply stores)
+  'ulta', 'ultra beauty', 'sephora', 'sally beauty', 'bath & body',
+  'bath and body', 'the body shop', 'bluemercury', 'morphe',
+  // Medical / dermatology (not retail)
+  'dermatolog', 'derma ', 'derm ', 'skin care clinic', 'skin clinic',
+  'medical', 'doctor', ' md', ' m.d', 'physician', 'pediatr', 'dentist',
+  'dental', 'orthodont', 'chiropract', 'optometr', 'ophthalmol',
+  'urgent care', 'hospital', 'clinic', 'surgery center', 'medspa', 'med spa',
+  // Pharmacy chains
+  'cvs', 'walgreens', 'rite aid',
+]
 function isExcluded(name) {
-  const n = (name || '').toLowerCase().replace(/\s/g, '')
-  return EXCLUDED_NEARBY.some(b => n.includes(b.replace(/\s/g, '')))
+  const n = (name || '').toLowerCase()
+  return EXCLUDED_NAMES.some(b => n.includes(b))
 }
 
 const STATUS_COLORS = {
@@ -184,7 +205,8 @@ export default function MapPage() {
         { type: 'gas_station',       label: '⛽', color: '#f59e0b' },
         { type: 'grocery_or_supermarket', label: '🛒', color: '#16a34a' },
         { type: 'liquor_store',      label: '🍺', color: '#dc2626' },
-        { type: 'beauty_salon',      label: '💄', color: '#ec4899' },
+        // Use keyword search for beauty supply stores (not salons/dermatologists)
+        { keyword: 'beauty supply store', label: '💄', color: '#ec4899', typeTag: 'beauty_supply' },
       ]
 
       const mapDiv = document.createElement('div')
@@ -192,9 +214,12 @@ export default function MapPage() {
       const service = new window.google.maps.places.PlacesService(tempMap)
       const newMarkers = []
 
-      await Promise.all(types.map(({ type, label, color }) =>
+      await Promise.all(types.map(({ type, keyword, label, color, typeTag }) =>
         new Promise(resolve => {
-          service.nearbySearch({ location: { lat, lng }, radius: searchRadius, type }, (places, status) => {
+          const req = { location: { lat, lng }, radius: searchRadius }
+          if (keyword) req.keyword = keyword
+          else req.type = type
+          service.nearbySearch(req, (places, status) => {
             if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
               for (const place of places.slice(0, 20)) {
                 if (isExcluded(place.name)) continue
@@ -224,7 +249,7 @@ export default function MapPage() {
                 })
                 marker.addListener('click', () => infoWindow.open(mapInstance.current, marker))
                 poiMarkersRef.current.push(marker)
-                newMarkers.push({ name: place.name, type, label })
+                newMarkers.push({ name: place.name, type: typeTag || type, label })
               }
             }
             resolve()
@@ -324,7 +349,7 @@ export default function MapPage() {
             <span>⛽ {poiMarkers.filter(p=>p.type==='gas_station').length}</span>
             <span>🛒 {poiMarkers.filter(p=>p.type==='grocery_or_supermarket').length}</span>
             <span>🍺 {poiMarkers.filter(p=>p.type==='liquor_store').length}</span>
-            <span>💄 {poiMarkers.filter(p=>p.type==='beauty_salon').length}</span>
+            <span>💄 {poiMarkers.filter(p=>p.type==='beauty_supply').length}</span>
             <span style={{ color: 'var(--text-muted)' }}>({poiMarkers.length} total)</span>
           </div>
         )}
