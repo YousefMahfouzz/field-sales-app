@@ -462,12 +462,16 @@ export default function VisitLogPage() {
           onClick={() => setStep('notes')}
           disabled={!callbackDate}
           style={{
-            background: 'none', border: 'none', fontSize: 22, cursor: 'pointer',
-            opacity: callbackDate ? 1 : 0.3,
-            color: callbackDate ? 'var(--blue)' : 'var(--text-muted)',
+            background: callbackDate ? 'var(--blue)' : 'var(--gray-light)',
+            color: callbackDate ? 'white' : 'var(--text-muted)',
+            border: 'none',
+            borderRadius: 8,
+            padding: '6px 14px',
+            fontSize: 14,
             fontWeight: 700,
+            cursor: callbackDate ? 'pointer' : 'default',
           }}
-        >→</button>
+        >Next →</button>
       </div>
       <div className="page" style={{ paddingTop: 20 }}>
         <p className="text-sm text-muted" style={{ marginBottom: 16 }}>
