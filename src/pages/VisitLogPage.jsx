@@ -418,13 +418,13 @@ export default function VisitLogPage() {
 
   // ─── STEP: CALLBACK ─── (pick a date to come back)
   if (step === 'callback') return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="page-header">
         <button onClick={() => setStep('outcome')} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }}>←</button>
         <h1>When to come back?</h1>
         <div style={{ width: 36 }} />
       </div>
-      <div className="page" style={{ paddingTop: 20 }}>
+      <div style={{ flex: 1, padding: '20px 16px 0', overflowY: 'auto' }}>
         <p className="text-sm text-muted" style={{ marginBottom: 16 }}>
           Set a follow-up date. This will update their next visit date.
         </p>
@@ -433,9 +433,9 @@ export default function VisitLogPage() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
           {(() => {
             const now = new Date()
-            const dow = now.getDay() // 0=Sun, 5=Fri, 6=Sat
-            const daysToFriday = dow <= 5 ? (5 - dow) : 6 // days until this Friday
-            const daysToNextMon = dow === 0 ? 1 : (8 - dow) // days until next Monday
+            const dow = now.getDay()
+            const daysToFriday = dow <= 5 ? (5 - dow) : 6
+            const daysToNextMon = dow === 0 ? 1 : (8 - dow)
             return [
               { label: 'Tomorrow', days: 1 },
               { label: 'In 2 days', days: 2 },
@@ -473,12 +473,14 @@ export default function VisitLogPage() {
           <input className="form-input" value={callbackNote} onChange={e => setCallbackNote(e.target.value)}
             placeholder="e.g. Come back Monday morning, ask for Mike" />
         </div>
+      </div>
 
+      {/* Sticky bottom buttons */}
+      <div style={{ padding: '12px 16px calc(12px + var(--safe-bottom))', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
         <button
           className="btn btn-primary btn-full"
           onClick={() => setStep('notes')}
           disabled={!callbackDate}
-          style={{ marginTop: 8 }}
         >
           Set follow-up date →
         </button>
