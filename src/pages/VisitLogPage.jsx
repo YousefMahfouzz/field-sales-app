@@ -458,9 +458,18 @@ export default function VisitLogPage() {
       <div className="page-header">
         <button onClick={() => setStep('outcome')} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }}>←</button>
         <h1>When to come back?</h1>
-        <div style={{ width: 36 }} />
+        <button
+          onClick={() => setStep('notes')}
+          disabled={!callbackDate}
+          style={{
+            background: 'none', border: 'none', fontSize: 22, cursor: 'pointer',
+            opacity: callbackDate ? 1 : 0.3,
+            color: callbackDate ? 'var(--blue)' : 'var(--text-muted)',
+            fontWeight: 700,
+          }}
+        >→</button>
       </div>
-      <div className="page" style={{ paddingTop: 20, paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 140px)' }}>
+      <div className="page" style={{ paddingTop: 20 }}>
         <p className="text-sm text-muted" style={{ marginBottom: 16 }}>
           Set a follow-up date. This will update their next visit date.
         </p>
@@ -504,31 +513,22 @@ export default function VisitLogPage() {
             onChange={e => setCallbackDate(e.target.value)} />
         </div>
 
+        {callbackDate && (
+          <div style={{ background: 'var(--blue-light)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, border: '1px solid #bfdbfe' }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
+              📅 {new Date(callbackDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </p>
+          </div>
+        )}
+
         <div className="form-group">
           <label className="form-label">What they said (optional)</label>
           <input className="form-input" value={callbackNote} onChange={e => setCallbackNote(e.target.value)}
             placeholder="e.g. Come back Monday morning, ask for Mike" />
         </div>
-      </div>
 
-      {/* Fixed bottom buttons — above bottom nav */}
-      <div style={{
-        position: 'fixed', bottom: 'calc(var(--nav-height) + var(--safe-bottom))', left: 0, right: 0, zIndex: 50,
-        padding: '12px 16px',
-        borderTop: '1px solid var(--border)', background: 'var(--surface)',
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
-      }}>
-        <button
-          className="btn btn-primary btn-full"
-          onClick={() => setStep('notes')}
-          disabled={!callbackDate}
-        >
-          {callbackDate
-            ? `Set follow-up → ${new Date(callbackDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
-            : 'Pick a date above'}
-        </button>
-        <button className="btn btn-ghost btn-full" onClick={() => setStep('notes')} style={{ marginTop: 8 }}>
-          Skip date, just log
+        <button className="btn btn-ghost btn-full" onClick={() => setStep('notes')} style={{ marginTop: 8, color: 'var(--text-muted)' }}>
+          Skip date, just log visit
         </button>
       </div>
     </div>
