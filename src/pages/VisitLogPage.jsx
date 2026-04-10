@@ -454,13 +454,13 @@ export default function VisitLogPage() {
 
   // ─── STEP: CALLBACK ─── (pick a date to come back)
   if (step === 'callback') return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
+    <div>
       <div className="page-header">
         <button onClick={() => setStep('outcome')} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }}>←</button>
         <h1>When to come back?</h1>
         <div style={{ width: 36 }} />
       </div>
-      <div style={{ flex: 1, padding: '20px 16px 0', overflowY: 'auto' }}>
+      <div className="page" style={{ paddingTop: 20, paddingBottom: 120 }}>
         <p className="text-sm text-muted" style={{ marginBottom: 16 }}>
           Set a follow-up date. This will update their next visit date.
         </p>
@@ -511,14 +511,21 @@ export default function VisitLogPage() {
         </div>
       </div>
 
-      {/* Sticky bottom buttons */}
-      <div style={{ padding: '12px 16px calc(12px + var(--safe-bottom))', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+      {/* Fixed bottom buttons — always visible */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+        padding: '12px 16px calc(12px + var(--safe-bottom))',
+        borderTop: '1px solid var(--border)', background: 'var(--surface)',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+      }}>
         <button
           className="btn btn-primary btn-full"
           onClick={() => setStep('notes')}
           disabled={!callbackDate}
         >
-          Set follow-up date →
+          {callbackDate
+            ? `Set follow-up → ${new Date(callbackDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
+            : 'Pick a date above'}
         </button>
         <button className="btn btn-ghost btn-full" onClick={() => setStep('notes')} style={{ marginTop: 8 }}>
           Skip date, just log
