@@ -423,20 +423,14 @@ export default function MapPage() {
               Clear
             </button>
             <button onClick={() => {
-              const origin = searchCenter
-                ? `${searchCenter.lat},${searchCenter.lng}`
-                : `${selectedPois[0].lat},${selectedPois[0].lng}`
-              const lastStop = selectedPois[selectedPois.length - 1]
-              const destination = `${lastStop.lat},${lastStop.lng}`
-              const waypoints = selectedPois.slice(0, -1)
-                .map(p => `${p.lat},${p.lng}`)
-                .join('|')
-              let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`
-              if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`
-              window.open(url, '_blank')
+              const stopsData = selectedPois.map(p => ({ name: p.name, lat: p.lat, lng: p.lng, vicinity: p.vicinity || '', type: 'poi' }))
+              const params = new URLSearchParams()
+              params.set('stops', JSON.stringify(stopsData))
+              if (searchCenter) { params.set('startLat', searchCenter.lat); params.set('startLng', searchCenter.lng) }
+              navigate(`/route?${params.toString()}`)
             }}
               style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: 'white', color: '#7c3aed', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
-              🗺️ Route
+              🗺️ Plan Route
             </button>
           </div>
         </div>
