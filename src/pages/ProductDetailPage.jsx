@@ -75,7 +75,9 @@ export default function ProductDetailPage() {
       <div className="page-header">
         <button onClick={() => navigate(-1)} style={{ background:'none',border:'none',fontSize:22,cursor:'pointer' }}>←</button>
         <h1 style={{ fontSize:18, flex:1, textAlign:'center' }}>{product.name}</h1>
-        <button onClick={() => navigate(`/products/${id}/edit`)} style={{ background:'none',border:'none',fontSize:20,cursor:'pointer' }}>✏️</button>
+        {!isDriver ? (
+          <button onClick={() => navigate(`/products/${id}/edit`)} style={{ background:'none',border:'none',fontSize:20,cursor:'pointer' }}>✏️</button>
+        ) : <div style={{ width:36 }} />}
       </div>
 
       <div className="page" style={{ paddingTop:14 }}>
@@ -183,7 +185,8 @@ export default function ProductDetailPage() {
           )
         })}
 
-        {/* Danger zone */}
+        {/* Danger zone – owners only */}
+        {!isDriver && (<>
         <p className="section-header" style={{ color:'var(--red)' }}>Danger Zone</p>
         <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)', borderColor:'var(--red)' }}
           onClick={async () => {
@@ -196,6 +199,7 @@ export default function ProductDetailPage() {
           }}>
           🗑️ Delete Product
         </button>
+        </>)}
       </div>
 
       {/* Add Stock Modal */}

@@ -10,22 +10,10 @@ export default function PurchasesPage() {
   const { user, canSeeProfit } = useAuth()
   const { products, fetchProducts } = useProducts()
 
-  // Drivers without profit access can't see purchases
+  // Drivers without cost access get redirected – this page shouldn't appear as an option
   if (!canSeeProfit) {
-    return (
-      <div>
-        <div className="page-header">
-          <button onClick={() => navigate(-1)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer' }}>←</button>
-          <h1>Purchases</h1>
-          <div style={{ width:36 }} />
-        </div>
-        <div className="page" style={{ textAlign:'center', paddingTop:60 }}>
-          <p style={{ fontSize:48, marginBottom:12 }}>🔒</p>
-          <p style={{ fontWeight:700, marginBottom:4 }}>Access restricted</p>
-          <p className="text-sm text-muted">Purchase history is only visible to distributors</p>
-        </div>
-      </div>
-    )
+    navigate('/dashboard', { replace: true })
+    return null
   }
   const [movements, setMovements] = useState([])
   const [loading, setLoading] = useState(true)

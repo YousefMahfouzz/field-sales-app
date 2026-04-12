@@ -458,10 +458,10 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
               { label: 'Add Customer', to: '/customers/new', icon: 'map-pin' },
-              { label: 'Record Purchase', to: '/purchases', icon: 'truck' },
+              canSeeProfit && { label: 'Record Purchase', to: '/purchases', icon: 'truck' },
               { label: 'View Orders', to: '/orders', icon: 'orders' },
               { label: 'Analytics', to: '/analytics', icon: 'bar-chart' },
-            ].map(a => (
+            ].filter(Boolean).map(a => (
               <button key={a.to} onClick={() => navigate(a.to)} style={{
                 padding: '12px 14px', borderRadius: 12, border: '1.5px solid var(--border)',
                 background: 'var(--surface)', cursor: 'pointer', fontWeight: 600, fontSize: 13,

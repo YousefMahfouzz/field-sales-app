@@ -171,7 +171,7 @@ export default function ProductsPage() {
           <div className="empty-state">
             <div className="empty-icon">📦</div>
             <h3>{search ? 'No products match' : 'No products yet'}</h3>
-            {!search && (
+            {!search && !isDriver && (
               <button className="btn btn-primary" style={{ marginTop:16 }} onClick={() => navigate('/products/new')}>{'Add First Product'}</button>
             )}
           </div>
@@ -186,7 +186,7 @@ export default function ProductsPage() {
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8, marginTop:8 }}>
                   <p className="section-header" style={{ margin:0 }}>{cat}</p>
                   <p style={{ fontSize:11, color:'var(--text-muted)' }}>
-                    cost ${catCost.toFixed(0)} · sell ${catSell.toFixed(0)}
+                    {!isDriver ? `cost $${catCost.toFixed(0)} · sell $${catSell.toFixed(0)}` : `sell $${catSell.toFixed(0)}`}
                   </p>
                 </div>
               )}

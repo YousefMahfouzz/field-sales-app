@@ -322,19 +322,8 @@ export default function TeamPage() {
 
   // Not an owner – redirect
   if (!isOwner) {
-    return (
-      <div>
-        <div className="page-header">
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20 }}>←</button>
-          <h1>Team</h1>
-          <div style={{ width: 36 }} />
-        </div>
-        <div className="page" style={{ textAlign: 'center', paddingTop: 60 }}>
-          <p style={{ fontSize: 48, marginBottom: 12 }}>🔒</p>
-          <p style={{ fontWeight: 700 }}>Only distributors can manage drivers</p>
-        </div>
-      </div>
-    )
+    navigate('/dashboard', { replace: true })
+    return null
   }
 
   // Total team stats

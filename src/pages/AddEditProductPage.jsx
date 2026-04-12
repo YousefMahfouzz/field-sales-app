@@ -47,22 +47,10 @@ export default function AddEditProductPage() {
   const { products, addProduct, updateProduct, uploadProductImage, uploadAdditionalImage, isDriver } = useProducts()
   const isEdit = Boolean(id)
 
-  // Drivers can't add or edit products
+  // Drivers get redirected – add/edit shouldn't appear as an option for them
   if (isDriver) {
-    return (
-      <div>
-        <div className="page-header">
-          <button onClick={() => navigate(-1)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer' }}>←</button>
-          <h1>Products</h1>
-          <div style={{ width:36 }} />
-        </div>
-        <div className="page" style={{ textAlign:'center', paddingTop:60 }}>
-          <p style={{ fontSize:48, marginBottom:12 }}>🔒</p>
-          <p style={{ fontWeight:700, marginBottom:4 }}>Access restricted</p>
-          <p className="text-sm text-muted">Only your distributor can add or edit products</p>
-        </div>
-      </div>
-    )
+    navigate('/products', { replace: true })
+    return null
   }
   const [form, setForm] = useState({ ...EMPTY })
   const [loading, setLoading] = useState(false)
