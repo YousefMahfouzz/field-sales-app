@@ -6,6 +6,7 @@ import { useProducts } from '../hooks/useProducts'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
+import InvoiceModal from '../components/InvoiceModal'
 import ProductSelector from '../components/ProductSelector'
 
 export default function VisitLogPage() {
@@ -46,6 +47,8 @@ export default function VisitLogPage() {
   const [visitGps, setVisitGps] = useState(null)
   const [savedVisitId, setSavedVisitId] = useState(null)
   const [undoing, setUndoing] = useState(false)
+  const [showInvoice, setShowInvoice] = useState(false)
+  const { profile } = useAuth()
 
   // Silently capture GPS when visit page opens
   useEffect(() => {
@@ -250,6 +253,15 @@ export default function VisitLogPage() {
           </div>
         </div>
       )}
+
+      {/* Invoice button for sales */}
+      {saleItems.length > 0 && savedVisitId && (
+        <button onClick={() => setShowInvoice(true)}
+          style={{ width: '100%', maxWidth: 320, marginBottom: 12, padding: '12px', borderRadius: 12, border: '1.5px solid #bfdbfe', background: '#eff6ff', color: 'var(--blue)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+          🧾 View Invoice
+        </button>
+      )}
+
       <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 320 }}>
         <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/')}>🏠 Home</button>
         <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => navigate(`/customers/${customerId}`)}>👤 Profile</button>
@@ -295,10 +307,26 @@ export default function VisitLogPage() {
           {undoing ? 'Undoing...' : '↩ Undo this visit'}
         </button>
       )}
+
+      {/* Invoice modal */}
+      {showInvoice && savedVisitId && (
+        <InvoiceModal
+          visit={{
+            id: savedVisitId,
+            created_at: new Date().toISOString(),
+            sale_items: saleItems.map(i => ({ product_name: i.product_name, qty: i.qty, unit_price: i.unit_price, unit_cost: i.unit_cost })),
+            sale_amount: totalSale,
+            cost: totalCost,
+            notes,
+            had_sale: true,
+          }}
+          customer={customer}
+          profile={profile}
+          onClose={() => setShowInvoice(false)}
+        />
+      )}
     </div>
   )
-
-  // ─── PRODUCT SELECTOR MODAL ───
   if (showProducts) return (
     <div>
       <div className="page-header">

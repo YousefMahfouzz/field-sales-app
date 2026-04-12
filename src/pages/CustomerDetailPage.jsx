@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useCustomers } from '../hooks/useCustomers'
 import { useVisits } from '../hooks/useVisits'
+import { useAuth } from '../hooks/useAuth'
 import { StatusBadge, AreaBadge } from '../components/CustomerCard'
+import InvoiceModal from '../components/InvoiceModal'
+import { supabase } from '../lib/supabase'
+import { showToast } from '../components/Toast'
 
 function daysUntilVisit(dateStr) {
   if (!dateStr) return null
@@ -19,9 +23,11 @@ function daysUntilVisit(dateStr) {
 export default function CustomerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { profile } = useAuth()
   const { customers, loading: customersLoading, deleteCustomer, updateCustomer } = useCustomers()
   const { visits, fetchVisitsForCustomer } = useVisits()
   const [showDelete, setShowDelete] = useState(false)
+  const [invoiceVisit, setInvoiceVisit] = useState(null) // visit to show invoice for
 
   const customer = customers.find(c => c.id === id)
 
@@ -239,14 +245,19 @@ export default function CustomerDetailPage() {
                   </p>
                   <p className="text-xs text-muted">{new Date(v.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
                   {saleTotal > 0 && (
                     <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 15 }}>${saleTotal.toFixed(0)}</span>
+                  )}
+                  {v.had_sale && v.sale_items?.length > 0 && (
+                    <button onClick={(e) => { e.stopPropagation(); setInvoiceVisit(v) }}
+                      style={{ padding:'3px 8px', borderRadius:8, border:'1px solid #bfdbfe', background:'#eff6ff', color:'var(--blue)', fontSize:11, fontWeight:700, cursor:'pointer' }}>🧾</button>
                   )}
                   <button onClick={async () => {
                     if (!window.confirm('Delete this visit record?')) return
                     await supabase.from('visits').update({ deleted_at: new Date().toISOString() }).eq('id', v.id)
-                    setVisits(prev => prev.filter(x => x.id !== v.id))
+                    fetchVisitsForCustomer(id)
+                    showToast('Visit deleted')
                   }} style={{ padding:'3px 8px', borderRadius:8, border:'1px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer' }}>🗑️</button>
                 </div>
               </div>
@@ -292,6 +303,16 @@ export default function CustomerDetailPage() {
             <button className="btn btn-ghost btn-full" onClick={() => setShowDelete(false)} style={{ marginTop: 10 }}>Cancel</button>
           </div>
         </div>
+      )}
+
+      {/* Invoice modal */}
+      {invoiceVisit && (
+        <InvoiceModal
+          visit={invoiceVisit}
+          customer={customer}
+          profile={profile}
+          onClose={() => setInvoiceVisit(null)}
+        />
       )}
     </div>
   )
