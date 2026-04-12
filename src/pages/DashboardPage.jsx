@@ -5,6 +5,7 @@ import { useCustomers } from '../hooks/useCustomers'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import Icon from '../components/Icon'
+import SalesLogModal from '../components/SalesLogModal'
 
 // ── Reschedule Modal ──────────────────────────────────────────────
 function RescheduleModal({ overdue, onClose, onDone}) {
@@ -189,6 +190,7 @@ export default function DashboardPage() {
   const [loadingStats, setLoadingStats] = useState(true)
   const [tab, setTab] = useState('overview')
   const [showReschedule, setShowReschedule] = useState(false)
+  const [salesLogPeriod, setSalesLogPeriod] = useState(null) // null = hidden, 'today' | 'week'
 
   // CT day boundaries — compute fresh each render so day change auto-updates
   const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
@@ -396,10 +398,13 @@ export default function DashboardPage() {
           {/* Today */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
             <p className="section-header" style={{ margin:0 }}>{'Today'}</p>
-            <button onClick={() => navigate('/analytics')} style={{ fontSize:12, color:'var(--blue)', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📊 Analytics →</button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button onClick={() => setSalesLogPeriod('today')} style={{ fontSize:12, color:'#16a34a', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📋 Sales Log</button>
+              <button onClick={() => navigate('/analytics')} style={{ fontSize:12, color:'var(--blue)', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📊 Analytics →</button>
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: canSeeProfit ? '1fr 1fr' : '1fr', gap: 8, marginBottom: 8 }}>
-            <div style={{ background:'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius:12, padding:'12px 14px' }}>
+            <div onClick={() => setSalesLogPeriod('today')} style={{ background:'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius:12, padding:'12px 14px', cursor:'pointer' }}>
               <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Revenue {'Today'}</p>
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayRevenue??0).toFixed(2)}`}</p>
             </div>
@@ -417,10 +422,13 @@ export default function DashboardPage() {
           </div>
 
           {/* This week */}
-          <p className="section-header">{'This Week'}</p>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+            <p className="section-header" style={{ margin:0 }}>{'This Week'}</p>
+            <button onClick={() => setSalesLogPeriod('week')} style={{ fontSize:12, color:'#16a34a', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📋 Sales Log</button>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: canSeeProfit ? '1fr 1fr' : '1fr 1fr', gap: 10, marginBottom: 16 }}>
             <Metric icon={<Icon name="map-pin" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
-            <Metric icon={<Icon name="dollar" size={18} />} label={'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
+            <Metric icon={<Icon name="dollar" size={18} />} label={'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" onClick={() => setSalesLogPeriod('week')} />
             <Metric icon={<Icon name="trending-up" size={18} />} label={'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
             {canSeeProfit && <Metric icon={<Icon name="bar-chart" size={18} />} label={'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />}
           </div>
@@ -507,6 +515,14 @@ export default function DashboardPage() {
           overdue={overdue}
           onClose={() => setShowReschedule(false)}
           onDone={() => { fetchCustomers(); loadStats() }}
+        />
+      )}
+
+      {/* Sales Log Modal */}
+      {salesLogPeriod && (
+        <SalesLogModal
+          initialPeriod={salesLogPeriod}
+          onClose={() => setSalesLogPeriod(null)}
         />
       )}
     </div>
