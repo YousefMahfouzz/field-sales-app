@@ -24,27 +24,68 @@ export default function LoginPage() {
         if (!form.displayName.trim()) { setError('Please enter your name'); setLoading(false); return }
         if (!form.inviteCode.trim()) { setError('An invite code is required to create an account'); setLoading(false); return }
 
-        // Validate invite code
         const code = form.inviteCode.trim().toUpperCase()
-        const { data: codeRow, error: codeErr } = await supabase
-          .from('invite_codes')
-          .select('id, is_active, used_by')
+
+        // First check if it's a driver code
+        const { data: driverCode, error: driverErr } = await supabase
+          .from('driver_codes')
+          .select('id, owner_user_id, used_by')
           .eq('code', code)
           .single()
 
-        if (codeErr || !codeRow) { setError('Invalid invite code. Contact your Kanz Supply representative.'); setLoading(false); return }
-        if (!codeRow.is_active || codeRow.used_by) { setError('This invite code has already been used or is no longer active.'); setLoading(false); return }
+        let isDriverCode = false
+        let driverInfo = null
 
-        // Create account
-        await signUp(form.email, form.password, form.displayName.trim())
+        if (driverCode && !driverErr) {
+          // It's a driver code
+          if (driverCode.used_by) {
+            setError('This driver code has already been used.')
+            setLoading(false)
+            return
+          }
+          isDriverCode = true
+          driverInfo = { owner_user_id: driverCode.owner_user_id }
+        } else {
+          // Not a driver code – check regular invite codes
+          const { data: codeRow, error: codeErr } = await supabase
+            .from('invite_codes')
+            .select('id, is_active, used_by')
+            .eq('code', code)
+            .single()
+
+          if (codeErr || !codeRow) { setError('Invalid invite code. Contact your Kanz Supply representative.'); setLoading(false); return }
+          if (!codeRow.is_active || codeRow.used_by) { setError('This invite code has already been used or is no longer active.'); setLoading(false); return }
+        }
+
+        // Create account (pass driverInfo if it's a driver code)
+        await signUp(form.email, form.password, form.displayName.trim(), driverInfo)
 
         // Mark code as used (best effort)
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          await supabase.from('invite_codes').update({ used_by: user.id, used_at: new Date().toISOString(), is_active: false }).eq('id', codeRow.id)
+          if (isDriverCode) {
+            await supabase.from('driver_codes')
+              .update({ used_by: user.id, used_at: new Date().toISOString() })
+              .eq('id', driverCode.id)
+          } else {
+            // Mark regular invite code as used
+            const { data: codeRow } = await supabase
+              .from('invite_codes')
+              .select('id')
+              .eq('code', code)
+              .single()
+            if (codeRow) {
+              await supabase.from('invite_codes')
+                .update({ used_by: user.id, used_at: new Date().toISOString(), is_active: false })
+                .eq('id', codeRow.id)
+            }
+          }
         }
 
-        setSuccess('Account created! Check your email to confirm, then sign in.')
+        const successMsg = isDriverCode
+          ? 'Driver account created! Check your email to confirm, then sign in.'
+          : 'Account created! Check your email to confirm, then sign in.'
+        setSuccess(successMsg)
         setMode('signin')
       } else {
         const { error: signInError } = await signIn(form.email, form.password)
@@ -84,12 +125,12 @@ export default function LoginPage() {
                 {previewUsername && <p style={{ fontSize:11, color:'rgba(255,255,255,0.3)', marginTop:4 }}>Username: @{previewUsername}</p>}
               </div>
               <div>
-                <label style={labelStyle}>Invite Code</label>
+                <label style={labelStyle}>Invite Code or Driver Code</label>
                 <input style={{ ...inputStyle, textTransform:'uppercase', letterSpacing:'2px', fontWeight:700 }}
                   type="text" value={form.inviteCode} onChange={set('inviteCode')} placeholder="XXXX-XXXX" required
                   onFocus={e => e.target.style.borderColor='rgba(99,102,241,0.6)'}
                   onBlur={e => e.target.style.borderColor='rgba(255,255,255,0.12)'} />
-                <p style={{ fontSize:11, color:'rgba(255,255,255,0.25)', marginTop:4 }}>Get your invite code from your Kanz Supply rep</p>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,0.25)', marginTop:4 }}>Get your code from your distributor or Kanz Supply rep</p>
               </div>
             </>
           )}

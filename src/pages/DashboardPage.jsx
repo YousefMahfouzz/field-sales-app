@@ -178,7 +178,7 @@ function RescheduleModal({ overdue, onClose, onDone}) {
 
 // ── Dashboard ─────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { user, profile } = useAuth()
+  const { user, profile, canSeeProfit, isOwner } = useAuth()
   const { customers, restoreCustomer, fetchCustomers } = useCustomers()
   const navigate = useNavigate()
 
@@ -380,20 +380,35 @@ export default function DashboardPage() {
             </button>
           )}
 
+          {/* Team shortcut for owners */}
+          {isOwner && (
+            <button onClick={() => navigate('/team')} className="card" style={{
+              width: '100%', marginBottom: 10, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
+              color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+              padding: '12px 14px', borderRadius: 12,
+            }}>
+              <span style={{ fontSize: 20 }}>🚗</span>
+              <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>Manage Team & Drivers</span>
+              <span>→</span>
+            </button>
+          )}
+
           {/* Today */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
             <p className="section-header" style={{ margin:0 }}>{'Today'}</p>
             <button onClick={() => navigate('/analytics')} style={{ fontSize:12, color:'var(--blue)', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📊 Analytics →</button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: canSeeProfit ? '1fr 1fr' : '1fr', gap: 8, marginBottom: 8 }}>
             <div style={{ background:'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius:12, padding:'12px 14px' }}>
               <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Revenue {'Today'}</p>
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayRevenue??0).toFixed(2)}`}</p>
             </div>
+            {canSeeProfit && (
             <div style={{ background:'linear-gradient(135deg,#14532d,#16a34a)', borderRadius:12, padding:'12px 14px' }}>
               <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Profit {'Today'}</p>
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayProfit??0).toFixed(2)}`}</p>
             </div>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
             <Metric icon={<Icon name="user" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
@@ -403,11 +418,11 @@ export default function DashboardPage() {
 
           {/* This week */}
           <p className="section-header">{'This Week'}</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: canSeeProfit ? '1fr 1fr' : '1fr 1fr', gap: 10, marginBottom: 16 }}>
             <Metric icon={<Icon name="map-pin" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
             <Metric icon={<Icon name="dollar" size={18} />} label={'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" />
             <Metric icon={<Icon name="trending-up" size={18} />} label={'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
-            <Metric icon={<Icon name="bar-chart" size={18} />} label={'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />
+            {canSeeProfit && <Metric icon={<Icon name="bar-chart" size={18} />} label={'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />}
           </div>
 
           {/* Customers */}

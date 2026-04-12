@@ -48,7 +48,7 @@ export default function VisitLogPage() {
   const [savedVisitId, setSavedVisitId] = useState(null)
   const [undoing, setUndoing] = useState(false)
   const [showInvoice, setShowInvoice] = useState(false)
-  const { profile } = useAuth()
+  const { profile, canSeeProfit } = useAuth()
 
   // Silently capture GPS when visit page opens
   useEffect(() => {
@@ -249,7 +249,7 @@ export default function VisitLogPage() {
           ))}
           <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 8 }}>
             <div className="flex justify-between text-sm"><span className="text-muted">Total</span><span style={{ fontWeight: 700 }}>${totalSale.toFixed(2)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted">Profit</span><span style={{ fontWeight: 700, color: 'var(--green)' }}>${totalProfit.toFixed(2)}</span></div>
+            {canSeeProfit && <div className="flex justify-between text-sm"><span className="text-muted">Profit</span><span style={{ fontWeight: 700, color: 'var(--green)' }}>${totalProfit.toFixed(2)}</span></div>}
           </div>
         </div>
       )}
@@ -644,10 +644,12 @@ export default function VisitLogPage() {
               <span className="text-muted">{'Total Sale'}</span>
               <span style={{ fontWeight: 700 }}>${totalSale.toFixed(2)}</span>
             </div>
+            {canSeeProfit && (
             <div className="flex justify-between text-sm">
               <span className="text-muted">Profit</span>
               <span style={{ fontWeight: 700, color: 'var(--green)' }}>${totalProfit.toFixed(2)}</span>
             </div>
+            )}
           </div>
         )}
 

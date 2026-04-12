@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
+import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { products, addStock, deleteProduct } = useProducts()
+  const { products, addStock, deleteProduct, isDriver } = useProducts()
+  const { canSeeProfit } = useAuth()
   const product = products.find(p => p.id === id)
 
   const [movements, setMovements] = useState([])
@@ -94,11 +96,11 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Pricing grid */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:0, borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', marginBottom:12 }}>
+          <div style={{ display:'grid', gridTemplateColumns: canSeeProfit ? '1fr 1fr 1fr' : '1fr', gap:0, borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', marginBottom:12 }}>
             {[
-              { label:'Avg Cost', value:`$${effectiveCost.toFixed(2)}`, sub: product.avg_cost != null && product.avg_cost !== product.cost ? `(orig $${product.cost.toFixed(2)})` : null, color:'var(--text)' },
+              ...(canSeeProfit ? [{ label:'Avg Cost', value:`$${effectiveCost.toFixed(2)}`, sub: product.avg_cost != null && product.avg_cost !== product.cost ? `(orig $${product.cost.toFixed(2)})` : null, color:'var(--text)' }] : []),
               { label:'Sell Price', value:`$${product.sell_price.toFixed(2)}`, color:'var(--green)' },
-              { label:'Profit/unit', value:`$${profit.toFixed(2)}`, sub:`${margin.toFixed(0)}% margin`, color: profit >= 0 ? 'var(--green)' : 'var(--red)' },
+              ...(canSeeProfit ? [{ label:'Profit/unit', value:`$${profit.toFixed(2)}`, sub:`${margin.toFixed(0)}% margin`, color: profit >= 0 ? 'var(--green)' : 'var(--red)' }] : []),
             ].map((col, i) => (
               <div key={i} style={{ textAlign:'center', padding:'12px 4px', borderLeft: i>0 ? '1px solid var(--border)' : 'none' }}>
                 <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{col.label}</p>
@@ -117,23 +119,27 @@ export default function ProductDetailPage() {
                 <span style={{ fontSize:14, fontWeight:400, color:'var(--text-muted)', marginLeft:4 }}>{product.unit}s</span>
               </p>
               <div style={{ marginTop:6, display:'flex', gap:12 }}>
+                {canSeeProfit && (
                 <div>
                   <p style={{ fontSize:10, color:'var(--text-muted)' }}>Cost value</p>
                   <p style={{ fontWeight:700, fontSize:13, color:'var(--text)' }}>${stockCostValue.toFixed(2)}</p>
                 </div>
+                )}
                 <div>
                   <p style={{ fontSize:10, color:'var(--text-muted)' }}>Sell value</p>
                   <p style={{ fontWeight:700, fontSize:13, color:'var(--green)' }}>${stockSellValue.toFixed(2)}</p>
                 </div>
+                {canSeeProfit && (
                 <div>
                   <p style={{ fontSize:10, color:'var(--text-muted)' }}>Potential profit</p>
                   <p style={{ fontWeight:700, fontSize:13, color: stockSellValue - stockCostValue >= 0 ? 'var(--blue)' : 'var(--red)' }}>
                     ${(stockSellValue - stockCostValue).toFixed(2)}
                   </p>
                 </div>
+                )}
               </div>
             </div>
-            <button className="btn btn-primary" onClick={() => setShowAddStock(true)}>+ Add Stock</button>
+            {!isDriver && <button className="btn btn-primary" onClick={() => setShowAddStock(true)}>+ Add Stock</button>}
           </div>
         </div>
 

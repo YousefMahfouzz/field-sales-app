@@ -142,7 +142,7 @@ function FixAreasButton({ userId }) {
 }
 
 export default function SettingsPage() {
-  const { user, profile, signOut, updateProfile } = useAuth()
+  const { user, profile, signOut, updateProfile, isOwner, isDriver, effectiveUserId } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({ display_name: '', username: '' })
   const [loading, setLoading] = useState(false)
@@ -247,6 +247,36 @@ export default function SettingsPage() {
           sub="Expands app to full width — great for tablets"
         />
 
+        {/* Team management – for owners */}
+        {isOwner && (
+          <div style={{ marginTop: 24, paddingTop: 8 }}>
+            <p className="section-header">Team</p>
+            <button
+              className="btn btn-ghost btn-full"
+              onClick={() => navigate('/team')}
+              style={{ marginBottom: 10, color: '#7c3aed', borderColor: '#7c3aed', fontWeight: 700 }}
+            >
+              🚗 Manage Drivers & Codes
+            </button>
+          </div>
+        )}
+
+        {/* Driver info badge */}
+        {isDriver && (
+          <div className="card" style={{ marginTop: 24, background: '#f0f9ff', border: '1px solid #bae6fd', padding: '12px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>🚗</span>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: 14, color: '#0369a1' }}>Driver Account</p>
+                <p className="text-xs" style={{ color: '#0c4a6e' }}>
+                  You're working under a distributor's team.
+                  {profile?.can_see_profit ? ' Cost & profit visibility is enabled.' : ' Cost & profit are hidden from your view.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Account */}
         <div style={{ marginTop:24, paddingTop:8 }}>
           <p className="section-header">Account</p>
@@ -273,7 +303,7 @@ export default function SettingsPage() {
           </button>
 
           {/* Fix missing areas tool */}
-          <FixAreasButton userId={user?.id} />
+          <FixAreasButton userId={effectiveUserId} />
 
           <button className="btn btn-ghost btn-full" onClick={signOut} style={{ color:'var(--red)', borderColor:'var(--red)' }}>
             Sign Out

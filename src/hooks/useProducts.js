@@ -3,27 +3,29 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 
 export function useProducts() {
-  const { user } = useAuth()
+  const { user, effectiveUserId, isDriver } = useAuth()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetchProducts = useCallback(async () => {
-    if (!user) return
+    if (!user || !effectiveUserId) return
     setLoading(true)
+    // Both owners and drivers fetch products belonging to the effective (owner) user ID
+    // RLS policies allow drivers to read parent's products
     const { data } = await supabase
       .from('products')
-      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at')
-      .eq('user_id', user.id)
-      // fetch all including archived — ProductsPage filters by is_active
+      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at,user_id')
+      .eq('user_id', effectiveUserId)
       .order('category')
       .order('name')
     setProducts(data || [])
     setLoading(false)
-  }, [user])
+  }, [user, effectiveUserId])
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
 
   const addProduct = async (productData) => {
+    if (isDriver) throw new Error('Drivers cannot add products')
     const { data, error } = await supabase
       .from('products')
       .insert([{ ...productData, user_id: user.id, is_active: true }])
@@ -36,15 +38,16 @@ export function useProducts() {
   }
 
   const updateProduct = async (id, updates) => {
+    // Drivers CAN update stock_qty (for deductions during sales) but not other fields
+    // RLS allows update if user_id = self OR user_id = parent
     const { error } = await supabase
       .from('products')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
     if (error) throw error
-    // Re-fetch the updated product fresh from DB
     const { data, error: fetchErr } = await supabase
       .from('products')
-      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at')
+      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at,user_id')
       .eq('id', id)
       .single()
     if (fetchErr) throw fetchErr
@@ -53,6 +56,7 @@ export function useProducts() {
   }
 
   const deleteProduct = async (id) => {
+    if (isDriver) throw new Error('Drivers cannot delete products')
     const { error } = await supabase.from('products').delete().eq('id', id)
     if (error) throw error
     setProducts(prev => prev.filter(p => p.id !== id))
@@ -61,8 +65,6 @@ export function useProducts() {
   /**
    * Add stock with optional cost tracking.
    * Recalculates weighted average cost automatically.
-   *
-   * avgCost = (currentQty * currentAvgCost + newQty * newCostPerUnit) / (currentQty + newQty)
    */
   const addStock = async (productId, qty, note = '', costPerUnit = null, source = null) => {
     const product = products.find(p => p.id === productId)
@@ -71,7 +73,6 @@ export function useProducts() {
     const currentQty = product.stock_qty || 0
     const currentAvg = product.avg_cost ?? product.cost ?? 0
 
-    // Weighted average cost
     let newAvgCost = currentAvg
     if (costPerUnit !== null && costPerUnit >= 0) {
       const totalQty = currentQty + qty
@@ -83,7 +84,7 @@ export function useProducts() {
 
     const totalCost = costPerUnit !== null ? qty * costPerUnit : null
 
-    // Insert stock movement with cost info
+    // Stock movements are always recorded under the acting user's ID
     const { error: mvError } = await supabase.from('stock_movements').insert([{
       user_id: user.id,
       product_id: productId,
@@ -96,11 +97,9 @@ export function useProducts() {
     }])
     if (mvError) throw mvError
 
-    // Update product: new stock qty + new avg cost
     const updates = {
       stock_qty: currentQty + qty,
       avg_cost: newAvgCost,
-      // Also update base cost to avg so profit always reflects reality
       cost: newAvgCost,
     }
     if (source) updates.source = source
@@ -110,10 +109,11 @@ export function useProducts() {
   }
 
   const uploadProductImage = async (productId, file) => {
+    // Use effectiveUserId for storage path so all images are under the owner's folder
     const ext = 'webp'
-    // Include timestamp in filename so URL changes on every upload (busts CDN cache)
     const ts = Date.now()
-    const path = `${user.id}/${productId}_${ts}.${ext}`
+    const storageUserId = effectiveUserId || user.id
+    const path = `${storageUserId}/${productId}_${ts}.${ext}`
     const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false })
     if (error) throw error
     const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path)
@@ -122,7 +122,8 @@ export function useProducts() {
 
   const uploadAdditionalImage = async (productId, file, index) => {
     const ext = file.name ? file.name.split('.').pop() : 'webp'
-    const path = `${user.id}/${productId}_extra_${index}_${Date.now()}.${ext}`
+    const storageUserId = effectiveUserId || user.id
+    const path = `${storageUserId}/${productId}_extra_${index}_${Date.now()}.${ext}`
     const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
     if (error) throw error
     const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path)
@@ -134,5 +135,6 @@ export function useProducts() {
     addProduct, updateProduct, deleteProduct,
     addStock,
     uploadProductImage, uploadAdditionalImage,
+    isDriver,
   }
 }

@@ -23,7 +23,7 @@ function daysUntilVisit(dateStr) {
 export default function CustomerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { profile } = useAuth()
+  const { profile, canSeeProfit } = useAuth()
   const { customers, loading: customersLoading, deleteCustomer, updateCustomer } = useCustomers()
   const { visits, fetchVisitsForCustomer } = useVisits()
   const [showDelete, setShowDelete] = useState(false)
@@ -192,19 +192,23 @@ export default function CustomerDetailPage() {
           <div className="card" style={{ marginBottom: 10 }}>
             <p className="section-header" style={{ padding: 0, marginBottom: 10 }}>💰 Sales</p>
             {customer.sale_amount > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: canSeeProfit ? '1fr 1fr 1fr' : '1fr', gap: 10, marginBottom: 10 }}>
                 <div>
                   <p className="text-xs text-muted">{'Revenue'}</p>
                   <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--green)' }}>${(customer.sale_amount || 0).toFixed(0)}</p>
                 </div>
+                {canSeeProfit && (
                 <div>
                   <p className="text-xs text-muted">{'Cost'}</p>
                   <p style={{ fontWeight: 700, fontSize: 16 }}>${(customer.cost || 0).toFixed(0)}</p>
                 </div>
+                )}
+                {canSeeProfit && (
                 <div>
                   <p className="text-xs text-muted">Profit</p>
                   <p style={{ fontWeight: 700, fontSize: 16, color: profit >= 0 ? 'var(--green)' : 'var(--red)' }}>${profit.toFixed(0)}</p>
                 </div>
+                )}
               </div>
             )}
             {customer.bought_before && (

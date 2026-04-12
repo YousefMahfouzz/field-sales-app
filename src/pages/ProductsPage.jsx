@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import Icon from '../components/Icon'
 
 export default function ProductsPage() {
-  const { profile } = useAuth()
+  const { profile, isDriver } = useAuth()
   const navigate = useNavigate()
   const { products, loading, fetchProducts } = useProducts()
   const [search, setSearch] = useState('')
@@ -71,7 +71,7 @@ export default function ProductsPage() {
     <div>
       <div className="page-header">
         <h1>Products</h1>
-        <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>
+        {!isDriver && <button className="btn btn-primary btn-sm" onClick={() => navigate('/products/new')}>+ Add</button>}
       </div>
 
       {/* ── ACTION PILLS ── */}
@@ -97,7 +97,8 @@ export default function ProductsPage() {
       {/* ── INVENTORY SUMMARY ── */}
       <div style={{ padding:'0 16px 14px', paddingTop:14 }}>
 
-        {/* Big 3 value cards */}
+        {/* Big value cards – hide cost/profit for drivers */}
+        {!isDriver ? (
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:10 }}>
           <div style={{
             background:'white', borderRadius:14, padding:'12px 10px', textAlign:'center',
@@ -125,6 +126,17 @@ export default function ProductsPage() {
             <p style={{ fontSize:9, color:totalProfit>=0?'#1d4ed8':'#dc2626', marginTop:2 }}>{profitMargin}% margin</p>
           </div>
         </div>
+        ) : (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:8, marginBottom:10 }}>
+          <div style={{
+            background:'linear-gradient(135deg,#f0fdf4,#dcfce7)', borderRadius:14, padding:'12px 14px', textAlign:'center',
+            border:'1.5px solid #86efac',
+          }}>
+            <p style={{ fontSize:10, color:'#15803d', fontWeight:600, marginBottom:3, textTransform:'uppercase' }}>Sell Value (if sold at list)</p>
+            <p style={{ fontWeight:900, fontSize:20, color:'#16a34a' }}>${totalSellValue.toFixed(0)}</p>
+          </div>
+        </div>
+        )}
 
         {/* Stock status row */}
         <div style={{ display:'flex', gap:8 }}>
@@ -204,20 +216,25 @@ export default function ProductsPage() {
                         <p style={{ fontWeight:700, fontSize:15, marginBottom:1 }}>{product.name}</p>
                         {product.brand && <p style={{ fontSize:11, color:'var(--text-muted)' }}>{product.brand}</p>}
                         <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:3 }}>
+                          {!isDriver && (
                           <span style={{ fontSize:11, color:'var(--text-muted)' }}>
                             Cost: ${avgCost.toFixed(2)}{hasAvgDiff ? ' avg' : ''}
                           </span>
+                          )}
                           <span style={{ fontSize:11, color:'var(--green)', fontWeight:700 }}>
                             Sell: ${product.sell_price.toFixed(2)}
                           </span>
+                          {!isDriver && (
                           <span style={{ fontSize:11, color: unitProfit >= 0 ? 'var(--blue)' : 'var(--red)', fontWeight:600 }}>
                             +${unitProfit.toFixed(2)}
                           </span>
+                          )}
                         </div>
-                        {/* Stock cost value */}
+                        {!isDriver && (
                         <p style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>
                           Stock value: ${stockVal.toFixed(0)}
                         </p>
+                        )}
                       </div>
 
                       {/* Stock qty + archive */}
@@ -229,6 +246,7 @@ export default function ProductsPage() {
                           {product.is_active === false ? '—' : (product.stock_qty || 0)}
                         </div>
                         <div style={{ fontSize:10, color:'var(--text-muted)' }}>{product.unit}s</div>
+                        {!isDriver && (
                         <button onClick={(e) => handleArchive(e, product)} disabled={archiving === product.id}
                           style={{ marginTop:4, padding:'2px 8px', borderRadius:8, border:'1px solid', cursor:'pointer', fontSize:10, fontWeight:700,
                             borderColor: product.is_active === false ? '#86efac' : '#fecaca',
@@ -237,6 +255,7 @@ export default function ProductsPage() {
                           }}>
                           {archiving === product.id ? '...' : product.is_active === false ? 'Restore' : 'Archive'}
                         </button>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -6,14 +6,17 @@ import { useAuth } from '../hooks/useAuth'
 const fmt = (n) => n >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(2)}`
 
 // ── Monthly Bar Chart ──────────────────────────────────────────
-function MonthlyChart({ data}) {
-  const max = Math.max(...data.map(d => Math.max(d.revenue, d.stockCost)), 1)
+function MonthlyChart({ data, canSeeProfit = true }) {
+  const max = Math.max(...data.map(d => Math.max(d.revenue, canSeeProfit ? d.stockCost : 0)), 1)
+
+  const legend = [['#2563eb','Revenue']]
+  if (canSeeProfit) { legend.push(['#16a34a','Profit']); legend.push(['#dc2626','Stock Cost']) }
 
   return (
     <div className="card" style={{ padding:'16px 16px 12px', marginBottom:12 }}>
-      <p style={{ fontWeight:800, fontSize:14, marginBottom:4 }}>📊 Monthly Overview — Last 6 Months</p>
+      <p style={{ fontWeight:800, fontSize:14, marginBottom:4 }}>📊 Monthly Overview – Last 6 Months</p>
       <div style={{ display:'flex', gap:4, marginBottom:8 }}>
-        {[['#2563eb','Revenue'],['#16a34a','Profit'],['#dc2626','Stock Cost']].map(([c,l]) => (
+        {legend.map(([c,l]) => (
           <div key={l} style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, color:'var(--text-muted)' }}>
             <div style={{ width:10, height:10, borderRadius:2, background:c }} />{l}
           </div>
@@ -22,14 +25,14 @@ function MonthlyChart({ data}) {
       <div style={{ display:'flex', gap:6, alignItems:'flex-end', height:120 }}>
         {data.map((m, i) => {
           const rh = Math.max((m.revenue / max) * 110, m.revenue > 0 ? 3 : 0)
-          const ph = Math.max((Math.max(m.profit,0) / max) * 110, m.profit > 0 ? 3 : 0)
-          const sh = Math.max((m.stockCost / max) * 110, m.stockCost > 0 ? 3 : 0)
+          const ph = canSeeProfit ? Math.max((Math.max(m.profit,0) / max) * 110, m.profit > 0 ? 3 : 0) : 0
+          const sh = canSeeProfit ? Math.max((m.stockCost / max) * 110, m.stockCost > 0 ? 3 : 0) : 0
           return (
             <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
               <div style={{ width:'100%', display:'flex', gap:2, alignItems:'flex-end', height:110, justifyContent:'center' }}>
                 <div title={`Revenue: $${m.revenue.toFixed(2)}`} style={{ flex:1, height:rh, background:'#2563eb', borderRadius:'3px 3px 0 0', minWidth:4 }} />
-                <div title={`Profit: $${m.profit.toFixed(2)}`} style={{ flex:1, height:ph, background:'#16a34a', borderRadius:'3px 3px 0 0', minWidth:4 }} />
-                <div title={`Stock: $${m.stockCost.toFixed(2)}`} style={{ flex:1, height:sh, background:'#dc2626', borderRadius:'3px 3px 0 0', minWidth:4 }} />
+                {canSeeProfit && <div title={`Profit: $${m.profit.toFixed(2)}`} style={{ flex:1, height:ph, background:'#16a34a', borderRadius:'3px 3px 0 0', minWidth:4 }} />}
+                {canSeeProfit && <div title={`Stock: $${m.stockCost.toFixed(2)}`} style={{ flex:1, height:sh, background:'#dc2626', borderRadius:'3px 3px 0 0', minWidth:4 }} />}
               </div>
               <p style={{ fontSize:10, color:'var(--text-muted)', marginTop:4 }}>{m.label}</p>
               {m.revenue > 0 && <p style={{ fontSize:9, color:'#2563eb', fontWeight:700 }}>{fmt(m.revenue)}</p>}
@@ -93,7 +96,7 @@ function SectionHeader({ title }) {
 }
 
 export default function AnalyticsPage() {
-  const { user } = useAuth()
+  const { user, canSeeProfit } = useAuth()
   const navigate = useNavigate()
 
   // ── Sales lookup ──
@@ -276,10 +279,10 @@ export default function AnalyticsPage() {
         {/* ── TODAY SUMMARY ── */}
         <div style={{ background:'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius:14, padding:'16px 18px', marginBottom:16 }}>
           <p style={{ color:'rgba(255,255,255,0.7)', fontSize:12, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:10 }}>Today's Performance</p>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
+          <div style={{ display:'grid', gridTemplateColumns: canSeeProfit ? '1fr 1fr 1fr' : '1fr 1fr', gap:10 }}>
             {[
               { label:'Revenue', value: loadingSummary ? '...' : fmtFull(summary?.today?.revenue||0), color:'#7dd3fc' },
-              { label:'Profit',  value: loadingSummary ? '...' : fmtFull(summary?.today?.profit||0),  color: (summary?.today?.profit||0)>=0 ? '#86efac' : '#fca5a5' },
+              ...(canSeeProfit ? [{ label:'Profit',  value: loadingSummary ? '...' : fmtFull(summary?.today?.profit||0),  color: (summary?.today?.profit||0)>=0 ? '#86efac' : '#fca5a5' }] : []),
               { label:'Units',   value: loadingSummary ? '...' : (summary?.today?.units||0),           color:'#c4b5fd' },
             ].map(s => (
               <div key={s.label} style={{ background:'rgba(255,255,255,0.1)', borderRadius:10, padding:'10px 12px', textAlign:'center' }}>
@@ -293,14 +296,16 @@ export default function AnalyticsPage() {
         {/* ── PERIOD SUMMARY ── */}
         <SectionHeader title="Revenue Summary" />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:8 }}>
-          <StatCard icon="📅" label="This Week" value={loadingSummary?'...':fmt(summary?.week?.revenue||0)} sub={`${fmtFull(summary?.week?.profit||0)} profit`} color="#2563eb" />
-          <StatCard icon="🗓️" label="This Month" value={loadingSummary?'...':fmt(summary?.month?.revenue||0)} sub={`${fmtFull(summary?.month?.profit||0)} profit`} color="#7c3aed" />
+          <StatCard icon="📅" label="This Week" value={loadingSummary?'...':fmt(summary?.week?.revenue||0)} sub={canSeeProfit ? `${fmtFull(summary?.week?.profit||0)} profit` : undefined} color="#2563eb" />
+          <StatCard icon="🗓️" label="This Month" value={loadingSummary?'...':fmt(summary?.month?.revenue||0)} sub={canSeeProfit ? `${fmtFull(summary?.month?.profit||0)} profit` : undefined} color="#7c3aed" />
         </div>
+        {canSeeProfit && (
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:4 }}>
           <StatCard icon="📦" label="Stock (month)" value={loadingSummary?'...':fmt(summary?.monthStock||0)} sub="paid for inventory" color="#dc2626" />
           <StatCard icon="💡" label="Net (month)" value={loadingSummary?'...':fmtFull((summary?.month?.profit||0)-(summary?.monthStock||0))} sub="profit minus stock cost" color={(summary?.month?.profit||0)-(summary?.monthStock||0)>=0?'#16a34a':'#dc2626'} />
         </div>
-        <StatCard icon="📆" label="This Year Revenue" value={loadingSummary?'...':fmt(summary?.year?.revenue||0)} sub={`${fmtFull(summary?.year?.profit||0)} profit · ${summary?.year?.units||0} units sold`} color="#059669" />
+        )}
+        <StatCard icon="📆" label="This Year Revenue" value={loadingSummary?'...':fmt(summary?.year?.revenue||0)} sub={canSeeProfit ? `${fmtFull(summary?.year?.profit||0)} profit · ${summary?.year?.units||0} units sold` : `${summary?.year?.units||0} units sold`} color="#059669" />
 
         {/* ── SEARCH BY DAY ── */}
         <SectionHeader title="📅 Sales on a Specific Day" />
@@ -316,10 +321,10 @@ export default function AnalyticsPage() {
           <div>
             <div style={{ background:'var(--gray-light)', borderRadius:12, padding:'14px 16px', marginBottom:12 }}>
               <p style={{ fontWeight:800, fontSize:15, marginBottom:10 }}>{prettyDate(searchDate)}</p>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+              <div style={{ display:'grid', gridTemplateColumns: canSeeProfit ? 'repeat(4,1fr)' : 'repeat(3,1fr)', gap:8 }}>
                 {[
                   { l:'Revenue', v:fmtFull(dayData.revenue), c:'#2563eb' },
-                  { l:'Profit',  v:fmtFull(dayData.profit),  c:dayData.profit>=0?'#16a34a':'#dc2626' },
+                  ...(canSeeProfit ? [{ l:'Profit',  v:fmtFull(dayData.profit),  c:dayData.profit>=0?'#16a34a':'#dc2626' }] : []),
                   { l:'Units',   v:dayData.units,             c:'#7c3aed' },
                   { l:'Visits',  v:dayData.visits,            c:'#f59e0b' },
                 ].map(s => (
@@ -342,7 +347,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div style={{ textAlign:'right' }}>
                       <p style={{ fontWeight:800, fontSize:14, color:'#2563eb' }}>{fmtFull(p.revenue)}</p>
-                      <p style={{ fontSize:11, color:p.profit>=0?'#16a34a':'#dc2626' }}>{fmtFull(p.profit)} profit</p>
+                      {canSeeProfit && <p style={{ fontSize:11, color:p.profit>=0?'#16a34a':'#dc2626' }}>{fmtFull(p.profit)} profit</p>}
                     </div>
                   </div>
                 ))}
@@ -355,7 +360,8 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {/* ── STOCK COST RANGE ── */}
+        {/* ── STOCK COST RANGE (hidden for drivers without profit access) ── */}
+        {canSeeProfit && (<>
         <SectionHeader title="📦 Stock Purchases by Date Range" />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
           <div>
@@ -430,13 +436,16 @@ export default function AnalyticsPage() {
             )}
           </div>
         )}
+        </>)}
 
         {/* ── MONTHLY CHART ── */}
-        {monthlyChart.length > 0 && <MonthlyChart data={monthlyChart} />}
+        {monthlyChart.length > 0 && <MonthlyChart data={monthlyChart} canSeeProfit={canSeeProfit} />}
 
         {/* ── ALL TIME ── */}
+        {canSeeProfit && (<>
         <SectionHeader title="All Time" />
         <StatCard icon="🏦" label="Total Stock Investment" value={loadingSummary?'...':fmt(summary?.allStock||0)} sub="total paid for all inventory" color="#dc2626" />
+        </>)}
 
       </div>
     </div>
