@@ -446,7 +446,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
       if (ex >= 0) { const u=[...prev]; u[ex]={...u[ex],qty:u[ex].qty+qty}; return u }
       return [...prev, { product_id:product.id, product_name:product.name, qty, unit_price, list_price:unit_price, unit_cost, image_url:product.image_url }]
     })
-    setShowProducts(false)
+    showToast(`✅ ${product.name} added`)
   }
   const removeItem = idx => setSaleItems(p => p.filter((_,i) => i !== idx))
   const updateQty = (idx, v) => setSaleItems(p => p.map((it,i) => i===idx ? {...it, qty:parseInt(v)||1} : it))
@@ -509,9 +509,33 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
     <div>
       <div className="page-header">
         <button onClick={() => setShowProducts(false)} style={{ background:'none',border:'none',fontSize:22,cursor:'pointer' }}>←</button>
-        <h1>Select Product</h1><div style={{ width:36 }} />
+        <h1>Select Products</h1><div style={{ width:36 }} />
       </div>
-      <div className="page" style={{ paddingTop:12 }}><ProductSelector products={products} onAdd={addSaleItem} /></div>
+      {saleItems.length > 0 && (
+        <div style={{
+          padding: '8px 16px', background: 'var(--green-light)', borderBottom: '1px solid #bbf7d0',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position: 'sticky', top: 56, zIndex: 30,
+        }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
+            🛒 {saleItems.length} item{saleItems.length !== 1 ? 's' : ''} · ${saleItems.reduce((s, i) => s + i.qty * i.unit_price, 0).toFixed(2)}
+          </p>
+        </div>
+      )}
+      <div className="page" style={{ paddingTop:12, paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 140px)' }}>
+        <ProductSelector products={products} onAdd={addSaleItem} addedItems={saleItems} />
+      </div>
+      <div style={{
+        position: 'fixed', bottom: 'calc(var(--nav-height) + var(--safe-bottom))', left: 0, right: 0, zIndex: 50,
+        padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface)',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+      }}>
+        <button className="btn btn-primary btn-full" onClick={() => setShowProducts(false)} style={{ fontSize: 16, padding: 14 }}>
+          {saleItems.length > 0
+            ? `Done · ${saleItems.length} item${saleItems.length !== 1 ? 's' : ''} · $${saleItems.reduce((s, i) => s + i.qty * i.unit_price, 0).toFixed(2)}`
+            : 'Done'}
+        </button>
+      </div>
     </div>
   )
 

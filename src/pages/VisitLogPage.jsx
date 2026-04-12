@@ -13,11 +13,19 @@ export default function VisitLogPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { customers, updateCustomer } = useCustomers()
+  const { customers, loading: customersLoading, updateCustomer } = useCustomers()
   const { logVisit } = useVisits()
   const { products, updateProduct } = useProducts()
 
   const customer = customers.find(c => c.id === customerId)
+
+  // Show spinner while data loads
+  if (customersLoading && !customer) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 12 }}>
+      <div style={{ width: 40, height: 40, border: '4px solid var(--border)', borderTopColor: 'var(--blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <p className="text-muted text-sm">Loading...</p>
+    </div>
+  )
 
   // mode: 'visit' = full log visit flow, 'sale' = jump straight to sale recording
   const mode = searchParams.get('mode') || 'visit'

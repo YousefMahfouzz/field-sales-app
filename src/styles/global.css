@@ -398,6 +398,9 @@ h3 { font-size: 14px; font-weight: 600; }
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
 }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 /* ── FAB (Floating Action Button) ─────────────────────────────── */
 .fab {

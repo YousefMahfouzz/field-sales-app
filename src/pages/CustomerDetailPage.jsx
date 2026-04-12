@@ -19,13 +19,21 @@ function daysUntilVisit(dateStr) {
 export default function CustomerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { customers, deleteCustomer, updateCustomer } = useCustomers()
+  const { customers, loading: customersLoading, deleteCustomer, updateCustomer } = useCustomers()
   const { visits, fetchVisitsForCustomer } = useVisits()
   const [showDelete, setShowDelete] = useState(false)
 
   const customer = customers.find(c => c.id === id)
 
   useEffect(() => { if (id) fetchVisitsForCustomer(id) }, [id, fetchVisitsForCustomer])
+
+  // Show loading while customers are still being fetched
+  if (customersLoading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 12 }}>
+      <div style={{ width: 40, height: 40, border: '4px solid var(--border)', borderTopColor: 'var(--blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <p className="text-muted text-sm">Loading customer...</p>
+    </div>
+  )
 
   if (!customer) return (
     <div className="page" style={{ textAlign: 'center', paddingTop: 80 }}>

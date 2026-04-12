@@ -16,10 +16,12 @@ const EXCLUDED_NAMES = [
   'circle k', 'racetrac', 'racetrack', 'race trac', 'qt ', 'quiktrip', 'loves travel',
   'buc-ee', 'bucees', 'pilot travel', 'flying j', 'wawa', 'sheetz', 'speedway',
   'murphy usa', 'murphyusa', 'sams fuel', "sam's fuel", 'costco gas', 'kroger fuel',
-  // Big-box grocery (not independent)
+  // Big-box / chain grocery (not independent)
   'walmart', 'wal-mart', 'target', 'costco', 'sams club', "sam's club",
   'whole foods', 'trader joe', 'aldi', 'lidl', 'kroger', 'publix', 'safeway',
   'albertsons', 'winn-dixie', 'winn dixie', 'food lion',
+  'rouses', "rouse's", 'rouse market',
+  'dollar general', 'dg market', 'dollar tree', 'family dollar',
   // Beauty chains (not beauty supply stores)
   'ulta ', 'ulta beauty', 'sephora', 'sally beauty', 'bath & body',
   'bath and body', 'the body shop', 'bluemercury', 'morphe',
@@ -30,13 +32,18 @@ const EXCLUDED_NAMES = [
   'urgent care', 'hospital', 'surgery center', 'medspa', 'med spa',
   // Pharmacy chains
   'cvs', 'walgreens', 'rite aid',
-  // Wine-only stores
+  // Wine stores
   'wine bar', 'wine shop', 'wine cellar', 'wine merchant', 'wine house',
   'wine & spirits', 'wine and spirits', 'wine boutique', 'wine store',
+  'wine tasting', 'winery', 'vineyard',
   'total wine', 'spec\'s', 'binny\'s',
   // Hair extension / wig suppliers (not beauty supply retail)
   'hair extension', 'hair extensions', 'wig ', 'wigs ', 'wig outlet',
   'hair wholesale', 'hair vendor', 'hair distributor', 'lace front',
+  // Production / manufacturing / warehouse (not retail)
+  'production', 'manufacturing', 'warehouse', 'distribution center',
+  'bottling', 'packaging', 'factory', 'plant ', 'processing',
+  'wholesale only', 'trade only',
 ]
 function isExcluded(name) {
   const n = (name || '').toLowerCase()
