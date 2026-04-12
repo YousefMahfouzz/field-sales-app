@@ -234,6 +234,13 @@ export default function MapPage() {
       const service = new window.google.maps.places.PlacesService(tempMap)
       const newMarkers = []
 
+      // Distance between two GPS points in meters
+      const metersApart = (lat1, lng1, lat2, lng2) => {
+        const dlat = (lat1 - lat2) * 111000
+        const dlng = (lng1 - lng2) * 111000 * Math.cos(lat1 * Math.PI / 180)
+        return Math.sqrt(dlat * dlat + dlng * dlng)
+      }
+
       await Promise.all(types.map(({ type, keyword, label, color, typeTag }) =>
         new Promise(resolve => {
           const req = { location: { lat, lng }, radius: searchRadius }
@@ -245,6 +252,15 @@ export default function MapPage() {
                 if (isExcluded(place.name)) continue
                 const plat = place.geometry.location.lat()
                 const plng = place.geometry.location.lng()
+
+                // Skip if duplicate (within 50m of already-added POI)
+                if (newMarkers.some(m => metersApart(plat, plng, m.lat, m.lng) < 50)) continue
+
+                // Check if already one of your customers (within 80m)
+                const existingCust = customers.find(c =>
+                  c.lat && c.lng && metersApart(plat, plng, c.lat, c.lng) < 80
+                )
+
                 const poiData = {
                   name: place.name,
                   type: typeTag || type,
@@ -253,24 +269,27 @@ export default function MapPage() {
                   lng: plng,
                   vicinity: place.vicinity || '',
                   rating: place.rating || null,
+                  isExisting: !!existingCust,
+                  existingCustomer: existingCust || null,
                 }
+
+                const mColor = existingCust ? '#16a34a' : color
                 const marker = new window.google.maps.Marker({
                   position: place.geometry.location,
                   map: mapInstance.current,
-                  title: place.name,
+                  title: existingCust ? `\u2705 ${place.name} (your customer)` : place.name,
                   icon: {
                     path: window.google.maps.SymbolPath.CIRCLE,
                     scale: 11,
-                    fillColor: color, fillOpacity: 0.95,
-                    strokeColor: 'white', strokeWeight: 2.5,
+                    fillColor: mColor, fillOpacity: existingCust ? 0.4 : 0.95,
+                    strokeColor: existingCust ? '#16a34a' : 'white',
+                    strokeWeight: existingCust ? 3 : 2.5,
                   },
-                  label: { text: label, fontSize: '13px' },
-                  zIndex: 10,
+                  label: { text: existingCust ? '\u2705' : label, fontSize: '13px' },
+                  zIndex: existingCust ? 5 : 10,
                 })
                 marker.addListener('click', () => {
-                  // Close any previous customer popup
                   setSelectedCustomer(null)
-                  // Show POI popup
                   setSelectedPoi(poiData)
                 })
                 poiMarkersRef.current.push(marker)
@@ -570,7 +589,7 @@ export default function MapPage() {
           borderRadius: 18,
           padding: 16,
           boxShadow: '0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)',
-          borderTop: '4px solid #7c3aed',
+          borderTop: `4px solid ${selectedPoi.isExisting ? '#16a34a' : '#7c3aed'}`,
           transition: 'bottom 0.2s ease',
         }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 10 }}>
@@ -586,19 +605,41 @@ export default function MapPage() {
               <Icon name="close" size={14} />
             </button>
           </div>
+
+          {/* Existing customer badge */}
+          {selectedPoi.isExisting && (
+            <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:10, padding:'8px 12px', marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:16 }}>✅</span>
+              <div>
+                <p style={{ fontSize:13, fontWeight:700, color:'#16a34a' }}>Already your customer</p>
+                <p style={{ fontSize:11, color:'var(--text-muted)' }}>{selectedPoi.existingCustomer?.business_name || selectedPoi.existingCustomer?.full_name}</p>
+              </div>
+            </div>
+          )}
+
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={() => {
               window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedPoi.name + ' ' + selectedPoi.vicinity)}`, '_blank')
             }}
               style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'1.5px solid #d4d8e0', background:'white', color:'#14171e', fontWeight:700, fontSize:13, cursor:'pointer' }}>
-              🗺️ Google Maps
+              🗺️ Maps
             </button>
-            <button onClick={() => {
-              navigate(`/customers/new?lat=${selectedPoi.lat}&lng=${selectedPoi.lng}&name=${encodeURIComponent(selectedPoi.name)}&address=${encodeURIComponent(selectedPoi.vicinity)}`)
+
+            {/* Show Log Visit for existing customers, Add Customer for new ones */}
+            {selectedPoi.isExisting ? (
+              <button onClick={() => navigate(`/visit/${selectedPoi.existingCustomer.id}`)}
+                style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'none', background:'#16a34a', color:'white', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+                📋 Log Visit
+              </button>
+            ) : (
+              <button onClick={() => {
+                navigate(`/customers/new?lat=${selectedPoi.lat}&lng=${selectedPoi.lng}&name=${encodeURIComponent(selectedPoi.name)}&address=${encodeURIComponent(selectedPoi.vicinity)}`)
               }}
-              style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'none', background:'#3563e9', color:'white', fontWeight:700, fontSize:13, cursor:'pointer' }}>
-              + Add Customer
-            </button>
+                style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 0', borderRadius:10, border:'none', background:'#3563e9', color:'white', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+                + Add Customer
+              </button>
+            )}
+
             <button onClick={() => {
               const isSelected = selectedPois.some(p => p.name === selectedPoi.name && p.lat === selectedPoi.lat)
               if (isSelected) {
