@@ -296,10 +296,14 @@ export default function SettingsPage() {
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/inventory')} style={{ marginBottom:10, color:'#dc2626', borderColor:'#dc2626' }}>
               View User Inventories
             </button>
+          </>)}
+
+          {/* Copy sales tool – visible for Yousef and Joe only */}
+          {(user?.id === '52cf4ea5-3a12-4500-bb12-0aefc8176d57' || user?.id === 'b4412cb7-1e8b-411a-874d-98418bee1738') && (
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/copy-sales')} style={{ marginBottom:10, color:'#059669', borderColor:'#059669' }}>
               📋 Copy Sales Between Accounts
             </button>
-          </>)}
+          )}
 
           <button className="btn btn-ghost btn-full" onClick={() => navigate('/backup')} style={{ marginBottom:10 }}>
             Backup & Restore
