@@ -218,6 +218,56 @@ export default function CopySalesPage() {
     showToast('Cleared pending export data')
   }
 
+  // ── REPAIR: Delete broken copied visits (had_sale=true but 0 sale_items) ──
+  const [repairing, setRepairing] = useState(false)
+  const [repairResult, setRepairResult] = useState(null)
+
+  const handleRepair = async () => {
+    if (!window.confirm('This will delete all copied visits that have no sale items (broken imports), then allow you to re-import. Continue?')) return
+    setRepairing(true)
+    setStatus('Finding broken copied visits...')
+    try {
+      // Fetch all visits with "[Copied from" in notes that had a sale
+      const { data: copiedVisits } = await supabase
+        .from('visits')
+        .select('id, notes, sale_amount, created_at, sale_items(id)')
+        .eq('user_id', user.id)
+        .eq('had_sale', true)
+        .is('deleted_at', null)
+        .like('notes', '%[Copied from%')
+        .order('created_at', { ascending: false })
+        .limit(1000)
+
+      const broken = (copiedVisits || []).filter(v => !v.sale_items || v.sale_items.length === 0)
+
+      if (broken.length === 0) {
+        setStatus('No broken visits found – all copied visits have their sale items.')
+        setRepairResult({ deleted: 0 })
+        setRepairing(false)
+        return
+      }
+
+      setStatus(`Found ${broken.length} broken visits – deleting...`)
+
+      // Hard-delete the broken visits (they have no items so nothing to clean up)
+      for (const v of broken) {
+        await supabase.from('visits').delete().eq('id', v.id)
+      }
+
+      setRepairResult({ deleted: broken.length })
+      setStatus(`✅ Deleted ${broken.length} broken visits. You can now re-run the export + import.`)
+      showToast(`🔧 Repaired – deleted ${broken.length} broken visits`)
+
+      // Also clear localStorage so user can re-export
+      localStorage.removeItem(STORAGE_KEY)
+    } catch (err) {
+      setStatus('❌ Repair failed: ' + err.message)
+      showToast('Repair failed: ' + err.message, 'error')
+    } finally {
+      setRepairing(false)
+    }
+  }
+
   const isYousef = user?.id === YOUSEF_USER_ID
   const isJoe = user?.id === JOE_USER_ID
 
@@ -297,6 +347,31 @@ export default function CopySalesPage() {
           <div className="card" style={{ marginBottom: 16, padding: '14px 16px' }}>
             <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-muted)' }}>No export data found</p>
             <p className="text-xs text-muted">Log in as Yousef first and export the sales.</p>
+          </div>
+        )}
+
+        {/* Repair tool – for Joe to fix broken imports */}
+        {isJoe && (
+          <div className="card" style={{ marginBottom: 16, padding: '14px 16px', border: '2px solid #d97706' }}>
+            <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: '#d97706' }}>🔧 Repair Failed Import</p>
+            <p className="text-xs text-muted" style={{ marginBottom: 12 }}>
+              If a previous import created visits but failed on sale items, this will delete those broken visits so you can re-import cleanly.
+            </p>
+            <button
+              className="btn btn-ghost btn-full"
+              onClick={handleRepair}
+              disabled={repairing}
+              style={{ color: '#d97706', borderColor: '#d97706' }}
+            >
+              {repairing ? '⏳ Repairing...' : '🔧 Find & Delete Broken Visits'}
+            </button>
+            {repairResult && (
+              <div style={{ marginTop: 8, padding: '10px 14px', background: repairResult.deleted > 0 ? '#f0fdf4' : 'var(--gray-light)', borderRadius: 10, border: repairResult.deleted > 0 ? '1px solid #86efac' : '1px solid var(--border)' }}>
+                <p style={{ fontWeight: 700, fontSize: 13, color: repairResult.deleted > 0 ? '#16a34a' : 'var(--text-muted)' }}>
+                  {repairResult.deleted > 0 ? `✅ Deleted ${repairResult.deleted} broken visits – re-export from Yousef and import again` : 'No broken visits found'}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
