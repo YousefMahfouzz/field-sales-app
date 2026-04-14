@@ -136,21 +136,6 @@ export default function BackupPage() {
     sale_items: ['total_cost', 'total_price', 'total_profit'],
   }
 
-  // Columns that might cause RLS issues when importing cross-user
-  // We remap user_id to the current user so RLS allows the insert
-  const remapUserId = (row, table) => {
-    const mapped = { ...row }
-    if (table === 'profiles') {
-      mapped.id = user.id
-    } else if (mapped.user_id) {
-      mapped.user_id = user.id
-    }
-    if (table === 'orders' && mapped.seller_user_id) {
-      mapped.seller_user_id = user.id
-    }
-    return mapped
-  }
-
   const handleImport = async () => {
     if (!importPreview) return
     setImporting(true)
@@ -159,44 +144,15 @@ export default function BackupPage() {
 
     try {
       const { data: importedData } = importPreview
+      const isSameUser = importedData.profiles?.[0]?.id === user.id
+        || importedData.customers?.[0]?.user_id === user.id
 
-      // Import in dependency order: profiles, products, customers, visits, sale_items, purchases, orders
-      const ORDER = ['profiles', 'products', 'customers', 'visits', 'sale_items', 'purchases', 'orders']
-
-      for (const table of ORDER) {
-        const rows = importedData[table]
-        if (!rows || rows.length === 0) {
-          log(setImportProgress, `⏭ ${table}: empty, skipped`)
-          continue
-        }
-
-        log(setImportProgress, `⏳ Importing ${rows.length} ${table}...`)
-
-        // Strip generated columns and remap user_id
-        const stripCols = STRIP_COLUMNS[table] || []
-        const cleanRows = rows.map(row => {
-          const mapped = remapUserId(row, table)
-          for (const col of stripCols) {
-            delete mapped[col]
-          }
-          return mapped
-        })
-
-        // Upsert in batches of 100
-        let imported = 0
-        for (let i = 0; i < cleanRows.length; i += 100) {
-          const batch = cleanRows.slice(i, i + 100)
-          const { error } = await supabase
-            .from(table)
-            .upsert(batch, { onConflict: 'id', ignoreDuplicates: true })
-
-          if (error) {
-            log(setImportProgress, `⚠️ ${table} batch ${Math.floor(i/100)+1}: ${error.message}`, 'warn')
-          } else {
-            imported += batch.length
-          }
-        }
-        log(setImportProgress, `✅ ${table}: ${imported}/${rows.length} imported`, 'success')
+      // If importing to a DIFFERENT user, generate new IDs and remap FKs
+      // If same user, upsert with original IDs (true restore)
+      if (isSameUser) {
+        await importSameUser(importedData)
+      } else {
+        await importCrossUser(importedData)
       }
 
       log(setImportProgress, '\n🎉 Import complete! Reload the app to see your data.', 'success')
@@ -206,6 +162,175 @@ export default function BackupPage() {
       setStep('error')
     } finally {
       setImporting(false)
+    }
+  }
+
+  // Same-user restore: upsert with original IDs
+  const importSameUser = async (importedData) => {
+    const ORDER = ['profiles', 'products', 'customers', 'visits', 'sale_items', 'purchases', 'orders']
+    for (const table of ORDER) {
+      const rows = importedData[table]
+      if (!rows || rows.length === 0) { log(setImportProgress, `⏭ ${table}: empty, skipped`); continue }
+      log(setImportProgress, `⏳ Importing ${rows.length} ${table}...`)
+
+      const stripCols = STRIP_COLUMNS[table] || []
+      const cleanRows = rows.map(row => {
+        const r = { ...row }
+        for (const col of stripCols) delete r[col]
+        return r
+      })
+
+      let imported = 0
+      for (let i = 0; i < cleanRows.length; i += 50) {
+        const batch = cleanRows.slice(i, i + 50)
+        const { error } = await supabase.from(table).upsert(batch, { onConflict: 'id' })
+        if (error) log(setImportProgress, `⚠️ ${table} batch ${Math.floor(i/50)+1}: ${error.message}`, 'warn')
+        else imported += batch.length
+      }
+      log(setImportProgress, `✅ ${table}: ${imported}/${rows.length} imported`, 'success')
+    }
+  }
+
+  // Cross-user import: new IDs, remap all foreign keys
+  const importCrossUser = async (importedData) => {
+    // ID mapping: oldId → newId
+    const idMap = {}
+    const genId = () => crypto.randomUUID()
+
+    // 1. Profile – just update current user's profile with display info (skip if not needed)
+    log(setImportProgress, `⏭ profiles: skipped (using your existing profile)`)
+
+    // 2. Products – generate new IDs, remap user_id
+    const products = importedData.products || []
+    if (products.length > 0) {
+      log(setImportProgress, `⏳ Importing ${products.length} products...`)
+      let imported = 0
+      for (const p of products) {
+        const newId = genId()
+        idMap[p.id] = newId
+        const row = { ...p, id: newId, user_id: user.id }
+        delete row.margin_percent
+        const { error } = await supabase.from('products').insert([row])
+        if (error) {
+          log(setImportProgress, `⚠️ product "${p.name}": ${error.message}`, 'warn')
+        } else {
+          imported++
+        }
+      }
+      log(setImportProgress, `✅ products: ${imported}/${products.length} imported`, 'success')
+    } else {
+      log(setImportProgress, `⏭ products: empty, skipped`)
+    }
+
+    // 3. Customers – generate new IDs, remap user_id
+    const customers = importedData.customers || []
+    if (customers.length > 0) {
+      log(setImportProgress, `⏳ Importing ${customers.length} customers...`)
+      let imported = 0
+      for (const c of customers) {
+        const newId = genId()
+        idMap[c.id] = newId
+        const row = { ...c, id: newId, user_id: user.id }
+        const { error } = await supabase.from('customers').insert([row])
+        if (error) {
+          log(setImportProgress, `⚠️ customer "${c.business_name || c.full_name}": ${error.message}`, 'warn')
+        } else {
+          imported++
+        }
+      }
+      log(setImportProgress, `✅ customers: ${imported}/${customers.length} imported`, 'success')
+    } else {
+      log(setImportProgress, `⏭ customers: empty, skipped`)
+    }
+
+    // 4. Visits – generate new IDs, remap user_id + customer_id
+    const visits = importedData.visits || []
+    if (visits.length > 0) {
+      log(setImportProgress, `⏳ Importing ${visits.length} visits...`)
+      let imported = 0
+      for (const v of visits) {
+        const newId = genId()
+        idMap[v.id] = newId
+        const row = { ...v, id: newId, user_id: user.id }
+        // Remap customer_id to the new customer ID
+        if (row.customer_id && idMap[row.customer_id]) {
+          row.customer_id = idMap[row.customer_id]
+        }
+        delete row.profit
+        delete row.sale_items // remove nested joins if present
+        const { error } = await supabase.from('visits').insert([row])
+        if (error) {
+          log(setImportProgress, `⚠️ visit ${v.created_at?.slice(0,10)}: ${error.message}`, 'warn')
+        } else {
+          imported++
+        }
+      }
+      log(setImportProgress, `✅ visits: ${imported}/${visits.length} imported`, 'success')
+    } else {
+      log(setImportProgress, `⏭ visits: empty, skipped`)
+    }
+
+    // 5. Sale items – generate new IDs, remap user_id + visit_id + product_id
+    const saleItems = importedData.sale_items || []
+    if (saleItems.length > 0) {
+      log(setImportProgress, `⏳ Importing ${saleItems.length} sale_items...`)
+      let imported = 0
+      for (const si of saleItems) {
+        const newId = genId()
+        const row = {
+          ...si,
+          id: newId,
+          user_id: user.id,
+          visit_id: idMap[si.visit_id] || si.visit_id,
+          product_id: idMap[si.product_id] || si.product_id,
+        }
+        delete row.total_cost
+        delete row.total_price
+        delete row.total_profit
+        const { error } = await supabase.from('sale_items').insert([row])
+        if (error) {
+          log(setImportProgress, `⚠️ sale_item "${si.product_name}": ${error.message}`, 'warn')
+        } else {
+          imported++
+        }
+      }
+      log(setImportProgress, `✅ sale_items: ${imported}/${saleItems.length} imported`, 'success')
+    } else {
+      log(setImportProgress, `⏭ sale_items: empty, skipped`)
+    }
+
+    // 6. Purchases
+    const purchases = importedData.purchases || []
+    if (purchases.length > 0) {
+      log(setImportProgress, `⏳ Importing ${purchases.length} purchases...`)
+      let imported = 0
+      for (const p of purchases) {
+        const row = { ...p, id: genId(), user_id: user.id }
+        if (row.product_id && idMap[row.product_id]) row.product_id = idMap[row.product_id]
+        const { error } = await supabase.from('purchases').insert([row])
+        if (error) log(setImportProgress, `⚠️ purchase: ${error.message}`, 'warn')
+        else imported++
+      }
+      log(setImportProgress, `✅ purchases: ${imported}/${purchases.length} imported`, 'success')
+    } else {
+      log(setImportProgress, `⏭ purchases: empty, skipped`)
+    }
+
+    // 7. Orders
+    const orders = importedData.orders || []
+    if (orders.length > 0) {
+      log(setImportProgress, `⏳ Importing ${orders.length} orders...`)
+      let imported = 0
+      for (const o of orders) {
+        const row = { ...o, id: genId(), seller_user_id: user.id }
+        if (row.user_id) row.user_id = user.id
+        const { error } = await supabase.from('orders').insert([row])
+        if (error) log(setImportProgress, `⚠️ order: ${error.message}`, 'warn')
+        else imported++
+      }
+      log(setImportProgress, `✅ orders: ${imported}/${orders.length} imported`, 'success')
+    } else {
+      log(setImportProgress, `⏭ orders: empty, skipped`)
     }
   }
 
