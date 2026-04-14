@@ -409,15 +409,15 @@ export default function DashboardPage() {
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayRevenue??0).toFixed(2)}`}</p>
             </div>
             {canSeeProfit && (
-            <div style={{ background:'linear-gradient(135deg,#14532d,#16a34a)', borderRadius:12, padding:'12px 14px' }}>
+            <div onClick={() => navigate('/analytics')} style={{ background:'linear-gradient(135deg,#14532d,#16a34a)', borderRadius:12, padding:'12px 14px', cursor:'pointer' }}>
               <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Profit {'Today'}</p>
               <p style={{ color:'white', fontWeight:900, fontSize:22, marginTop:4 }}>{loadingStats ? '...' : `$${(stats?.todayProfit??0).toFixed(2)}`}</p>
             </div>
             )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Metric icon={<Icon name="user" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" />
-            <Metric icon={<Icon name="map-pin" size={18} />} label={'Added'} value={addedToday.length} color="#7c3aed" />
+            <Metric icon={<Icon name="user" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.todayVisits ?? 0} color="var(--blue)" onClick={() => setSalesLogPeriod('today')} />
+            <Metric icon={<Icon name="map-pin" size={18} />} label={'Added'} value={addedToday.length} color="#7c3aed" onClick={() => navigate('/customers')} />
             <Metric icon={<Icon name="orders" size={18} />} label={'Orders'} value={pendingOrders} color="#f59e0b" onClick={() => navigate('/orders')} />
           </div>
 
@@ -427,17 +427,17 @@ export default function DashboardPage() {
             <button onClick={() => setSalesLogPeriod('week')} style={{ fontSize:12, color:'#16a34a', background:'none', border:'none', cursor:'pointer', fontWeight:600 }}>📋 Sales Log</button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: canSeeProfit ? '1fr 1fr' : '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            <Metric icon={<Icon name="map-pin" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" />
+            <Metric icon={<Icon name="map-pin" size={18} />} label={'Visits'} value={loadingStats ? '...' : stats?.weekVisits ?? 0} color="var(--blue)" onClick={() => setSalesLogPeriod('week')} />
             <Metric icon={<Icon name="dollar" size={18} />} label={'Sales'} value={loadingStats ? '...' : stats?.weekSales ?? 0} color="#16a34a" onClick={() => setSalesLogPeriod('week')} />
-            <Metric icon={<Icon name="trending-up" size={18} />} label={'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" />
-            {canSeeProfit && <Metric icon={<Icon name="bar-chart" size={18} />} label={'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} />}
+            <Metric icon={<Icon name="trending-up" size={18} />} label={'Revenue'} value={loadingStats ? '...' : `$${(stats?.weekRevenue ?? 0).toFixed(0)}`} color="#d97706" onClick={() => setSalesLogPeriod('week')} />
+            {canSeeProfit && <Metric icon={<Icon name="bar-chart" size={18} />} label={'Profit'} value={loadingStats ? '...' : `$${(stats?.weekProfit ?? 0).toFixed(0)}`} color={(stats?.weekProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626'} onClick={() => navigate('/analytics')} />}
           </div>
 
           {/* Customers */}
           <p className="section-header">{'Customers'}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Metric icon={<Icon name="users" size={18} />} label={'Active'} value={active.length} />
-            <Metric icon={<Icon name="calendar" size={18} />} label={'Due Today'} value={dueToday.length} color="var(--blue)" />
+            <Metric icon={<Icon name="users" size={18} />} label={'Active'} value={active.length} onClick={() => navigate('/customers')} />
+            <Metric icon={<Icon name="calendar" size={18} />} label={'Due Today'} value={dueToday.length} color="var(--blue)" onClick={() => navigate('/customers')} />
             <Metric icon={<Icon name="alert" size={18} />} label={'Overdue'} value={overdue.length} color="#dc2626" onClick={() => overdue.length > 0 && setShowReschedule(true)} />
           </div>
 

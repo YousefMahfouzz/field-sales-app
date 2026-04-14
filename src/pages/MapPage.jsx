@@ -250,6 +250,27 @@ export default function MapPage() {
             if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
               for (const place of places.slice(0, 20)) {
                 if (isExcluded(place.name)) continue
+
+                // Skip closed stores (allow 30-min grace for opening soon)
+                if (place.opening_hours && typeof place.opening_hours.isOpen === 'function') {
+                  if (!place.opening_hours.isOpen()) {
+                    // Check if opening within 30 min
+                    let openingSoon = false
+                    if (place.opening_hours.periods) {
+                      const now = new Date()
+                      const day = now.getDay()
+                      const nowMin = now.getHours() * 60 + now.getMinutes()
+                      for (const period of place.opening_hours.periods) {
+                        if (period.open && period.open.day === day) {
+                          const diff = (period.open.hours * 60 + period.open.minutes) - nowMin
+                          if (diff > 0 && diff <= 30) { openingSoon = true; break }
+                        }
+                      }
+                    }
+                    if (!openingSoon) continue
+                  }
+                }
+
                 const plat = place.geometry.location.lat()
                 const plng = place.geometry.location.lng()
 

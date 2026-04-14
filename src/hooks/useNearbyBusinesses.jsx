@@ -15,8 +15,45 @@ function getDistance(lat1, lng1, lat2, lng2) {
   return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)))
 }
 
+/**
+ * Check if a place is open or opens within 30 minutes.
+ * Returns { isOpenOrSoon: boolean, openingSoon: boolean, opensIn: number|null }
+ */
+function checkOpenStatus(place) {
+  // opening_hours may not be available for all places
+  if (!place.opening_hours) {
+    // If no hours data, assume open (don't filter out)
+    return { isOpenOrSoon: true, openingSoon: false, opensIn: null }
+  }
+
+  // If currently open, show it
+  if (place.opening_hours.isOpen?.()) {
+    return { isOpenOrSoon: true, openingSoon: false, opensIn: null }
+  }
+
+  // Try to check if it opens within 30 minutes
+  // opening_hours.periods gives us the weekly schedule
+  if (place.opening_hours.periods) {
+    const now = new Date()
+    const day = now.getDay() // 0=Sun, 6=Sat
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+
+    for (const period of place.opening_hours.periods) {
+      if (period.open && period.open.day === day) {
+        const openMinutes = period.open.hours * 60 + period.open.minutes
+        const diff = openMinutes - nowMinutes
+        if (diff > 0 && diff <= 30) {
+          return { isOpenOrSoon: true, openingSoon: true, opensIn: diff }
+        }
+      }
+    }
+  }
+
+  // Closed and not opening soon
+  return { isOpenOrSoon: false, openingSoon: false, opensIn: null }
+}
+
 // Uses Google Maps JS PlacesService (CORS-safe, works in browser)
-// Requires google.maps to be loaded — falls back gracefully if not available
 async function searchNearbyViaPlacesService(lat, lng, radius = 300) {
   return new Promise((resolve) => {
     if (!window.google?.maps?.places) { resolve([]); return }
@@ -36,9 +73,14 @@ async function searchNearbyViaPlacesService(lat, lng, radius = 300) {
         type,
       }, (places, status) => {
         if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
-          for (const p of places.slice(0, 3)) {
+          for (const p of places.slice(0, 5)) {
             if (isBrandExcluded(p.name)) continue
             if (results.find(r => r.name === p.name)) continue
+
+            // Filter closed stores (with 30-min grace for opening soon)
+            const { isOpenOrSoon, openingSoon, opensIn } = checkOpenStatus(p)
+            if (!isOpenOrSoon) continue
+
             results.push({
               name: p.name,
               address: p.vicinity,
@@ -46,12 +88,13 @@ async function searchNearbyViaPlacesService(lat, lng, radius = 300) {
               rating: p.rating,
               distance: getDistance(lat, lng, p.geometry.location.lat(), p.geometry.location.lng()),
               placeId: p.place_id,
+              openingSoon,
+              opensIn,
             })
           }
         }
         remaining--
         if (remaining === 0) {
-          // Sort: convenience first, then gas, then beauty — within each by distance
           const ORDER = { convenience_store: 0, gas_station: 1, beauty_salon: 2 }
           results.sort((a, b) => (ORDER[a.type] - ORDER[b.type]) || (a.distance - b.distance))
           resolve(results.slice(0, 5))
@@ -108,6 +151,7 @@ export function NearbyBusinessSuggestions({ suggestions, loading, onSelect }) {
             <p style={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{biz.name}</p>
             <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {TYPE_LABELS[biz.type]} · {biz.distance}m{biz.rating ? ` · ⭐${biz.rating}` : ''}
+              {biz.openingSoon && <span style={{ color: '#d97706', fontWeight: 600 }}> · Opens in {biz.opensIn} min</span>}
             </p>
           </div>
           <span style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>Use →</span>
