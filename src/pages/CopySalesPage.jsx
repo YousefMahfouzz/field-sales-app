@@ -166,6 +166,7 @@ export default function CopySalesPage() {
           existingKeys.add(key)
 
           // Insert sale items under the new visit
+          // Note: total_price, total_cost, total_profit are generated columns – don't insert them
           if (v.sale_items && v.sale_items.length > 0 && newVisit?.id) {
             const items = v.sale_items.map(si => ({
               visit_id: newVisit.id,
@@ -175,9 +176,6 @@ export default function CopySalesPage() {
               qty: si.qty,
               unit_price: si.unit_price,
               unit_cost: si.unit_cost,
-              total_price: si.total_price,
-              total_cost: si.total_cost,
-              total_profit: si.total_profit,
               created_at: si.created_at,
             }))
 
