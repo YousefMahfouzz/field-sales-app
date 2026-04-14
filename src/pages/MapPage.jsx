@@ -89,6 +89,7 @@ export default function MapPage() {
   const activeInfoWindow = useRef(null) // track open info window to auto-close
   const [selectedPoi, setSelectedPoi] = useState(null) // tapped POI store
   const [selectedPois, setSelectedPois] = useState([]) // stores selected for route
+  const [showRoutePickerModal, setShowRoutePickerModal] = useState(false)
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -393,13 +394,31 @@ export default function MapPage() {
           })}
         </div>
 
-        {/* Hint when POIs visible */}
+        {/* Hint when POIs visible + Select All for Route */}
         {poiVisible && (
-          <div style={{ marginTop: 6, fontSize: 11, color: '#7c3aed', fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span>🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length} convenience</span>
-            <span>🛒 {poiMarkers.filter(p=>p.type==='grocery_or_supermarket').length} grocery/liquor</span>
-            <span>💄 {poiMarkers.filter(p=>p.type==='beauty_supply').length} beauty</span>
-            <span style={{ color: 'var(--text-muted)' }}>({poiMarkers.length} total)</span>
+          <div style={{ marginTop: 6 }}>
+            <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+              <span>🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length} convenience</span>
+              <span>🛒 {poiMarkers.filter(p=>p.type==='grocery_or_supermarket').length} grocery/liquor</span>
+              <span>💄 {poiMarkers.filter(p=>p.type==='beauty_supply').length} beauty</span>
+              <span style={{ color: 'var(--text-muted)' }}>({poiMarkers.length} total)</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => {
+                // Add all non-existing POIs to the route selection
+                const newPois = poiMarkers.filter(p => !p.isExisting)
+                setSelectedPois(newPois)
+              }}
+                style={{ padding: '5px 12px', borderRadius: 8, border: '1.5px solid #7c3aed', background: '#ede9fe', color: '#7c3aed', fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
+                ✅ Select All ({poiMarkers.filter(p => !p.isExisting).length}) → Route
+              </button>
+              {selectedPois.length > 0 && (
+                <button onClick={() => setShowRoutePickerModal(true)}
+                  style={{ padding: '5px 12px', borderRadius: 8, border: '1.5px solid #7c3aed', background: '#7c3aed', color: 'white', fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
+                  ✏️ Edit Selection ({selectedPois.length})
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -677,6 +696,85 @@ export default function MapPage() {
           onCreateNew={() => navigate(`/customers/new?lat=${capturedLocation.lat}&lng=${capturedLocation.lng}`)}
           onClose={() => setNearbyCustomers([])}
         />
+      )}
+
+      {/* Route Picker Modal – edit which stores go to the route */}
+      {showRoutePickerModal && (
+        <div className="modal-overlay" onClick={() => setShowRoutePickerModal(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh' }}>
+            <div className="modal-handle" />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800 }}>Edit Route Stores</h2>
+              <button onClick={() => setShowRoutePickerModal(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+            </div>
+
+            <p className="text-xs text-muted" style={{ marginBottom: 12 }}>
+              {selectedPois.length} store{selectedPois.length !== 1 ? 's' : ''} selected · remove ones you don't want, then plan route
+            </p>
+
+            {/* All found stores with toggle */}
+            <div style={{ maxHeight: 'calc(85vh - 220px)', overflowY: 'auto', marginBottom: 14 }}>
+              {poiMarkers.filter(p => !p.isExisting).map((poi, i) => {
+                const isSelected = selectedPois.some(p => p.name === poi.name && p.lat === poi.lat)
+                const TYPE_LABELS = { convenience_store: '🏪', gas_station: '⛽', beauty_supply: '💄', grocery_or_supermarket: '🛒', beauty_salon: '💄' }
+                return (
+                  <div key={i} onClick={() => {
+                    if (isSelected) {
+                      setSelectedPois(prev => prev.filter(p => !(p.name === poi.name && p.lat === poi.lat)))
+                    } else {
+                      setSelectedPois(prev => [...prev, poi])
+                    }
+                  }} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', marginBottom: 6, cursor: 'pointer',
+                    borderRadius: 12, border: `1.5px solid ${isSelected ? '#7c3aed' : 'var(--border)'}`,
+                    background: isSelected ? '#f5f3ff' : 'white',
+                  }}>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                      border: `2px solid ${isSelected ? '#7c3aed' : 'var(--border)'}`,
+                      background: isSelected ? '#7c3aed' : 'white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {isSelected && <span style={{ color: 'white', fontSize: 14, fontWeight: 900 }}>✓</span>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {TYPE_LABELS[poi.type] || '📍'} {poi.name}
+                      </p>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{poi.vicinity}</p>
+                    </div>
+                    {poi.rating && <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>⭐{poi.rating}</span>}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => {
+                setSelectedPois(poiMarkers.filter(p => !p.isExisting))
+              }} style={{ flex: 1, padding: '12px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                Select All
+              </button>
+              <button onClick={() => setSelectedPois([])} style={{ flex: 1, padding: '12px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', color: 'var(--text-muted)' }}>
+                Clear All
+              </button>
+            </div>
+            {selectedPois.length > 0 && (
+              <button onClick={() => {
+                setShowRoutePickerModal(false)
+                const stopsData = selectedPois.map(p => ({ name: p.name, lat: p.lat, lng: p.lng, vicinity: p.vicinity || '', type: 'poi' }))
+                const params = new URLSearchParams()
+                params.set('stops', JSON.stringify(stopsData))
+                if (searchCenter) { params.set('startLat', searchCenter.lat); params.set('startLng', searchCenter.lng) }
+                navigate(`/route?${params.toString()}`)
+              }}
+                style={{ width: '100%', marginTop: 8, padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,0.4)' }}>
+                🗺️ Plan Route ({selectedPois.length} store{selectedPois.length !== 1 ? 's' : ''})
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
