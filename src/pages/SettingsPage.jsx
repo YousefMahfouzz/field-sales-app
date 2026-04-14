@@ -296,6 +296,9 @@ export default function SettingsPage() {
             <button className="btn btn-ghost btn-full" onClick={() => navigate('/admin/inventory')} style={{ marginBottom:10, color:'#dc2626', borderColor:'#dc2626' }}>
               View User Inventories
             </button>
+            <button className="btn btn-ghost btn-full" onClick={() => navigate('/copy-sales')} style={{ marginBottom:10, color:'#059669', borderColor:'#059669' }}>
+              📋 Copy Sales Between Accounts
+            </button>
           </>)}
 
           <button className="btn btn-ghost btn-full" onClick={() => navigate('/backup')} style={{ marginBottom:10 }}>

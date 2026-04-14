@@ -33,6 +33,7 @@ import PublicPriceListPage from './pages/PublicPriceListPage'
 import OrdersPage from './pages/OrdersPage'
 import PurchasesPage from './pages/PurchasesPage'
 import TeamPage from './pages/TeamPage'
+import CopySalesPage from './pages/CopySalesPage'
 import BottomNav from './components/BottomNav'
 
 // Routes to public homepage if not logged in, app dashboard if logged in
@@ -137,6 +138,7 @@ function AppRoutes() {
           <Route path="/pl/:userId/:slug" element={<PublicPriceListPage />} />
           <Route path="/price-lists" element={<PrivateRoute><PriceListsPage /></PrivateRoute>} />
           <Route path="/team" element={<PrivateRoute><TeamPage /></PrivateRoute>} />
+          <Route path="/copy-sales" element={<PrivateRoute><CopySalesPage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       {user && !isPricelist && <BottomNav />}
