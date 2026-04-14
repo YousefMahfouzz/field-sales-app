@@ -191,97 +191,156 @@ export default function BackupPage() {
     }
   }
 
-  // Cross-user import: new IDs, remap all foreign keys
+  // Cross-user import: new IDs, remap all foreign keys, skip duplicates
   const importCrossUser = async (importedData) => {
-    // ID mapping: oldId → newId
+    // ID mapping: oldId → newId (or existing ID if duplicate found)
     const idMap = {}
     const genId = () => crypto.randomUUID()
 
-    // 1. Profile – just update current user's profile with display info (skip if not needed)
+    // 1. Profile – skip
     log(setImportProgress, `⏭ profiles: skipped (using your existing profile)`)
 
-    // 2. Products – generate new IDs, remap user_id
+    // 2. Products – match by name, skip duplicates
     const products = importedData.products || []
     if (products.length > 0) {
-      log(setImportProgress, `⏳ Importing ${products.length} products...`)
-      let imported = 0
+      log(setImportProgress, `⏳ Checking ${products.length} products...`)
+
+      // Fetch existing products for this user
+      const { data: existingProducts } = await supabase
+        .from('products').select('id, name')
+        .eq('user_id', user.id).limit(5000)
+      const existingByName = {}
+      for (const ep of (existingProducts || [])) {
+        existingByName[ep.name.toLowerCase().trim()] = ep.id
+      }
+
+      let imported = 0, skipped = 0
       for (const p of products) {
-        const newId = genId()
-        idMap[p.id] = newId
-        const row = { ...p, id: newId, user_id: user.id }
-        delete row.margin_percent
-        const { error } = await supabase.from('products').insert([row])
-        if (error) {
-          log(setImportProgress, `⚠️ product "${p.name}": ${error.message}`, 'warn')
+        const key = (p.name || '').toLowerCase().trim()
+        if (existingByName[key]) {
+          // Duplicate – map old ID to existing ID, don't insert
+          idMap[p.id] = existingByName[key]
+          skipped++
         } else {
-          imported++
+          const newId = genId()
+          idMap[p.id] = newId
+          const row = { ...p, id: newId, user_id: user.id }
+          delete row.margin_percent
+          const { error } = await supabase.from('products').insert([row])
+          if (error) {
+            log(setImportProgress, `⚠️ product "${p.name}": ${error.message}`, 'warn')
+          } else {
+            imported++
+            existingByName[key] = newId
+          }
         }
       }
-      log(setImportProgress, `✅ products: ${imported}/${products.length} imported`, 'success')
+      log(setImportProgress, `✅ products: ${imported} imported, ${skipped} duplicates skipped`, 'success')
     } else {
       log(setImportProgress, `⏭ products: empty, skipped`)
     }
 
-    // 3. Customers – generate new IDs, remap user_id
+    // 3. Customers – match by business_name+phone, skip duplicates
     const customers = importedData.customers || []
     if (customers.length > 0) {
-      log(setImportProgress, `⏳ Importing ${customers.length} customers...`)
-      let imported = 0
+      log(setImportProgress, `⏳ Checking ${customers.length} customers...`)
+
+      const { data: existingCustomers } = await supabase
+        .from('customers').select('id, business_name, full_name, phone')
+        .eq('user_id', user.id).is('deleted_at', null).limit(5000)
+
+      // Build lookup: "businessname|phone" → id
+      const existingKey = (c) => {
+        const name = (c.business_name || c.full_name || '').toLowerCase().trim()
+        const phone = (c.phone || '').replace(/\D/g, '').slice(-7)
+        return `${name}|${phone}`
+      }
+      const existingMap = {}
+      for (const ec of (existingCustomers || [])) {
+        existingMap[existingKey(ec)] = ec.id
+      }
+
+      let imported = 0, skipped = 0
       for (const c of customers) {
-        const newId = genId()
-        idMap[c.id] = newId
-        const row = { ...c, id: newId, user_id: user.id }
-        const { error } = await supabase.from('customers').insert([row])
-        if (error) {
-          log(setImportProgress, `⚠️ customer "${c.business_name || c.full_name}": ${error.message}`, 'warn')
+        const key = existingKey(c)
+        if (existingMap[key]) {
+          idMap[c.id] = existingMap[key]
+          skipped++
         } else {
-          imported++
+          const newId = genId()
+          idMap[c.id] = newId
+          const row = { ...c, id: newId, user_id: user.id }
+          const { error } = await supabase.from('customers').insert([row])
+          if (error) {
+            log(setImportProgress, `⚠️ customer "${c.business_name || c.full_name}": ${error.message}`, 'warn')
+          } else {
+            imported++
+            existingMap[key] = newId
+          }
         }
       }
-      log(setImportProgress, `✅ customers: ${imported}/${customers.length} imported`, 'success')
+      log(setImportProgress, `✅ customers: ${imported} imported, ${skipped} duplicates skipped`, 'success')
     } else {
       log(setImportProgress, `⏭ customers: empty, skipped`)
     }
 
-    // 4. Visits – generate new IDs, remap user_id + customer_id
+    // 4. Visits – match by customer_id(mapped)+created_at+sale_amount, skip duplicates
     const visits = importedData.visits || []
     if (visits.length > 0) {
-      log(setImportProgress, `⏳ Importing ${visits.length} visits...`)
-      let imported = 0
+      log(setImportProgress, `⏳ Checking ${visits.length} visits...`)
+
+      const { data: existingVisits } = await supabase
+        .from('visits').select('id, customer_id, created_at, sale_amount')
+        .eq('user_id', user.id).is('deleted_at', null).limit(10000)
+      const existingVisitKeys = new Set(
+        (existingVisits || []).map(v => `${v.customer_id}|${v.created_at}|${v.sale_amount}`)
+      )
+
+      let imported = 0, skipped = 0
       for (const v of visits) {
-        const newId = genId()
-        idMap[v.id] = newId
-        const row = { ...v, id: newId, user_id: user.id }
-        // Remap customer_id to the new customer ID
-        if (row.customer_id && idMap[row.customer_id]) {
-          row.customer_id = idMap[row.customer_id]
-        }
-        delete row.profit
-        delete row.sale_items // remove nested joins if present
-        const { error } = await supabase.from('visits').insert([row])
-        if (error) {
-          log(setImportProgress, `⚠️ visit ${v.created_at?.slice(0,10)}: ${error.message}`, 'warn')
+        const mappedCustId = idMap[v.customer_id] || v.customer_id
+        const key = `${mappedCustId}|${v.created_at}|${v.sale_amount}`
+
+        if (existingVisitKeys.has(key)) {
+          idMap[v.id] = '__skip__'
+          skipped++
         } else {
-          imported++
+          const newId = genId()
+          idMap[v.id] = newId
+          const row = { ...v, id: newId, user_id: user.id, customer_id: mappedCustId }
+          delete row.profit
+          delete row.sale_items
+          const { error } = await supabase.from('visits').insert([row])
+          if (error) {
+            log(setImportProgress, `⚠️ visit ${v.created_at?.slice(0,10)}: ${error.message}`, 'warn')
+            idMap[v.id] = '__skip__'
+          } else {
+            imported++
+            existingVisitKeys.add(key)
+          }
         }
       }
-      log(setImportProgress, `✅ visits: ${imported}/${visits.length} imported`, 'success')
+      log(setImportProgress, `✅ visits: ${imported} imported, ${skipped} duplicates skipped`, 'success')
     } else {
       log(setImportProgress, `⏭ visits: empty, skipped`)
     }
 
-    // 5. Sale items – generate new IDs, remap user_id + visit_id + product_id
+    // 5. Sale items – skip if parent visit was skipped
     const saleItems = importedData.sale_items || []
     if (saleItems.length > 0) {
       log(setImportProgress, `⏳ Importing ${saleItems.length} sale_items...`)
-      let imported = 0
+      let imported = 0, skipped = 0
       for (const si of saleItems) {
-        const newId = genId()
+        const mappedVisitId = idMap[si.visit_id]
+        if (!mappedVisitId || mappedVisitId === '__skip__') {
+          skipped++
+          continue
+        }
         const row = {
           ...si,
-          id: newId,
+          id: genId(),
           user_id: user.id,
-          visit_id: idMap[si.visit_id] || si.visit_id,
+          visit_id: mappedVisitId,
           product_id: idMap[si.product_id] || si.product_id,
         }
         delete row.total_cost
@@ -294,7 +353,7 @@ export default function BackupPage() {
           imported++
         }
       }
-      log(setImportProgress, `✅ sale_items: ${imported}/${saleItems.length} imported`, 'success')
+      log(setImportProgress, `✅ sale_items: ${imported} imported, ${skipped} skipped (duplicate visits)`, 'success')
     } else {
       log(setImportProgress, `⏭ sale_items: empty, skipped`)
     }
