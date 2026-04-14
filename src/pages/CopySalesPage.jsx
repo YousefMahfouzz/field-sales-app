@@ -223,42 +223,45 @@ export default function CopySalesPage() {
   const [repairResult, setRepairResult] = useState(null)
 
   const handleRepair = async () => {
-    if (!window.confirm('This will delete all copied visits that have no sale items (broken imports), then allow you to re-import. Continue?')) return
+    if (!window.confirm('This will delete ALL copied visits (from previous imports) and their sale items, so you can re-import fresh. Continue?')) return
     setRepairing(true)
-    setStatus('Finding broken copied visits...')
+    setStatus('Finding all copied visits...')
     try {
-      // Fetch all visits with "[Copied from" in notes that had a sale
+      // Fetch ALL visits with "[Copied from" in notes
       const { data: copiedVisits } = await supabase
         .from('visits')
         .select('id, notes, sale_amount, created_at, sale_items(id)')
         .eq('user_id', user.id)
-        .eq('had_sale', true)
         .is('deleted_at', null)
         .like('notes', '%[Copied from%')
-        .order('created_at', { ascending: false })
-        .limit(1000)
+        .limit(2000)
 
-      const broken = (copiedVisits || []).filter(v => !v.sale_items || v.sale_items.length === 0)
-
-      if (broken.length === 0) {
-        setStatus('No broken visits found – all copied visits have their sale items.')
+      if (!copiedVisits || copiedVisits.length === 0) {
+        setStatus('No copied visits found.')
         setRepairResult({ deleted: 0 })
         setRepairing(false)
         return
       }
 
-      setStatus(`Found ${broken.length} broken visits – deleting...`)
+      setStatus(`Found ${copiedVisits.length} copied visits – deleting...`)
 
-      // Hard-delete the broken visits (they have no items so nothing to clean up)
-      for (const v of broken) {
+      let deleted = 0
+      for (const v of copiedVisits) {
+        // Delete sale_items first (if any)
+        if (v.sale_items && v.sale_items.length > 0) {
+          await supabase.from('sale_items').delete().eq('visit_id', v.id)
+        }
+        // Delete the visit itself (hard delete)
         await supabase.from('visits').delete().eq('id', v.id)
+        deleted++
+        if (deleted % 5 === 0) setStatus(`Deleting ${deleted}/${copiedVisits.length}...`)
       }
 
-      setRepairResult({ deleted: broken.length })
-      setStatus(`✅ Deleted ${broken.length} broken visits. You can now re-run the export + import.`)
-      showToast(`🔧 Repaired – deleted ${broken.length} broken visits`)
+      setRepairResult({ deleted })
+      setStatus(`✅ Deleted ${deleted} copied visits. Now re-export from Yousef and import again.`)
+      showToast(`🔧 Cleaned up ${deleted} copied visits`)
 
-      // Also clear localStorage so user can re-export
+      // Clear localStorage
       localStorage.removeItem(STORAGE_KEY)
     } catch (err) {
       setStatus('❌ Repair failed: ' + err.message)
