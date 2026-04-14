@@ -52,8 +52,21 @@ export default function BackupPage() {
           log(setExportProgress, `⚠️ ${table}: ${error.message}`, 'warn')
           backup.data[table] = []
         } else {
-          backup.data[table] = data || []
-          log(setExportProgress, `✅ ${table}: ${(data||[]).length} records`, 'success')
+          // Strip generated/computed columns that can't be re-inserted
+          const STRIP = {
+            products: ['margin_percent'],
+            visits: ['profit'],
+            sale_items: ['total_cost', 'total_price', 'total_profit'],
+          }
+          const stripCols = STRIP[table] || []
+          const cleaned = (data || []).map(row => {
+            if (stripCols.length === 0) return row
+            const r = { ...row }
+            for (const c of stripCols) delete r[c]
+            return r
+          })
+          backup.data[table] = cleaned
+          log(setExportProgress, `✅ ${table}: ${cleaned.length} records`, 'success')
         }
       }
 
@@ -116,6 +129,28 @@ export default function BackupPage() {
   }
 
   // ── IMPORT ──
+  // Generated/computed columns that Postgres won't let us insert into
+  const STRIP_COLUMNS = {
+    products: ['margin_percent'],
+    visits: ['profit'],
+    sale_items: ['total_cost', 'total_price', 'total_profit'],
+  }
+
+  // Columns that might cause RLS issues when importing cross-user
+  // We remap user_id to the current user so RLS allows the insert
+  const remapUserId = (row, table) => {
+    const mapped = { ...row }
+    if (table === 'profiles') {
+      mapped.id = user.id
+    } else if (mapped.user_id) {
+      mapped.user_id = user.id
+    }
+    if (table === 'orders' && mapped.seller_user_id) {
+      mapped.seller_user_id = user.id
+    }
+    return mapped
+  }
+
   const handleImport = async () => {
     if (!importPreview) return
     setImporting(true)
@@ -137,16 +172,26 @@ export default function BackupPage() {
 
         log(setImportProgress, `⏳ Importing ${rows.length} ${table}...`)
 
+        // Strip generated columns and remap user_id
+        const stripCols = STRIP_COLUMNS[table] || []
+        const cleanRows = rows.map(row => {
+          const mapped = remapUserId(row, table)
+          for (const col of stripCols) {
+            delete mapped[col]
+          }
+          return mapped
+        })
+
         // Upsert in batches of 100
         let imported = 0
-        for (let i = 0; i < rows.length; i += 100) {
-          const batch = rows.slice(i, i + 100)
+        for (let i = 0; i < cleanRows.length; i += 100) {
+          const batch = cleanRows.slice(i, i + 100)
           const { error } = await supabase
             .from(table)
-            .upsert(batch, { onConflict: 'id', ignoreDuplicates: false })
+            .upsert(batch, { onConflict: 'id', ignoreDuplicates: true })
 
           if (error) {
-            log(setImportProgress, `⚠️ ${table} batch ${i/100+1}: ${error.message}`, 'warn')
+            log(setImportProgress, `⚠️ ${table} batch ${Math.floor(i/100)+1}: ${error.message}`, 'warn')
           } else {
             imported += batch.length
           }
