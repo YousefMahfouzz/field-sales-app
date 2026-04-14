@@ -99,17 +99,42 @@ export default function CopySalesPage() {
     if (!data || !data.visits) { showToast('No export data found', 'error'); return }
 
     setLoading(true)
-    setStatus(`Importing ${data.visits.length} sales...`)
+    setStatus('Checking for duplicates...')
 
     let imported = 0
     let itemsImported = 0
     let skipped = 0
+    let duplicates = 0
     const errors = []
 
     try {
+      // Pre-fetch all of Joe's existing visits to detect duplicates
+      // Match on: customer_id + created_at + sale_amount
+      const { data: existingVisits } = await supabase
+        .from('visits')
+        .select('customer_id, created_at, sale_amount')
+        .eq('user_id', user.id)
+        .eq('had_sale', true)
+        .is('deleted_at', null)
+        .limit(5000)
+
+      // Build a lookup set for fast duplicate checking
+      const existingKeys = new Set(
+        (existingVisits || []).map(v =>
+          `${v.customer_id}|${v.created_at}|${v.sale_amount}`
+        )
+      )
+
       for (const v of data.visits) {
         try {
-          setStatus(`Importing sale ${imported + 1}/${data.visits.length}...`)
+          // Check for duplicate
+          const key = `${v.customer_id}|${v.created_at}|${v.sale_amount}`
+          if (existingKeys.has(key)) {
+            duplicates++
+            continue
+          }
+
+          setStatus(`Importing sale ${imported + skipped + duplicates + 1}/${data.visits.length}...`)
 
           // Insert visit under current user (Joe)
           const { data: newVisit, error: visitErr } = await supabase
@@ -132,11 +157,13 @@ export default function CopySalesPage() {
             .single()
 
           if (visitErr) {
-            // Might fail if customer_id doesn't exist for Joe – skip
             skipped++
             errors.push(`Visit ${v.created_at}: ${visitErr.message}`)
             continue
           }
+
+          // Add to lookup so we don't duplicate within the same import run
+          existingKeys.add(key)
 
           // Insert sale items under the new visit
           if (v.sale_items && v.sale_items.length > 0 && newVisit?.id) {
@@ -172,8 +199,8 @@ export default function CopySalesPage() {
         }
       }
 
-      setImportStats({ imported, itemsImported, skipped, errors })
-      setStatus(`✅ Done! ${imported} sales imported with ${itemsImported} items. ${skipped > 0 ? `${skipped} skipped.` : ''}`)
+      setImportStats({ imported, itemsImported, skipped, duplicates, errors })
+      setStatus(`✅ Done! ${imported} sales imported, ${itemsImported} items. ${duplicates > 0 ? `${duplicates} duplicates skipped. ` : ''}${skipped > 0 ? `${skipped} failed.` : ''}`)
 
       // Clean up localStorage
       localStorage.removeItem(STORAGE_KEY)
@@ -287,18 +314,22 @@ export default function CopySalesPage() {
         {importStats && (
           <div className="card" style={{ marginBottom: 16, padding: '14px 16px', border: '2px solid #16a34a' }}>
             <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: '#16a34a' }}>✅ Import Complete</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontWeight: 800, fontSize: 20, color: '#16a34a' }}>{importStats.imported}</p>
-                <p className="text-xs text-muted">Sales</p>
+                <p className="text-xs text-muted">Imported</p>
               </div>
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontWeight: 800, fontSize: 20, color: 'var(--blue)' }}>{importStats.itemsImported}</p>
                 <p className="text-xs text-muted">Items</p>
               </div>
               <div style={{ textAlign: 'center' }}>
+                <p style={{ fontWeight: 800, fontSize: 20, color: importStats.duplicates > 0 ? '#7c3aed' : 'var(--text-muted)' }}>{importStats.duplicates}</p>
+                <p className="text-xs text-muted">Duplicates</p>
+              </div>
+              <div style={{ textAlign: 'center' }}>
                 <p style={{ fontWeight: 800, fontSize: 20, color: importStats.skipped > 0 ? '#d97706' : 'var(--text-muted)' }}>{importStats.skipped}</p>
-                <p className="text-xs text-muted">Skipped</p>
+                <p className="text-xs text-muted">Failed</p>
               </div>
             </div>
             {importStats.errors.length > 0 && (
