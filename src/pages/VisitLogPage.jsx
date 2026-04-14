@@ -17,28 +17,18 @@ export default function VisitLogPage() {
   const { customers, loading: customersLoading, updateCustomer } = useCustomers()
   const { logVisit } = useVisits()
   const { products, updateProduct } = useProducts()
+  const { profile, canSeeProfit } = useAuth()
 
   const customer = customers.find(c => c.id === customerId)
-
-  // Show spinner while data loads
-  if (customersLoading && !customer) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 12 }}>
-      <div style={{ width: 40, height: 40, border: '4px solid var(--border)', borderTopColor: 'var(--blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <p className="text-muted text-sm">Loading...</p>
-    </div>
-  )
 
   // mode: 'visit' = full log visit flow, 'sale' = jump straight to sale recording
   const mode = searchParams.get('mode') || 'visit'
 
   const [step, setStep] = useState(mode === 'sale' ? 'sale' : 'visit') 
-  // steps: 'visit' → 'outcome' → 'sale' → 'done'
-  // for sale mode: 'sale' → 'done'
-
-  const [wasVisited, setWasVisited] = useState(mode === 'sale' ? true : true)
-  const [outcome, setOutcome] = useState(null) // 'sold' | 'no_sale' | 'come_back' | 'avoid'
+  const [wasVisited, setWasVisited] = useState(true)
+  const [outcome, setOutcome] = useState(null)
   const [notes, setNotes] = useState('')
-  const [callbackDate, setCallbackDate] = useState('') // for "come back on..."
+  const [callbackDate, setCallbackDate] = useState('')
   const [callbackNote, setCallbackNote] = useState('')
   const [saleItems, setSaleItems] = useState([])
   const [showProducts, setShowProducts] = useState(false)
@@ -48,18 +38,25 @@ export default function VisitLogPage() {
   const [savedVisitId, setSavedVisitId] = useState(null)
   const [undoing, setUndoing] = useState(false)
   const [showInvoice, setShowInvoice] = useState(false)
-  const { profile, canSeeProfit } = useAuth()
 
   // Silently capture GPS when visit page opens
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setVisitGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {}, // silently fail
+        () => {},
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
       )
     }
   }, [])
+
+  // Show spinner while data loads (AFTER all hooks)
+  if (customersLoading && !customer) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 12 }}>
+      <div style={{ width: 40, height: 40, border: '4px solid var(--border)', borderTopColor: 'var(--blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <p className="text-muted text-sm">Loading...</p>
+    </div>
+  )
 
   const today = new Date().toISOString().split('T')[0]
   const totalSale = saleItems.reduce((s, i) => s + i.qty * i.unit_price, 0)
