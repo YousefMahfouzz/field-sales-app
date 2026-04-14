@@ -38,14 +38,14 @@ html {
   --purple:     #8b5cf6;
   --purple-light:#ede9fe;
 
-  /* Neutrals — darker warm slate, easier on eyes */
-  --bg:         #e8ebf0;       /* page background — medium warm gray */
-  --surface:    #f4f6f9;       /* cards, panels — off-white not bright white */
+  /* Neutrals — darker slate for a more premium feel */
+  --bg:         #dde1e8;       /* page background — darker warm gray */
+  --surface:    #eef0f4;       /* cards, panels — slightly off-white */
   --white:      #ffffff;
-  --gray-light: #eceef2;       /* pure white — for popups, modals */
-  --surface-2:  #eceef2;       /* secondary surface */
-  --border:     #d4d8e0;       /* dividers */
-  --border-strong: #b8bdc8;
+  --gray-light: #e4e7ec;       /* popups, modals background */
+  --surface-2:  #e4e7ec;       /* secondary surface */
+  --border:     #c8cdd6;       /* dividers — slightly darker */
+  --border-strong: #adb3bf;
   --text:       #14171e;       /* primary text — near black */
   --text-2:     #3d4454;       /* secondary text */
   --text-muted: #7a8394;       /* hints, placeholders */
@@ -95,7 +95,7 @@ html, body {
     justify-content: center;
     min-height: 100svh;
     min-height: 100dvh;
-    background: #d8dce4;
+    background: #ced3dc;
   }
   #root {
     max-width: 620px;

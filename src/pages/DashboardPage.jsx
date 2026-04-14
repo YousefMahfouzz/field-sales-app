@@ -230,7 +230,7 @@ export default function DashboardPage() {
     try {
       const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const { data: visits } = await supabase
-        .from('visits').select('id,had_sale,sale_amount,cost,outcome,created_at')
+        .from('visits').select('id,customer_id,had_sale,sale_amount,cost,outcome,created_at')
         .eq('user_id', user.id)
         .gte('created_at', ctMidnightToUTC(weekAgo))
         .lte('created_at', new Date().toISOString())
@@ -445,7 +445,7 @@ export default function DashboardPage() {
           {recentVisits.length > 0 && <>
             <p className="section-header">{'Recent Activity'}</p>
             {recentVisits.map(v => (
-              <div key={v.id} className="card" style={{ marginBottom: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={v.id} className="card card-tap" onClick={() => v.customer_id && navigate(`/customers/${v.customer_id}`)} style={{ marginBottom: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: v.customer_id ? 'pointer' : 'default' }}>
                 <div>
                   <p style={{ fontWeight: 600, fontSize: 13 }}>
                     {v.had_sale ? '💰 Sale' : v.outcome === 'come_back' ? '📅 Follow-up' : v.outcome === 'avoid' ? '⛔ Avoided' : '🤝 Visit'}
@@ -454,9 +454,12 @@ export default function DashboardPage() {
                     {new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
-                {v.had_sale && v.sale_amount > 0 && (
-                  <p style={{ fontWeight: 700, color: 'var(--green)' }}>${v.sale_amount.toFixed(2)}</p>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {v.had_sale && v.sale_amount > 0 && (
+                    <p style={{ fontWeight: 700, color: 'var(--green)' }}>${v.sale_amount.toFixed(2)}</p>
+                  )}
+                  {v.customer_id && <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>→</span>}
+                </div>
               </div>
             ))}
           </>}
@@ -523,6 +526,7 @@ export default function DashboardPage() {
         <SalesLogModal
           initialPeriod={salesLogPeriod}
           onClose={() => setSalesLogPeriod(null)}
+          onSalesChanged={loadStats}
         />
       )}
     </div>

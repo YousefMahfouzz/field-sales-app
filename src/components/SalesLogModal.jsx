@@ -11,7 +11,7 @@ import InvoiceModal from './InvoiceModal'
  *   initialPeriod – 'today' | 'week' (default: 'today')
  *   onClose       – callback to close
  */
-export default function SalesLogModal({ initialPeriod = 'today', onClose }) {
+export default function SalesLogModal({ initialPeriod = 'today', onClose, onSalesChanged }) {
   const { user, profile, canSeeProfit } = useAuth()
   const [period, setPeriod] = useState(initialPeriod)
   const [sales, setSales] = useState([])
@@ -106,6 +106,26 @@ export default function SalesLogModal({ initialPeriod = 'today', onClose }) {
   const handleInvoice = (sale) => {
     setInvoiceVisit(sale)
     setInvoiceCustomer(sale.customer)
+  }
+
+  // Delete a sale (soft-delete visit, hard-delete sale_items)
+  const [deleting, setDeleting] = useState(null)
+  const handleDelete = async (sale) => {
+    if (!window.confirm(`Delete this sale ($${(sale.sale_amount || 0).toFixed(2)})? This cannot be undone.`)) return
+    setDeleting(sale.id)
+    try {
+      // Delete sale_items
+      await supabase.from('sale_items').delete().eq('visit_id', sale.id)
+      // Soft-delete the visit
+      await supabase.from('visits').update({ deleted_at: new Date().toISOString() }).eq('id', sale.id)
+      // Remove from local state
+      setSales(prev => prev.filter(s => s.id !== sale.id))
+      if (onSalesChanged) onSalesChanged()
+    } catch (err) {
+      console.error('Delete failed:', err)
+    } finally {
+      setDeleting(null)
+    }
   }
 
   return (
@@ -214,6 +234,20 @@ export default function SalesLogModal({ initialPeriod = 'today', onClose }) {
                         title="View Invoice"
                       >
                         🧾
+                      </button>
+                      <button
+                        onClick={() => handleDelete(sale)}
+                        disabled={deleting === sale.id}
+                        style={{
+                          padding: '6px 8px', borderRadius: 8,
+                          border: '1.5px solid #fecaca', background: '#fef2f2',
+                          color: '#dc2626', fontSize: 14, fontWeight: 700,
+                          cursor: 'pointer', lineHeight: 1,
+                          opacity: deleting === sale.id ? 0.5 : 1,
+                        }}
+                        title="Delete Sale"
+                      >
+                        🗑️
                       </button>
                     </div>
                   </div>

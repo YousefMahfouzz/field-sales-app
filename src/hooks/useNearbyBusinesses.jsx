@@ -16,41 +16,18 @@ function getDistance(lat1, lng1, lat2, lng2) {
 }
 
 /**
- * Check if a place is open or opens within 30 minutes.
- * Returns { isOpenOrSoon: boolean, openingSoon: boolean, opensIn: number|null }
+ * Check if a place is open. Only skip if explicitly closed (open_now === false).
+ * nearbySearch returns opening_hours.open_now as a boolean, NOT isOpen() function.
  */
 function checkOpenStatus(place) {
-  // opening_hours may not be available for all places
   if (!place.opening_hours) {
-    // If no hours data, assume open (don't filter out)
     return { isOpenOrSoon: true, openingSoon: false, opensIn: null }
   }
-
-  // If currently open, show it
-  if (place.opening_hours.isOpen?.()) {
-    return { isOpenOrSoon: true, openingSoon: false, opensIn: null }
+  // open_now is a simple boolean from nearbySearch
+  if (place.opening_hours.open_now === false) {
+    return { isOpenOrSoon: false, openingSoon: false, opensIn: null }
   }
-
-  // Try to check if it opens within 30 minutes
-  // opening_hours.periods gives us the weekly schedule
-  if (place.opening_hours.periods) {
-    const now = new Date()
-    const day = now.getDay() // 0=Sun, 6=Sat
-    const nowMinutes = now.getHours() * 60 + now.getMinutes()
-
-    for (const period of place.opening_hours.periods) {
-      if (period.open && period.open.day === day) {
-        const openMinutes = period.open.hours * 60 + period.open.minutes
-        const diff = openMinutes - nowMinutes
-        if (diff > 0 && diff <= 30) {
-          return { isOpenOrSoon: true, openingSoon: true, opensIn: diff }
-        }
-      }
-    }
-  }
-
-  // Closed and not opening soon
-  return { isOpenOrSoon: false, openingSoon: false, opensIn: null }
+  return { isOpenOrSoon: true, openingSoon: false, opensIn: null }
 }
 
 // Uses Google Maps JS PlacesService (CORS-safe, works in browser)

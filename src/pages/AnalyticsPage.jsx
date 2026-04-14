@@ -99,8 +99,9 @@ export default function AnalyticsPage() {
   const { user, canSeeProfit } = useAuth()
   const navigate = useNavigate()
 
-  // ── Sales lookup ──
-  const [searchDate, setSearchDate] = useState(today())
+  // ── Sales lookup (date range) ──
+  const [searchFrom, setSearchFrom] = useState(today())
+  const [searchTo, setSearchTo] = useState(today())
   const [dayData, setDayData] = useState(null)
   const [loadingDay, setLoadingDay] = useState(false)
 
@@ -118,12 +119,12 @@ export default function AnalyticsPage() {
   const [todayData, setTodayData] = useState(null)
   const [monthlyChart, setMonthlyChart] = useState([])
 
-  const loadDay = useCallback(async (date) => {
-    if (!user || !date) return
+  const loadRange = useCallback(async (fromDate, toDate) => {
+    if (!user || !fromDate || !toDate) return
     setLoadingDay(true)
     try {
-      const from = ctStart(date)
-      const to   = ctEnd(date)
+      const from = ctStart(fromDate)
+      const to   = ctEnd(toDate)
       const { data: items } = await supabase
         .from('sale_items').select('qty,unit_price,unit_cost,total_price,total_cost,total_profit,product_name')
         .eq('user_id', user.id)
@@ -246,12 +247,16 @@ export default function AnalyticsPage() {
   }, [user])
 
   useEffect(() => { loadSummary() }, [loadSummary])
-  useEffect(() => { loadDay(today()) }, [loadDay])
+  useEffect(() => { loadRange(today(), today()) }, [loadRange])
   useEffect(() => { loadStockCost() }, [loadStockCost])
 
   const prettyDate = (d) => {
     if (d === today()) return 'Today'
     return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' })
+  }
+  const prettyRange = () => {
+    if (searchFrom === searchTo) return prettyDate(searchFrom)
+    return `${prettyDate(searchFrom)} – ${prettyDate(searchTo)}`
   }
 
   // Group items by product for the day
@@ -307,12 +312,34 @@ export default function AnalyticsPage() {
         )}
         <StatCard icon="📆" label="This Year Revenue" value={loadingSummary?'...':fmt(summary?.year?.revenue||0)} sub={canSeeProfit ? `${fmtFull(summary?.year?.profit||0)} profit · ${summary?.year?.units||0} units sold` : `${summary?.year?.units||0} units sold`} color="#059669" />
 
-        {/* ── SEARCH BY DAY ── */}
-        <SectionHeader title="📅 Sales on a Specific Day" />
-        <div style={{ display:'flex', gap:8, marginBottom:12 }}>
-          <input type="date" value={searchDate} max={today()} onChange={e => setSearchDate(e.target.value)}
-            style={{ flex:1, padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:15 }} />
-          <button onClick={() => loadDay(searchDate)} className="btn btn-primary" style={{ flexShrink:0 }}>
+        {/* ── SEARCH BY DATE RANGE ── */}
+        <SectionHeader title="📅 Sales by Date Range" />
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
+          <div>
+            <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4, fontWeight:600 }}>From</p>
+            <input type="date" value={searchFrom} max={searchTo} onChange={e => setSearchFrom(e.target.value)}
+              style={{ width:'100%', padding:'9px 12px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:14 }} />
+          </div>
+          <div>
+            <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4, fontWeight:600 }}>To</p>
+            <input type="date" value={searchTo} min={searchFrom} max={today()} onChange={e => setSearchTo(e.target.value)}
+              style={{ width:'100%', padding:'9px 12px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:14 }} />
+          </div>
+        </div>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+          {[
+            { l:'Today',      f:today(),          t:today() },
+            { l:'Yesterday',  f:(() => { const d = new Date(); d.setDate(d.getDate()-1); return d.toLocaleDateString('en-CA', { timeZone:'America/Chicago' }) })(), t:(() => { const d = new Date(); d.setDate(d.getDate()-1); return d.toLocaleDateString('en-CA', { timeZone:'America/Chicago' }) })() },
+            { l:'This Week',  f:startOf('week'),  t:today() },
+            { l:'This Month', f:startOf('month'), t:today() },
+            { l:'This Year',  f:startOf('year'),  t:today() },
+          ].map(r => (
+            <button key={r.l} onClick={() => { setSearchFrom(r.f); setSearchTo(r.t) }}
+              style={{ padding:'6px 14px', borderRadius:20, border:`1.5px solid ${searchFrom===r.f && searchTo===r.t ? 'var(--blue)' : 'var(--border)'}`, background: searchFrom===r.f && searchTo===r.t ? 'var(--blue)' : 'white', color: searchFrom===r.f && searchTo===r.t ? 'white' : 'var(--text)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+              {r.l}
+            </button>
+          ))}
+          <button onClick={() => loadRange(searchFrom, searchTo)} className="btn btn-primary" style={{ padding:'6px 14px', fontSize:12, marginLeft:'auto' }}>
             {loadingDay ? '...' : 'Search'}
           </button>
         </div>
@@ -320,7 +347,7 @@ export default function AnalyticsPage() {
         {dayData && (
           <div>
             <div style={{ background:'var(--gray-light)', borderRadius:12, padding:'14px 16px', marginBottom:12 }}>
-              <p style={{ fontWeight:800, fontSize:15, marginBottom:10 }}>{prettyDate(searchDate)}</p>
+              <p style={{ fontWeight:800, fontSize:15, marginBottom:10 }}>{prettyRange()}</p>
               <div style={{ display:'grid', gridTemplateColumns: canSeeProfit ? 'repeat(4,1fr)' : 'repeat(3,1fr)', gap:8 }}>
                 {[
                   { l:'Revenue', v:fmtFull(dayData.revenue), c:'#2563eb' },
