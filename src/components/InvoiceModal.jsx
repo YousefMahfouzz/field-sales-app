@@ -43,65 +43,66 @@ export default function InvoiceModal({ visit, customer, profile, onClose }) {
 <title>Invoice ${invoiceNum}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; padding: 40px; max-width: 800px; margin: 0 auto; font-size: 14px; line-height: 1.5; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; padding: 24px 28px; max-width: 800px; margin: 0 auto; font-size: 12px; line-height: 1.4; }
   
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 3px solid #2563eb; }
-  .logo-section { display: flex; align-items: center; gap: 16px; }
-  .logo-section img { width: 60px; height: 60px; object-fit: contain; border-radius: 8px; }
-  .company-name { font-size: 24px; font-weight: 800; color: #2563eb; letter-spacing: -0.5px; }
-  .company-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2.5px solid #2563eb; }
+  .logo-section { display: flex; align-items: center; gap: 10px; }
+  .logo-section img { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; }
+  .company-name { font-size: 18px; font-weight: 800; color: #2563eb; letter-spacing: -0.5px; }
+  .company-sub { font-size: 9px; color: #64748b; }
   
   .invoice-title { text-align: right; }
-  .invoice-title h1 { font-size: 28px; font-weight: 900; color: #1a1a1a; letter-spacing: -1px; }
-  .invoice-num { font-size: 13px; color: #2563eb; font-weight: 700; margin-top: 4px; }
-  .invoice-date { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .invoice-title h1 { font-size: 20px; font-weight: 900; color: #1a1a1a; letter-spacing: -0.5px; }
+  .invoice-num { font-size: 11px; color: #2563eb; font-weight: 700; margin-top: 2px; }
+  .invoice-date { font-size: 10px; color: #64748b; }
   
-  .parties { display: flex; gap: 40px; margin-bottom: 28px; }
-  .party { flex: 1; }
-  .party-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-  .party-name { font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
-  .party-detail { font-size: 12px; color: #64748b; line-height: 1.6; }
+  .info-row { display: flex; gap: 16px; margin-bottom: 12px; }
+  .info-col { flex: 1; }
+  .info-label { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px; }
+  .info-name { font-size: 13px; font-weight: 700; color: #1a1a1a; margin-bottom: 1px; }
+  .info-detail { font-size: 10px; color: #64748b; line-height: 1.4; }
   
-  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-  thead th { background: #f1f5f9; padding: 10px 14px; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+  .meta-strip { display: flex; gap: 0; margin-bottom: 10px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden; }
+  .meta-item { flex: 1; padding: 6px 8px; text-align: center; border-right: 1px solid #e2e8f0; }
+  .meta-item:last-child { border-right: none; }
+  .meta-item label { font-size: 7px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 1px; }
+  .meta-item span { font-size: 10px; font-weight: 600; color: #1a1a1a; }
+  
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  thead th { background: #f1f5f9; padding: 5px 8px; font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; text-align: left; border-bottom: 1.5px solid #e2e8f0; }
   thead th:last-child, thead th:nth-child(3), thead th:nth-child(4) { text-align: right; }
-  tbody td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+  tbody td { padding: 5px 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; }
   tbody td:last-child, tbody td:nth-child(3), tbody td:nth-child(4) { text-align: right; font-variant-numeric: tabular-nums; }
-  tbody tr:hover { background: #fafbfc; }
   .item-name { font-weight: 600; }
   
-  .totals { display: flex; justify-content: flex-end; margin-bottom: 28px; }
-  .totals-box { width: 280px; }
-  .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #64748b; }
-  .total-row.grand { padding: 12px 0; margin-top: 8px; border-top: 2px solid #1a1a1a; font-size: 18px; font-weight: 800; color: #1a1a1a; }
+  .totals { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+  .totals-box { width: 220px; }
+  .total-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; color: #64748b; }
+  .total-row.grand { padding: 6px 0; margin-top: 4px; border-top: 2px solid #1a1a1a; font-size: 14px; font-weight: 800; color: #1a1a1a; }
   .total-value { font-variant-numeric: tabular-nums; font-weight: 600; }
   
-  .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
-  .meta-item label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
-  .meta-item span { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+  .notes { padding: 8px 10px; background: #fffbeb; border-radius: 6px; border: 1px solid #fde68a; margin-bottom: 10px; }
+  .notes-label { font-size: 8px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .notes-text { font-size: 10px; color: #78350f; line-height: 1.4; }
   
-  .notes { padding: 16px; background: #fffbeb; border-radius: 8px; border: 1px solid #fde68a; margin-bottom: 28px; }
-  .notes-label { font-size: 10px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-  .notes-text { font-size: 12px; color: #78350f; line-height: 1.6; }
-  
-  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
+  .footer { margin-top: 16px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
   .footer-col { flex: 1; }
-  .footer-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-  .sig-line { border-bottom: 1px solid #cbd5e1; width: 200px; height: 40px; }
-  .footer-note { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 32px; }
+  .footer-label { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .sig-line { border-bottom: 1px solid #cbd5e1; width: 160px; height: 28px; }
+  .footer-note { font-size: 9px; color: #94a3b8; text-align: center; margin-top: 12px; }
   
   @media print {
-    body { padding: 20px; }
-    @page { margin: 0.5in; size: letter; }
+    body { padding: 16px 20px; }
+    @page { margin: 0.4in; size: letter; }
     .no-print { display: none !important; }
   }
 </style>
 </head>
 <body>
 
-<div class="no-print" style="margin-bottom:20px;display:flex;gap:10px">
-  <button onclick="window.print()" style="padding:10px 24px;border-radius:8px;border:none;background:#2563eb;color:white;font-weight:700;font-size:14px;cursor:pointer">🖨️ Print / Save as PDF</button>
-  <button onclick="window.close()" style="padding:10px 24px;border-radius:8px;border:1px solid #d4d8e0;background:white;color:#64748b;font-weight:600;font-size:14px;cursor:pointer">Close</button>
+<div class="no-print" style="margin-bottom:14px;display:flex;gap:10px">
+  <button onclick="window.print()" style="padding:8px 20px;border-radius:8px;border:none;background:#2563eb;color:white;font-weight:700;font-size:13px;cursor:pointer">🖨️ Print / Save as PDF</button>
+  <button onclick="window.close()" style="padding:8px 20px;border-radius:8px;border:1px solid #d4d8e0;background:white;color:#64748b;font-weight:600;font-size:13px;cursor:pointer">Close</button>
 </div>
 
 <div class="header">
@@ -109,40 +110,32 @@ export default function InvoiceModal({ visit, customer, profile, onClose }) {
     ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : ''}
     <div>
       <div class="company-name">Kanz Supply</div>
-      <div class="company-sub">Wholesale Distribution</div>
-      <div class="company-sub">orders@kanzsupply.com</div>
+      <div class="company-sub">Wholesale Distribution · orders@kanzsupply.com</div>
     </div>
   </div>
   <div class="invoice-title">
     <h1>INVOICE</h1>
     <div class="invoice-num">${invoiceNum}</div>
-    <div class="invoice-date">${visitDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+    <div class="invoice-date">${visitDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
   </div>
 </div>
 
-<div class="parties">
-  <div class="party">
-    <div class="party-label">Sold By</div>
-    <div class="party-name">${profile?.display_name || 'Kanz Supply'}</div>
-    <div class="party-detail">
-      Kanz Supply LLC<br/>
-      Louisiana, USA<br/>
-      orders@kanzsupply.com
-    </div>
+<div class="info-row">
+  <div class="info-col">
+    <div class="info-label">Sold By</div>
+    <div class="info-name">${profile?.display_name || 'Kanz Supply'}</div>
+    <div class="info-detail">Kanz Supply LLC · Louisiana, USA</div>
   </div>
-  <div class="party">
-    <div class="party-label">Sold To</div>
-    <div class="party-name">${customer?.business_name || customer?.full_name || 'Customer'}</div>
-    <div class="party-detail">
-      ${customer?.full_name && customer?.business_name ? customer.full_name + '<br/>' : ''}
-      ${customer?.address || ''}${customer?.address ? '<br/>' : ''}
-      ${customer?.area || ''}${customer?.area ? '<br/>' : ''}
-      ${customer?.phone ? 'Tel: ' + customer.phone : ''}
+  <div class="info-col">
+    <div class="info-label">Sold To</div>
+    <div class="info-name">${customer?.business_name || customer?.full_name || 'Customer'}</div>
+    <div class="info-detail">
+      ${customer?.full_name && customer?.business_name ? customer.full_name + ' · ' : ''}${customer?.address || ''}${customer?.phone ? ' · ' + customer.phone : ''}
     </div>
   </div>
 </div>
 
-<div class="meta-grid">
+<div class="meta-strip">
   <div class="meta-item">
     <label>Invoice #</label>
     <span>${invoiceNum}</span>
@@ -152,30 +145,26 @@ export default function InvoiceModal({ visit, customer, profile, onClose }) {
     <span>${visitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
   </div>
   <div class="meta-item">
-    <label>Payment Terms</label>
+    <label>Terms</label>
     <span>${customer?.payment_status === 'paid' ? 'Paid' : 'Due on Receipt'}</span>
   </div>
   <div class="meta-item">
-    <label>Sales Rep</label>
-    <span>${profile?.display_name || '–'}</span>
-  </div>
-  <div class="meta-item">
-    <label>Total Items</label>
+    <label>Items</label>
     <span>${totalUnits} unit${totalUnits !== 1 ? 's' : ''}</span>
   </div>
   <div class="meta-item">
-    <label>Visit ID</label>
-    <span style="font-size:10px;color:#94a3b8">${visit.id?.slice(0, 8) || '–'}</span>
+    <label>Rep</label>
+    <span>${profile?.display_name || '–'}</span>
   </div>
 </div>
 
 <table>
   <thead>
     <tr>
-      <th style="width:10%">#</th>
-      <th style="width:40%">Product</th>
-      <th style="width:15%">Qty</th>
-      <th style="width:15%">Unit Price</th>
+      <th style="width:8%">#</th>
+      <th style="width:44%">Product</th>
+      <th style="width:12%">Qty</th>
+      <th style="width:16%">Unit Price</th>
       <th style="width:20%">Amount</th>
     </tr>
   </thead>
@@ -197,10 +186,6 @@ export default function InvoiceModal({ visit, customer, profile, onClose }) {
     <div class="total-row">
       <span>Subtotal</span>
       <span class="total-value">$${subtotal.toFixed(2)}</span>
-    </div>
-    <div class="total-row">
-      <span>Tax</span>
-      <span class="total-value">$0.00</span>
     </div>
     <div class="total-row grand">
       <span>Total Due</span>
@@ -228,7 +213,7 @@ ${visit.notes ? `
 </div>
 
 <div class="footer-note">
-  Thank you for your business! &mdash; Kanz Supply LLC
+  Thank you for your business! &ndash; Kanz Supply LLC
 </div>
 
 </body>
