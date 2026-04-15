@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import InvoiceModal from '../components/InvoiceModal'
 import ProductSelector from '../components/ProductSelector'
+import { buildCalendarUrl } from '../lib/calendarUtils'
 
 export default function VisitLogPage() {
   const { customerId } = useParams()
@@ -258,6 +259,28 @@ export default function VisitLogPage() {
           🧾 View Invoice
         </button>
       )}
+
+      {/* Google Calendar reminder – shows when there's a next visit date */}
+      {(() => {
+        // Determine the next visit date: explicit callback date, or +30 days if sale
+        const nextDate = callbackDate || (saleItems.length > 0 ? (() => {
+          const d = new Date(); d.setDate(d.getDate() + 30)
+          return d.toISOString().split('T')[0]
+        })() : null)
+        if (!nextDate) return null
+        const calUrl = buildCalendarUrl(nextDate, customer?.business_name || customer?.full_name || 'Customer', {
+          notes: notes || callbackNote || (saleItems.length > 0 ? `Last sale: $${totalSale.toFixed(2)}` : ''),
+          address: customer?.address,
+          area: customer?.area,
+          phone: customer?.phone,
+        })
+        return (
+          <a href={calUrl} target="_blank" rel="noopener noreferrer"
+            style={{ display: 'block', width: '100%', maxWidth: 320, marginBottom: 12, padding: '12px', borderRadius: 12, border: '1.5px solid #fde68a', background: '#fffbeb', color: '#92400e', fontWeight: 700, fontSize: 14, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>
+            📅 Add Reminder to Google Calendar
+          </a>
+        )
+      })()}
 
       <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 320 }}>
         <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/')}>🏠 Home</button>

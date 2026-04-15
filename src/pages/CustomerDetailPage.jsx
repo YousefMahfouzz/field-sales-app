@@ -7,6 +7,7 @@ import { StatusBadge, AreaBadge } from '../components/CustomerCard'
 import InvoiceModal from '../components/InvoiceModal'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
+import { buildCalendarUrl } from '../lib/calendarUtils'
 
 function daysUntilVisit(dateStr) {
   if (!dateStr) return null
@@ -175,6 +176,15 @@ export default function CustomerDetailPage() {
                 ) : '—'}
                 {isOverdue && ' ⚠️'}
               </p>
+              {customer.next_visit_date && (
+                <a href={buildCalendarUrl(customer.next_visit_date, customer.business_name || customer.full_name, {
+                  address: customer.address, area: customer.area, phone: customer.phone,
+                  notes: customer.wants_next || '',
+                })} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-block', marginTop: 4, padding: '2px 8px', borderRadius: 6, border: '1px solid #fde68a', background: '#fffbeb', color: '#92400e', fontSize: 10, fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}>
+                  📅 Calendar
+                </a>
+              )}
             </div>
             <div>
               <p className="text-xs text-muted">Frequency</p>
