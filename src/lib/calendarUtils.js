@@ -24,12 +24,11 @@ export function buildCalendarUrl(date, customerName, opts = {}) {
 
   // Google Calendar uses this date format: YYYYMMDD for all-day events
   // Or YYYYMMDDTHHMMSS for timed events
-  // We'll create a timed event at 9:00 AM CT, lasting 1 hour
+  // We'll create a timed event at 7:00 AM CT, lasting 1 hour
   const dateClean = date.replace(/-/g, '')
 
-  // Format: YYYYMMDDTHHMMSS (local time – Google Calendar interprets it in user's timezone)
-  const startTime = `${dateClean}T090000`
-  const endTime = `${dateClean}T100000`
+  const startTime = `${dateClean}T070000`
+  const endTime = `${dateClean}T080000`
 
   const location = address || area || ''
 
