@@ -146,8 +146,8 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
 
   const hasDesc = product.description?.trim()
 
-  // Per-piece pricing for boxes/cases/packs
-  const pieceCount = parsePieceCount(product.description)
+  // Per-piece pricing – prefer explicit pieces_per_unit, fallback to parsing description
+  const pieceCount = product.pieces_per_unit || parsePieceCount(product.description)
   const showPerPiece = pieceCount && pieceCount > 1 && product.sell_price > 0
   const pricePerPiece = showPerPiece ? (product.sell_price / pieceCount) : null
 
@@ -403,7 +403,7 @@ export default function PriceListPage() {
           setNotFound(true); setLoading(false); return
         }
       }
-      let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id,stock_qty').eq('is_active', true).order('category').order('name')
+      let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id,stock_qty,pieces_per_unit').eq('is_active', true).order('category').order('name')
       if (userId) q = q.eq('user_id', userId)
       const { data } = await q
       if (username && !userId && (!data || data.length === 0)) {

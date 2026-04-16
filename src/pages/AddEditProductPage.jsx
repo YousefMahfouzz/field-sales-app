@@ -38,7 +38,7 @@ function guessCategory(name) {
 const EMPTY = {
   name:'', brand:'', description:'', cost:'', sell_price:'',
   price_min:'', price_max:'', sell_range:'',
-  stock_qty:0, unit:'unit', category:'', source:'',
+  stock_qty:0, unit:'unit', category:'', source:'', pieces_per_unit:'',
 }
 
 export default function AddEditProductPage() {
@@ -70,7 +70,7 @@ export default function AddEditProductPage() {
           cost: p.cost ?? '', sell_price: p.sell_price ?? '',
           price_min: p.price_min ?? '', price_max: p.price_max ?? '',
           sell_range: p.sell_range ?? '', source: p.source ?? '', brand: p.brand ?? '',
-          category: p.category || ''
+          category: p.category || '', pieces_per_unit: p.pieces_per_unit ?? '',
         })
         setImageData({
           primaryFile: null, primaryPreview: p.image_url || null,
@@ -128,6 +128,7 @@ export default function AddEditProductPage() {
         sell_range: form.sell_range || null,
         stock_qty: parseInt(form.stock_qty) || 0,
         unit: form.unit || 'unit',
+        pieces_per_unit: form.pieces_per_unit ? parseInt(form.pieces_per_unit) : null,
       }
       let saved = isEdit ? await updateProduct(id, payload) : await addProduct(payload)
       
@@ -286,6 +287,19 @@ export default function AddEditProductPage() {
             </select>
           </div>
         </div>
+
+        {/* Pieces per unit – for boxes/cases/packs */}
+        {['box','case','pack','dozen'].includes(form.unit) && (
+          <div className="form-group">
+            <label className="form-label">Pieces per {form.unit}</label>
+            <input className="form-input" type="number" min="1" value={form.pieces_per_unit} onChange={set('pieces_per_unit')} placeholder={`How many pieces in one ${form.unit}?`} />
+            {form.pieces_per_unit > 0 && form.sell_price > 0 && (
+              <p className="text-xs" style={{ marginTop:4, color:'var(--blue)', fontWeight:600 }}>
+                💰 ${(parseFloat(form.sell_price) / parseInt(form.pieces_per_unit)).toFixed(2)} per piece · {form.pieces_per_unit} pieces per {form.unit}
+              </p>
+            )}
+          </div>
+        )}
 
         <button type="submit" className="btn btn-primary btn-full" disabled={loading} style={{ marginTop:8 }}>
           {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Product'}

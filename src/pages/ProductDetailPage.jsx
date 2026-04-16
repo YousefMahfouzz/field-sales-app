@@ -120,6 +120,11 @@ export default function ProductDetailPage() {
                 {product.stock_qty}
                 <span style={{ fontSize:14, fontWeight:400, color:'var(--text-muted)', marginLeft:4 }}>{product.unit}s</span>
               </p>
+              {product.pieces_per_unit > 1 && (
+                <p style={{ fontSize:12, color:'var(--blue)', fontWeight:600, marginTop:4 }}>
+                  {product.pieces_per_unit} pieces per {product.unit} · ${(product.sell_price / product.pieces_per_unit).toFixed(2)}/piece
+                </p>
+              )}
               <div style={{ marginTop:6, display:'flex', gap:12 }}>
                 {canSeeProfit && (
                 <div>
