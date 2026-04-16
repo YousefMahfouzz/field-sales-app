@@ -166,7 +166,7 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
       position: 'relative',
       backdropFilter: 'blur(8px)',
     }}
-      onMouseEnter={e => { if (!isSoldOut) { e.currentTarget.style.boxShadow = '0 12px 40px rgba(139,92,246,0.2)'; e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)'; e.currentTarget.style.border = '1px solid rgba(139,92,246,0.2)' }}}
+      onMouseEnter={e => { if (!isSoldOut) { e.currentTarget.style.boxShadow = '0 12px 40px rgba(212,168,67,0.18)'; e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)'; e.currentTarget.style.border = '1px solid rgba(212,168,67,0.25)' }}}
       onMouseLeave={e => { e.currentTarget.style.boxShadow = isSoldOut ? 'none' : '0 4px 20px rgba(0,0,0,0.15)'; e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.border = isSoldOut ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.1)' }}
     >
       {/* SOLD OUT badge */}
@@ -375,6 +375,7 @@ export default function PriceListPage() {
   const [search, setSearch] = useState('')
   const [activeCat, setActiveCat] = useState('all')
   const [lightbox, setLightbox] = useState(null)
+  const [logoUrl, setLogoUrl] = useState(null)
   // Cart: { productId: { product, qty } }
   const [cart, setCart] = useState({})
   const [showCart, setShowCart] = useState(false)
@@ -382,7 +383,13 @@ export default function PriceListPage() {
   const [orderSubmitted, setOrderSubmitted] = useState(false)
   const [orderForm, setOrderForm] = useState({ name: '', phone: '', address: '', notes: '' })
   const [orderLoading, setOrderLoading] = useState(false)
-  const [confirmedTotal, setConfirmedTotal] = useState(0) // snapshot before cart clears
+  const [confirmedTotal, setConfirmedTotal] = useState(0)
+
+  // Fetch logo
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'logo_url').single()
+      .then(({ data }) => { if (data?.value) setLogoUrl(data.value) })
+  }, []) // snapshot before cart clears
 
   const cartCount = Object.values(cart).reduce((s, i) => s + i.qty, 0)
   const cartTotal = Object.values(cart).reduce((s, i) => s + i.qty * i.product.sell_price, 0)
@@ -487,8 +494,8 @@ export default function PriceListPage() {
       scope: `/u/${username}/`,
       display: 'standalone',
       orientation: 'portrait',
-      background_color: '#f8fafc',
-      theme_color: '#2563eb',
+      background_color: '#0a0a0a',
+      theme_color: '#d4a843',
       icons: [
         { src: `${window.location.origin}/pwa-192x192.png`, sizes: '192x192', type: 'image/png' },
         { src: `${window.location.origin}/pwa-512x512.png`, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
@@ -541,12 +548,12 @@ export default function PriceListPage() {
       {/* Global styles for this page */}
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0a0a12; }
+        body { background: #0a0a0a; }
         .pl-page {
           min-height: 100vh;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           color: #0f172a;
-          background: linear-gradient(-45deg, #0f0c29, #1a1145, #24243e, #0f0c29);
+          background: linear-gradient(-45deg, #0a0a0a, #111108, #0d0b00, #0a0a0a);
           background-size: 400% 400%;
           animation: gradientShift 15s ease infinite;
           position: relative;
@@ -554,9 +561,9 @@ export default function PriceListPage() {
         .pl-page::before {
           content: '';
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
-          background: radial-gradient(ellipse at 20% 50%, rgba(139,92,246,0.08) 0%, transparent 50%),
-                      radial-gradient(ellipse at 80% 20%, rgba(236,72,153,0.06) 0%, transparent 50%),
-                      radial-gradient(ellipse at 50% 80%, rgba(99,102,241,0.05) 0%, transparent 50%);
+          background: radial-gradient(ellipse at 20% 50%, rgba(212,168,67,0.06) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 20%, rgba(184,134,11,0.05) 0%, transparent 50%),
+                      radial-gradient(ellipse at 50% 80%, rgba(240,208,120,0.03) 0%, transparent 50%);
         }
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
@@ -577,8 +584,8 @@ export default function PriceListPage() {
           66% { transform: translate(-20px, 15px) scale(0.95); }
         }
         @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.4); }
-          50% { box-shadow: 0 0 20px 8px rgba(139,92,246,0.15); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(212,168,67,0.4); }
+          50% { box-shadow: 0 0 24px 10px rgba(212,168,67,0.12); }
         }
         @keyframes shimmer {
           0% { background-position: -200% center; }
@@ -595,7 +602,7 @@ export default function PriceListPage() {
         }
         @media (max-width: 500px) { .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
         @media (max-width: 320px) { .pl-grid { grid-template-columns: 1fr; } }
-        .pl-search:focus { outline: none; border-color: #6366f1 !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+        .pl-search:focus { outline: none; border-color: #d4a843 !important; box-shadow: 0 0 0 3px rgba(212,168,67,0.2); }
         .pl-pill { white-space: nowrap; border: none; cursor: pointer; transition: all 0.2s ease; }
         .pl-pill:hover { transform: translateY(-1px); }
         .pl-pill:active { transform: scale(0.95); }
@@ -630,23 +637,33 @@ export default function PriceListPage() {
       <div className="pl-page" style={{ position: 'relative', zIndex: 1 }}>
         {/* ── HERO ── */}
         <div style={{
-          background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 70%, #5b21b6 100%)',
+          background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1500 40%, #0d0b00 70%, #111108 100%)',
           padding: 'clamp(36px, 6vw, 72px) clamp(16px, 5vw, 80px) clamp(28px, 4vw, 56px)',
           position: 'relative', overflow: 'hidden',
         }}>
-          {/* Animated floating blobs */}
-          <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(139,92,246,0.25)', filter: 'blur(40px)', animation: 'floatBlob 8s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', bottom: -40, left: '30%', width: 200, height: 200, borderRadius: '50%', background: 'rgba(236,72,153,0.2)', filter: 'blur(50px)', animation: 'floatBlob 10s ease-in-out infinite reverse' }} />
-          <div style={{ position: 'absolute', top: '40%', left: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', filter: 'blur(35px)', animation: 'floatBlob 12s ease-in-out infinite 2s' }} />
+          {/* Animated floating blobs – gold tones */}
+          <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(212,168,67,0.15)', filter: 'blur(40px)', animation: 'floatBlob 8s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', bottom: -40, left: '30%', width: 200, height: 200, borderRadius: '50%', background: 'rgba(184,134,11,0.12)', filter: 'blur(50px)', animation: 'floatBlob 10s ease-in-out infinite reverse' }} />
+          <div style={{ position: 'absolute', top: '40%', left: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(240,208,120,0.08)', filter: 'blur(35px)', animation: 'floatBlob 12s ease-in-out infinite 2s' }} />
 
           <div style={{ position: 'relative', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-            {profile && (
+            {/* Logo */}
+            {logoUrl ? (
+              <div style={{
+                width: 72, height: 72, borderRadius: 16, margin: '0 auto 16px',
+                overflow: 'hidden', border: '2px solid rgba(212,168,67,0.3)',
+                boxShadow: '0 0 24px rgba(212,168,67,0.2)',
+                animation: 'pulseGlow 3s ease-in-out infinite',
+              }}>
+                <img src={logoUrl} alt="Kanz Supply" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#0a0a0a' }} draggable="false" onContextMenu={e => e.preventDefault()} />
+              </div>
+            ) : profile && (
               <div style={{
                 width: 64, height: 64, borderRadius: '50%', margin: '0 auto 16px',
-                background: 'linear-gradient(135deg, #a78bfa, #f472b6)',
+                background: 'linear-gradient(135deg, #d4a843, #b8860b)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, fontWeight: 700, color: 'white',
-                boxShadow: '0 0 0 4px rgba(255,255,255,0.15)',
+                fontSize: 28, fontWeight: 700, color: '#0a0a0a',
+                boxShadow: '0 0 0 4px rgba(212,168,67,0.2)',
                 animation: 'pulseGlow 3s ease-in-out infinite',
               }}>
                 {displayName[0]?.toUpperCase() || '?'}
@@ -654,7 +671,7 @@ export default function PriceListPage() {
             )}
             <h1 style={{
               fontSize: 'clamp(24px, 4vw, 42px)', fontWeight: 900, lineHeight: 1.15,
-              background: 'linear-gradient(90deg, #fff 0%, #e0d7ff 25%, #f9a8d4 50%, #e0d7ff 75%, #fff 100%)',
+              background: 'linear-gradient(90deg, #f0d078 0%, #d4a843 25%, #fff 50%, #d4a843 75%, #f0d078 100%)',
               backgroundSize: '200% auto',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               marginBottom: 8, letterSpacing: '-0.5px',
@@ -664,16 +681,16 @@ export default function PriceListPage() {
             </h1>
             {username && <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>@{username}</p>}
             {products.length > 0 && (
-              <div style={{ marginTop: 18, display: 'inline-flex', gap: 24, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', borderRadius: 40, padding: '10px 28px', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}><span style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>{products.length}</span> items</span>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}><span style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>{categories.length - 1}</span> categories</span>
+              <div style={{ marginTop: 18, display: 'inline-flex', gap: 24, background: 'rgba(212,168,67,0.1)', backdropFilter: 'blur(8px)', borderRadius: 40, padding: '10px 28px', border: '1px solid rgba(212,168,67,0.2)' }}>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}><span style={{ color: '#f0d078', fontWeight: 800, fontSize: 18 }}>{products.length}</span> items</span>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}><span style={{ color: '#f0d078', fontWeight: 800, fontSize: 18 }}>{categories.length - 1}</span> categories</span>
               </div>
             )}
           </div>
         </div>
 
         {/* ── STICKY SEARCH + FILTERS ── */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(15,12,41,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: 'clamp(10px,2vw,16px) clamp(12px,4vw,40px)' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(212,168,67,0.12)', padding: 'clamp(10px,2vw,16px) clamp(12px,4vw,40px)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ position: 'relative', marginBottom: categories.length > 2 ? 10 : 0 }}>
               <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>🔍</span>
@@ -739,7 +756,7 @@ export default function PriceListPage() {
                   <div style={{
                     width: 36, height: 36, borderRadius: 10, background: color + '25',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
-                    boxShadow: `0 0 12px ${color}20`,
+                    boxShadow: `0 0 12px ${color}20, 0 0 4px rgba(212,168,67,0.1)`,
                   }}>{icon}</div>
                   <div>
                     <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{cat}</h2>
@@ -767,12 +784,13 @@ export default function PriceListPage() {
 
         {/* ── FOOTER ── */}
         <footer style={{
-          borderTop: '1px solid rgba(255,255,255,0.08)', padding: 'clamp(20px,3vw,32px) clamp(12px,4vw,40px)',
-          textAlign: 'center', background: 'rgba(0,0,0,0.2)', position: 'relative', zIndex: 1,
+          borderTop: '1px solid rgba(212,168,67,0.12)', padding: 'clamp(20px,3vw,32px) clamp(12px,4vw,40px)',
+          textAlign: 'center', background: 'rgba(0,0,0,0.3)', position: 'relative', zIndex: 1,
         }}>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
+          <p style={{ fontSize: 13, color: 'rgba(212,168,67,0.4)' }}>
             Tap any product image to enlarge · Prices subject to change
           </p>
+          <p style={{ fontSize: 11, color: 'rgba(212,168,67,0.25)', marginTop: 6 }}>Kanz Supply</p>
         </footer>
       </div>
 
@@ -782,17 +800,17 @@ export default function PriceListPage() {
           onClick={() => setShowCart(true)}
           style={{
             position: 'fixed', bottom: 28, right: 24, zIndex: 200,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: 'white', border: 'none', borderRadius: 32,
+            background: 'linear-gradient(135deg, #d4a843, #b8860b)',
+            color: '#0a0a0a', border: 'none', borderRadius: 32,
             padding: '14px 22px', cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 10,
-            boxShadow: '0 8px 28px rgba(99,102,241,0.45)',
+            boxShadow: '0 8px 28px rgba(212,168,67,0.4)',
             fontSize: 15, fontWeight: 700,
             animation: 'cartBounce 2s ease-in-out infinite',
           }}
         >
           <span style={{
-            background: 'white', color: '#6366f1', borderRadius: '50%',
+            background: '#0a0a0a', color: '#d4a843', borderRadius: '50%',
             width: 24, height: 24, display: 'flex', alignItems: 'center',
             justifyContent: 'center', fontSize: 13, fontWeight: 800,
           }}>{cartCount}</span>
