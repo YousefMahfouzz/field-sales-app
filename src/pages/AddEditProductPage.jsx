@@ -38,7 +38,7 @@ function guessCategory(name) {
 const EMPTY = {
   name:'', brand:'', description:'', cost:'', sell_price:'',
   price_min:'', price_max:'', sell_range:'',
-  stock_qty:0, unit:'unit', category:'', source:'', pieces_per_unit:'',
+  stock_qty:0, unit:'unit', category:'', source:'', pieces_per_unit:'', piece_name:'',
 }
 
 export default function AddEditProductPage() {
@@ -70,7 +70,7 @@ export default function AddEditProductPage() {
           cost: p.cost ?? '', sell_price: p.sell_price ?? '',
           price_min: p.price_min ?? '', price_max: p.price_max ?? '',
           sell_range: p.sell_range ?? '', source: p.source ?? '', brand: p.brand ?? '',
-          category: p.category || '', pieces_per_unit: p.pieces_per_unit ?? '',
+          category: p.category || '', pieces_per_unit: p.pieces_per_unit ?? '', piece_name: p.piece_name ?? '',
         })
         setImageData({
           primaryFile: null, primaryPreview: p.image_url || null,
@@ -129,6 +129,7 @@ export default function AddEditProductPage() {
         stock_qty: parseInt(form.stock_qty) || 0,
         unit: form.unit || 'unit',
         pieces_per_unit: form.pieces_per_unit ? parseInt(form.pieces_per_unit) : null,
+        piece_name: form.piece_name?.trim() || null,
       }
       let saved = isEdit ? await updateProduct(id, payload) : await addProduct(payload)
       
@@ -290,15 +291,26 @@ export default function AddEditProductPage() {
 
         {/* Pieces per unit – for boxes/cases/packs */}
         {['box','case','pack','dozen'].includes(form.unit) && (
-          <div className="form-group">
-            <label className="form-label">Pieces per {form.unit}</label>
-            <input className="form-input" type="number" min="1" value={form.pieces_per_unit} onChange={set('pieces_per_unit')} placeholder={`How many pieces in one ${form.unit}?`} />
-            {form.pieces_per_unit > 0 && form.sell_price > 0 && (
-              <p className="text-xs" style={{ marginTop:4, color:'var(--blue)', fontWeight:600 }}>
-                💰 ${(parseFloat(form.sell_price) / parseInt(form.pieces_per_unit)).toFixed(2)} per piece · {form.pieces_per_unit} pieces per {form.unit}
-              </p>
-            )}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label">Pieces per {form.unit}</label>
+              <input className="form-input" type="number" min="1" value={form.pieces_per_unit} onChange={set('pieces_per_unit')} placeholder="e.g. 24" />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label">Each piece is called</label>
+              <select className="form-select" value={form.piece_name} onChange={set('piece_name')}>
+                <option value="">piece (default)</option>
+                {['sachet','stick','can','packet','bottle','bag','roll','bar','capsule','tablet'].map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
           </div>
+        )}
+        {['box','case','pack','dozen'].includes(form.unit) && form.pieces_per_unit > 0 && form.sell_price > 0 && (
+          <p className="text-xs" style={{ marginTop: -8, marginBottom: 8, color: 'var(--blue)', fontWeight: 600 }}>
+            💰 ${(parseFloat(form.sell_price) / parseInt(form.pieces_per_unit)).toFixed(2)} per {form.piece_name || 'piece'} · {form.pieces_per_unit} {form.piece_name || 'piece'}{parseInt(form.pieces_per_unit) > 1 ? 's' : ''} per {form.unit}
+          </p>
         )}
 
         <button type="submit" className="btn btn-primary btn-full" disabled={loading} style={{ marginTop:8 }}>

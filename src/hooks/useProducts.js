@@ -14,7 +14,7 @@ export function useProducts() {
     // RLS policies allow drivers to read parent's products
     const { data } = await supabase
       .from('products')
-      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at,user_id,pieces_per_unit')
+      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at,user_id,pieces_per_unit,piece_name')
       .eq('user_id', effectiveUserId)
       .order('category')
       .order('name')
@@ -47,7 +47,7 @@ export function useProducts() {
     if (error) throw error
     const { data, error: fetchErr } = await supabase
       .from('products')
-      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at,user_id,pieces_per_unit')
+      .select('id,name,brand,source,description,image_url,images,cost,avg_cost,sell_price,price_min,price_max,margin_percent,stock_qty,unit,is_active,category,created_at,updated_at,user_id,pieces_per_unit,piece_name')
       .eq('id', id)
       .single()
     if (fetchErr) throw fetchErr

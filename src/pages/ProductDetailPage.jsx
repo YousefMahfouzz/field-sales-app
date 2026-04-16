@@ -122,7 +122,7 @@ export default function ProductDetailPage() {
               </p>
               {product.pieces_per_unit > 1 && (
                 <p style={{ fontSize:12, color:'var(--blue)', fontWeight:600, marginTop:4 }}>
-                  {product.pieces_per_unit} pieces per {product.unit} · ${(product.sell_price / product.pieces_per_unit).toFixed(2)}/piece
+                  {product.pieces_per_unit} {product.piece_name || 'piece'}{product.pieces_per_unit > 1 ? 's' : ''} per {product.unit} · ${(product.sell_price / product.pieces_per_unit).toFixed(2)}/{product.piece_name || 'piece'}
                 </p>
               )}
               <div style={{ marginTop:6, display:'flex', gap:12 }}>

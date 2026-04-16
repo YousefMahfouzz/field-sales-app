@@ -125,11 +125,33 @@ function Lightbox({ images, startIndex, onClose }) {
   )
 }
 
-// ── Parse piece count from description like "50 pieces", "24 sachets inside", "72 count display" ──
-function parsePieceCount(description) {
+// ── Parse piece count AND item name from description ──
+// "50 pieces" → { count: 50, itemName: "piece" }
+// "30 sachets inside" → { count: 30, itemName: "sachet" }
+// "720 sticks" → { count: 720, itemName: "stick" }
+// "72 count display" → { count: 72, itemName: "piece" }
+function parsePieceInfo(description) {
   if (!description) return null
-  const m = description.match(/(\d+)\s*(pieces?|sachets?|count|sticks?|pcs|ct|pk)/i)
-  return m ? parseInt(m[1]) : null
+  const m = description.match(/(\d+)\s*(pieces?|sachets?|sticks?|cans?|packets?|bottles?|bags?|rolls?|bars?|packs?|capsules?|tablets?|count|pcs|ct|pk)/i)
+  if (!m) return null
+  const count = parseInt(m[1])
+  const raw = m[2].toLowerCase()
+  // Normalize to singular
+  const NAMES = {
+    piece: 'piece', pieces: 'piece', pcs: 'piece', count: 'piece', ct: 'piece', pk: 'piece',
+    sachet: 'sachet', sachets: 'sachet',
+    stick: 'stick', sticks: 'stick',
+    can: 'can', cans: 'can',
+    packet: 'packet', packets: 'packet',
+    bottle: 'bottle', bottles: 'bottle',
+    bag: 'bag', bags: 'bag',
+    roll: 'roll', rolls: 'roll',
+    bar: 'bar', bars: 'bar',
+    pack: 'pack', packs: 'pack',
+    capsule: 'capsule', capsules: 'capsule',
+    tablet: 'tablet', tablets: 'tablet',
+  }
+  return { count, itemName: NAMES[raw] || 'piece' }
 }
 
 // ── Product Card ──
@@ -146,8 +168,10 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
 
   const hasDesc = product.description?.trim()
 
-  // Per-piece pricing – prefer explicit pieces_per_unit, fallback to parsing description
-  const pieceCount = product.pieces_per_unit || parsePieceCount(product.description)
+  // Per-piece pricing – prefer explicit fields, fallback to parsing description
+  const parsed = parsePieceInfo(product.description)
+  const pieceCount = product.pieces_per_unit || parsed?.count || null
+  const pieceName = product.piece_name || parsed?.itemName || 'piece'
   const showPerPiece = pieceCount && pieceCount > 1 && product.sell_price > 0
   const pricePerPiece = showPerPiece ? (product.sell_price / pieceCount) : null
 
@@ -269,10 +293,10 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
             borderRadius: 20, padding: '4px 12px', marginBottom: 8,
           }}>
             <span style={{ fontSize: 12, fontWeight: 800, color: '#1d4ed8' }}>
-              ${pricePerPiece.toFixed(2)}/piece
+              ${pricePerPiece.toFixed(2)}/{pieceName}
             </span>
             <span style={{ fontSize: 10, color: '#3b82f6' }}>
-              · {pieceCount} in {product.unit || 'box'}
+              · {pieceCount} {pieceName}{pieceCount > 1 ? 's' : ''} in {product.unit || 'box'}
             </span>
           </div>
         )}
@@ -420,7 +444,7 @@ export default function PriceListPage() {
           setNotFound(true); setLoading(false); return
         }
       }
-      let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id,stock_qty,pieces_per_unit').eq('is_active', true).order('category').order('name')
+      let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id,stock_qty,pieces_per_unit,piece_name').eq('is_active', true).order('category').order('name')
       if (userId) q = q.eq('user_id', userId)
       const { data } = await q
       if (username && !userId && (!data || data.length === 0)) {
