@@ -125,10 +125,18 @@ function Lightbox({ images, startIndex, onClose }) {
   )
 }
 
+// ── Parse piece count from description like "50 pieces", "24 sachets inside", "72 count display" ──
+function parsePieceCount(description) {
+  if (!description) return null
+  const m = description.match(/(\d+)\s*(pieces?|sachets?|count|sticks?|pcs|ct|pk)/i)
+  return m ? parseInt(m[1]) : null
+}
+
 // ── Product Card ──
 function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
   const [expanded, setExpanded] = useState(false)
   const { color, icon } = getCat(product.category)
+  const isSoldOut = product.stock_qty !== null && product.stock_qty !== undefined && product.stock_qty <= 0
 
   // All images: primary first, then extras
   const allImages = [
@@ -138,18 +146,41 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
 
   const hasDesc = product.description?.trim()
 
+  // Per-piece pricing for boxes/cases/packs
+  const pieceCount = parsePieceCount(product.description)
+  const showPerPiece = pieceCount && pieceCount > 1 && product.sell_price > 0
+  const pricePerPiece = showPerPiece ? (product.sell_price / pieceCount) : null
+
+  // Sold-out filter style
+  const soldOutFilter = isSoldOut ? 'grayscale(100%) opacity(0.6)' : 'none'
+
   return (
     <article style={{
       background: 'white',
       borderRadius: 16,
       overflow: 'hidden',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
-      border: '1px solid #f1f5f9',
+      boxShadow: isSoldOut ? '0 1px 6px rgba(0,0,0,0.04)' : '0 2px 12px rgba(0,0,0,0.07)',
+      border: isSoldOut ? '1px solid #e2e8f0' : '1px solid #f1f5f9',
       transition: 'box-shadow 0.2s, transform 0.2s',
+      opacity: isSoldOut ? 0.85 : 1,
+      position: 'relative',
     }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.13)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)'; e.currentTarget.style.transform = 'translateY(0)' }}
+      onMouseEnter={e => { if (!isSoldOut) { e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.13)'; e.currentTarget.style.transform = 'translateY(-2px)' }}}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = isSoldOut ? '0 1px 6px rgba(0,0,0,0.04)' : '0 2px 12px rgba(0,0,0,0.07)'; e.currentTarget.style.transform = 'translateY(0)' }}
     >
+      {/* SOLD OUT badge */}
+      {isSoldOut && (
+        <div style={{
+          position: 'absolute', top: 12, left: 12, zIndex: 10,
+          background: 'rgba(15,23,42,0.85)', color: 'white',
+          padding: '4px 12px', borderRadius: 8,
+          fontSize: 11, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase',
+          backdropFilter: 'blur(4px)',
+        }}>
+          SOLD OUT
+        </div>
+      )}
+
       {/* Image strip */}
       {allImages.length > 0 ? (
         <div style={{ position: 'relative' }}>
@@ -158,6 +189,7 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
             style={{
               width: '100%', paddingTop: '75%', position: 'relative',
               background: '#f8fafc', cursor: 'zoom-in', overflow: 'hidden',
+              filter: soldOutFilter,
             }}
           >
             <img src={allImages[0]} alt={product.name}
@@ -174,7 +206,7 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
           </div>
           {/* Thumbnail strip */}
           {allImages.length > 1 && (
-            <div style={{ display: 'flex', gap: 4, padding: '6px 8px', background: '#f8fafc', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: 4, padding: '6px 8px', background: '#f8fafc', overflowX: 'auto', scrollbarWidth: 'none', filter: soldOutFilter }}>
               {allImages.map((img, i) => (
                 <div key={i} onClick={() => onOpenLightbox(allImages, i)}
                   style={{
@@ -191,7 +223,8 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
       ) : (
         <div style={{
           width: '100%', paddingTop: '60%', position: 'relative',
-          background: `linear-gradient(135deg, ${color}18, ${color}08)`,
+          background: isSoldOut ? '#f1f5f9' : `linear-gradient(135deg, ${color}18, ${color}08)`,
+          filter: soldOutFilter,
         }}>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>
             {icon}
@@ -203,7 +236,7 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
       <div style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
           <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3, color: '#0f172a', marginBottom: 2 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3, color: isSoldOut ? '#94a3b8' : '#0f172a', marginBottom: 2 }}>
               {product.name}
             </h3>
             {product.brand && (
@@ -211,19 +244,36 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
             )}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <p style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1 }}>
+            <p style={{ fontSize: 22, fontWeight: 900, color: isSoldOut ? '#94a3b8' : color, lineHeight: 1, textDecoration: isSoldOut ? 'line-through' : 'none' }}>
               ${product.sell_price?.toFixed(2)}
             </p>
             <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>per {product.unit || 'unit'}</p>
           </div>
         </div>
 
+        {/* Per-piece pricing – shows when product is a box/case with multiple pieces */}
+        {showPerPiece && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            background: 'linear-gradient(135deg, #eff6ff, #e0f2fe)', border: '1px solid #93c5fd',
+            borderRadius: 20, padding: '4px 12px', marginBottom: 8,
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#1d4ed8' }}>
+              ${pricePerPiece.toFixed(2)}/piece
+            </span>
+            <span style={{ fontSize: 10, color: '#3b82f6' }}>
+              · {pieceCount} in {product.unit || 'box'}
+            </span>
+          </div>
+        )}
+
         {/* Price range — retail value badge */}
-        {(product.price_min || product.price_max) && (
+        {(product.price_min || product.price_max) && !isSoldOut && (
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
             background: '#fef9c3', border: '1px solid #fde047',
             borderRadius: 20, padding: '3px 10px', marginBottom: 8,
+            marginLeft: showPerPiece ? 6 : 0,
           }}>
             <span style={{ fontSize: 11 }}>🏷️</span>
             <span style={{ fontSize: 12, fontWeight: 700, color: '#854d0e' }}>
@@ -260,8 +310,19 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
           </>
         )}
 
-        {/* Add to cart */}
-        {cartQty > 0 ? (
+        {/* Add to cart / Request if sold out */}
+        {isSoldOut ? (
+          <button onClick={() => onSetQty(product, 1)} style={{
+            width: '100%', marginTop: 8, padding: '9px 0', borderRadius: 8,
+            border: '1.5px solid #cbd5e1', background: '#f8fafc', color: '#475569',
+            fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#475569'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#475569' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#475569'; e.currentTarget.style.borderColor = '#cbd5e1' }}
+          >
+            📋 Request When Available
+          </button>
+        ) : cartQty > 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: 8 }}>
             <button onClick={() => onSetQty(product, cartQty - 1)} style={{
               width: 34, height: 34, borderRadius: '8px 0 0 8px', border: '1.5px solid ' + color,
@@ -279,7 +340,7 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
           </div>
         ) : (
           <button onClick={() => onSetQty(product, 1)} style={{
-            width: '100%', marginTop: 8, padding: '8px 0', borderRadius: 8,
+            width: '100%', marginTop: 8, padding: '9px 0', borderRadius: 8,
             border: `1.5px solid ${color}`, background: 'white', color,
             fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s',
           }}
@@ -342,7 +403,7 @@ export default function PriceListPage() {
           setNotFound(true); setLoading(false); return
         }
       }
-      let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id').eq('is_active', true).order('category').order('name')
+      let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id,stock_qty').eq('is_active', true).order('category').order('name')
       if (userId) q = q.eq('user_id', userId)
       const { data } = await q
       if (username && !userId && (!data || data.length === 0)) {

@@ -40,5 +40,7 @@ export function buildCalendarUrl(date, customerName, opts = {}) {
     location: location,
   })
 
-  return `https://calendar.google.com/calendar/render?${params.toString()}`
+  // Use the web URL – on mobile, Google Calendar app intercepts calendar.google.com links
+  // and opens natively. Adding /r/ path helps force the app on Android.
+  return `https://calendar.google.com/calendar/r/eventedit?${params.toString()}`
 }
