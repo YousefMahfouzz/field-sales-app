@@ -156,17 +156,18 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
 
   return (
     <article style={{
-      background: 'white',
+      background: isSoldOut ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.07)',
       borderRadius: 16,
       overflow: 'hidden',
-      boxShadow: isSoldOut ? '0 1px 6px rgba(0,0,0,0.04)' : '0 2px 12px rgba(0,0,0,0.07)',
-      border: isSoldOut ? '1px solid #e2e8f0' : '1px solid #f1f5f9',
-      transition: 'box-shadow 0.2s, transform 0.2s',
-      opacity: isSoldOut ? 0.85 : 1,
+      boxShadow: isSoldOut ? 'none' : '0 4px 20px rgba(0,0,0,0.15)',
+      border: isSoldOut ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.1)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      opacity: isSoldOut ? 0.7 : 1,
       position: 'relative',
+      backdropFilter: 'blur(8px)',
     }}
-      onMouseEnter={e => { if (!isSoldOut) { e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.13)'; e.currentTarget.style.transform = 'translateY(-2px)' }}}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = isSoldOut ? '0 1px 6px rgba(0,0,0,0.04)' : '0 2px 12px rgba(0,0,0,0.07)'; e.currentTarget.style.transform = 'translateY(0)' }}
+      onMouseEnter={e => { if (!isSoldOut) { e.currentTarget.style.boxShadow = '0 12px 40px rgba(139,92,246,0.2)'; e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)'; e.currentTarget.style.border = '1px solid rgba(139,92,246,0.2)' }}}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = isSoldOut ? 'none' : '0 4px 20px rgba(0,0,0,0.15)'; e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.border = isSoldOut ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.1)' }}
     >
       {/* SOLD OUT badge */}
       {isSoldOut && (
@@ -181,24 +182,32 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
         </div>
       )}
 
-      {/* Image strip */}
+      {/* Image strip – protected */}
       {allImages.length > 0 ? (
         <div style={{ position: 'relative' }}>
           <div
+            className="pl-img-wrap"
             onClick={() => onOpenLightbox(allImages, 0)}
+            onContextMenu={e => e.preventDefault()}
             style={{
               width: '100%', paddingTop: '75%', position: 'relative',
-              background: '#f8fafc', cursor: 'zoom-in', overflow: 'hidden',
+              background: '#0f0c29', cursor: 'zoom-in', overflow: 'hidden',
               filter: soldOutFilter,
             }}
           >
-            <img src={allImages[0]} alt={product.name}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={allImages[0]} alt={product.name} draggable="false"
+              className="pl-protected-img"
+              onContextMenu={e => e.preventDefault()}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }}
+              onMouseEnter={e => { if (!isSoldOut) e.currentTarget.style.transform = 'scale(1.05)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+            />
             {allImages.length > 1 && (
               <div style={{
                 position: 'absolute', bottom: 8, right: 8,
                 background: 'rgba(0,0,0,0.55)', color: 'white',
                 borderRadius: 20, padding: '3px 9px', fontSize: 12, fontWeight: 600,
+                backdropFilter: 'blur(4px)',
               }}>
                 +{allImages.length - 1} more
               </div>
@@ -206,15 +215,16 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
           </div>
           {/* Thumbnail strip */}
           {allImages.length > 1 && (
-            <div style={{ display: 'flex', gap: 4, padding: '6px 8px', background: '#f8fafc', overflowX: 'auto', scrollbarWidth: 'none', filter: soldOutFilter }}>
+            <div style={{ display: 'flex', gap: 4, padding: '6px 8px', background: 'rgba(0,0,0,0.3)', overflowX: 'auto', scrollbarWidth: 'none', filter: soldOutFilter }}>
               {allImages.map((img, i) => (
                 <div key={i} onClick={() => onOpenLightbox(allImages, i)}
+                  onContextMenu={e => e.preventDefault()}
                   style={{
                     flexShrink: 0, width: 44, height: 44, borderRadius: 6,
                     overflow: 'hidden', cursor: 'pointer',
-                    border: '2px solid ' + (i === 0 ? color : '#e2e8f0'),
+                    border: '2px solid ' + (i === 0 ? color : 'rgba(255,255,255,0.15)'),
                   }}>
-                  <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={img} alt="" draggable="false" className="pl-protected-img" onContextMenu={e => e.preventDefault()} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
@@ -223,7 +233,7 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
       ) : (
         <div style={{
           width: '100%', paddingTop: '60%', position: 'relative',
-          background: isSoldOut ? '#f1f5f9' : `linear-gradient(135deg, ${color}18, ${color}08)`,
+          background: isSoldOut ? 'rgba(255,255,255,0.03)' : `linear-gradient(135deg, ${color}20, ${color}08)`,
           filter: soldOutFilter,
         }}>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>
@@ -236,18 +246,18 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
       <div style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
           <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3, color: isSoldOut ? '#94a3b8' : '#0f172a', marginBottom: 2 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3, color: isSoldOut ? 'rgba(255,255,255,0.35)' : '#fff', marginBottom: 2 }}>
               {product.name}
             </h3>
             {product.brand && (
-              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>{product.brand}</p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{product.brand}</p>
             )}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <p style={{ fontSize: 22, fontWeight: 900, color: isSoldOut ? '#94a3b8' : color, lineHeight: 1, textDecoration: isSoldOut ? 'line-through' : 'none' }}>
+            <p style={{ fontSize: 22, fontWeight: 900, color: isSoldOut ? 'rgba(255,255,255,0.3)' : color, lineHeight: 1, textDecoration: isSoldOut ? 'line-through' : 'none' }}>
               ${product.sell_price?.toFixed(2)}
             </p>
-            <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>per {product.unit || 'unit'}</p>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>per {product.unit || 'unit'}</p>
           </div>
         </div>
 
@@ -290,7 +300,7 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
         {hasDesc && (
           <>
             <p style={{
-              fontSize: 13, color: '#64748b', lineHeight: 1.6,
+              fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6,
               overflow: expanded ? 'visible' : 'hidden',
               display: expanded ? 'block' : '-webkit-box',
               WebkitLineClamp: expanded ? 'none' : 2,
@@ -331,7 +341,7 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
             <div style={{
               flex: 1, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: `1.5px solid ${color}`, borderLeft: 'none', borderRight: 'none',
-              fontWeight: 700, fontSize: 14, color: '#0f172a',
+              fontWeight: 700, fontSize: 14, color: '#fff',
             }}>{cartQty}</div>
             <button onClick={() => onSetQty(product, cartQty + 1)} style={{
               width: 34, height: 34, borderRadius: '0 8px 8px 0', border: '1.5px solid ' + color,
@@ -341,11 +351,11 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
         ) : (
           <button onClick={() => onSetQty(product, 1)} style={{
             width: '100%', marginTop: 8, padding: '9px 0', borderRadius: 8,
-            border: `1.5px solid ${color}`, background: 'white', color,
-            fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s',
+            border: `1.5px solid ${color}`, background: 'transparent', color,
+            fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s ease',
           }}
-            onMouseEnter={e => { e.currentTarget.style.background = color; e.currentTarget.style.color = 'white' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = color }}
+            onMouseEnter={e => { e.currentTarget.style.background = color; e.currentTarget.style.color = 'white'; e.currentTarget.style.transform = 'scale(1.02)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = color; e.currentTarget.style.transform = 'scale(1)' }}
           >
             + Add to Order
           </button>
@@ -531,27 +541,103 @@ export default function PriceListPage() {
       {/* Global styles for this page */}
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #f8fafc; }
-        .pl-page { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: #f8fafc; }
-        .pl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        body { background: #0a0a12; }
+        .pl-page {
+          min-height: 100vh;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          color: #0f172a;
+          background: linear-gradient(-45deg, #0f0c29, #1a1145, #24243e, #0f0c29);
+          background-size: 400% 400%;
+          animation: gradientShift 15s ease infinite;
+          position: relative;
+        }
+        .pl-page::before {
+          content: '';
+          position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background: radial-gradient(ellipse at 20% 50%, rgba(139,92,246,0.08) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 20%, rgba(236,72,153,0.06) 0%, transparent 50%),
+                      radial-gradient(ellipse at 50% 80%, rgba(99,102,241,0.05) 0%, transparent 50%);
+        }
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(24px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes floatBlob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -20px) scale(1.1); }
+          66% { transform: translate(-20px, 15px) scale(0.95); }
+        }
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.4); }
+          50% { box-shadow: 0 0 20px 8px rgba(139,92,246,0.15); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        @keyframes cartBounce {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.06); }
+        }
+        .pl-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 20px;
+        }
         @media (max-width: 500px) { .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
         @media (max-width: 320px) { .pl-grid { grid-template-columns: 1fr; } }
-        .pl-search:focus { outline: none; border-color: #6366f1 !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
-        .pl-pill { white-space: nowrap; border: none; cursor: pointer; transition: all 0.15s; }
-        .pl-pill:hover { opacity: 0.85; }
+        .pl-search:focus { outline: none; border-color: #6366f1 !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+        .pl-pill { white-space: nowrap; border: none; cursor: pointer; transition: all 0.2s ease; }
+        .pl-pill:hover { transform: translateY(-1px); }
+        .pl-pill:active { transform: scale(0.95); }
         .pl-scrollbar::-webkit-scrollbar { display: none; }
+        .pl-card-animate {
+          animation: fadeInUp 0.5s ease both;
+        }
+        .pl-cat-animate {
+          animation: slideInLeft 0.4s ease both;
+        }
+        /* Image protection */
+        .pl-protected-img {
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-touch-callout: none;
+          pointer-events: none;
+        }
+        .pl-img-wrap {
+          position: relative;
+          user-select: none;
+          -webkit-user-select: none;
+        }
+        .pl-img-wrap::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          background: transparent;
+        }
       `}</style>
 
-      <div className="pl-page">
+      <div className="pl-page" style={{ position: 'relative', zIndex: 1 }}>
         {/* ── HERO ── */}
         <div style={{
           background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 70%, #5b21b6 100%)',
           padding: 'clamp(36px, 6vw, 72px) clamp(16px, 5vw, 80px) clamp(28px, 4vw, 56px)',
           position: 'relative', overflow: 'hidden',
         }}>
-          {/* Background blobs */}
-          <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(139,92,246,0.25)', filter: 'blur(40px)' }} />
-          <div style={{ position: 'absolute', bottom: -40, left: '30%', width: 200, height: 200, borderRadius: '50%', background: 'rgba(236,72,153,0.2)', filter: 'blur(50px)' }} />
+          {/* Animated floating blobs */}
+          <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(139,92,246,0.25)', filter: 'blur(40px)', animation: 'floatBlob 8s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', bottom: -40, left: '30%', width: 200, height: 200, borderRadius: '50%', background: 'rgba(236,72,153,0.2)', filter: 'blur(50px)', animation: 'floatBlob 10s ease-in-out infinite reverse' }} />
+          <div style={{ position: 'absolute', top: '40%', left: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', filter: 'blur(35px)', animation: 'floatBlob 12s ease-in-out infinite 2s' }} />
 
           <div style={{ position: 'relative', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
             {profile && (
@@ -561,15 +647,18 @@ export default function PriceListPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 28, fontWeight: 700, color: 'white',
                 boxShadow: '0 0 0 4px rgba(255,255,255,0.15)',
+                animation: 'pulseGlow 3s ease-in-out infinite',
               }}>
                 {displayName[0]?.toUpperCase() || '?'}
               </div>
             )}
             <h1 style={{
               fontSize: 'clamp(24px, 4vw, 42px)', fontWeight: 900, lineHeight: 1.15,
-              background: 'linear-gradient(135deg, #fff 0%, #e0d7ff 50%, #f9a8d4 100%)',
+              background: 'linear-gradient(90deg, #fff 0%, #e0d7ff 25%, #f9a8d4 50%, #e0d7ff 75%, #fff 100%)',
+              backgroundSize: '200% auto',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               marginBottom: 8, letterSpacing: '-0.5px',
+              animation: 'shimmer 4s linear infinite',
             }}>
               {displayName ? `${displayName}'s Products` : 'Product Catalogue'}
             </h1>
@@ -584,19 +673,20 @@ export default function PriceListPage() {
         </div>
 
         {/* ── STICKY SEARCH + FILTERS ── */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(248,250,252,0.95)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #e2e8f0', padding: 'clamp(10px,2vw,16px) clamp(12px,4vw,40px)' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(15,12,41,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: 'clamp(10px,2vw,16px) clamp(12px,4vw,40px)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ position: 'relative', marginBottom: categories.length > 2 ? 10 : 0 }}>
-              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: '#94a3b8', pointerEvents: 'none' }}>🔍</span>
+              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>🔍</span>
               <input
                 className="pl-search"
                 type="search" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search products..."
                 style={{
                   width: '100%', padding: '11px 14px 11px 40px',
-                  borderRadius: 12, border: '1.5px solid #e2e8f0',
-                  background: 'white', fontSize: 15, color: '#0f172a',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                  borderRadius: 12, border: '1.5px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.06)', fontSize: 15, color: '#fff',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                  transition: 'all 0.2s ease',
                 }}
               />
             </div>
@@ -610,10 +700,10 @@ export default function PriceListPage() {
                     <button key={cat} className="pl-pill" onClick={() => setActiveCat(cat)} style={{
                       padding: '6px 14px', borderRadius: 20, fontSize: 13,
                       fontWeight: active ? 700 : 500,
-                      background: active ? color : 'white',
-                      color: active ? 'white' : '#475569',
-                      boxShadow: active ? `0 2px 8px ${color}40` : '0 1px 3px rgba(0,0,0,0.08)',
-                      border: active ? 'none' : '1px solid #e2e8f0',
+                      background: active ? color : 'rgba(255,255,255,0.08)',
+                      color: active ? 'white' : 'rgba(255,255,255,0.6)',
+                      boxShadow: active ? `0 2px 12px ${color}50` : 'none',
+                      border: active ? 'none' : '1px solid rgba(255,255,255,0.1)',
                     }}>
                       {isAll ? 'All' : `${getCat(cat).icon} ${cat}`}
                     </button>
@@ -625,47 +715,49 @@ export default function PriceListPage() {
         </div>
 
         {/* ── CONTENT ── */}
-        <main style={{ maxWidth: 1100, margin: '0 auto', padding: 'clamp(16px,3vw,40px) clamp(12px,4vw,40px) 80px' }}>
+        <main style={{ maxWidth: 1100, margin: '0 auto', padding: 'clamp(16px,3vw,40px) clamp(12px,4vw,40px) 80px', position: 'relative', zIndex: 1 }}>
           {loading && (
-            <div style={{ textAlign: 'center', padding: 80, color: '#94a3b8' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>✨</div>
+            <div style={{ textAlign: 'center', padding: 80, color: 'rgba(255,255,255,0.6)' }}>
+              <div style={{ fontSize: 40, marginBottom: 12, animation: 'pulseGlow 2s ease-in-out infinite' }}>✨</div>
               <p>Loading products...</p>
             </div>
           )}
 
           {!loading && filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 80, color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: 80, color: 'rgba(255,255,255,0.5)' }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>😕</div>
               <p>{search ? 'No products match your search' : 'No products listed yet'}</p>
             </div>
           )}
 
-          {!loading && Object.entries(grouped).map(([cat, items]) => {
+          {!loading && Object.entries(grouped).map(([cat, items], catIdx) => {
             const { color, icon } = getCat(cat)
             return (
               <section key={cat} style={{ marginBottom: 48 }}>
                 {/* Category heading */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <div className="pl-cat-animate" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, animationDelay: `${catIdx * 0.1}s` }}>
                   <div style={{
-                    width: 36, height: 36, borderRadius: 10, background: color + '18',
+                    width: 36, height: 36, borderRadius: 10, background: color + '25',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
+                    boxShadow: `0 0 12px ${color}20`,
                   }}>{icon}</div>
                   <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{cat}</h2>
-                    <p style={{ fontSize: 12, color: '#94a3b8' }}>{items.length} product{items.length !== 1 ? 's' : ''}</p>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{cat}</h2>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{items.length} product{items.length !== 1 ? 's' : ''}</p>
                   </div>
-                  <div style={{ flex: 1, height: 1, background: '#f1f5f9', marginLeft: 8 }} />
+                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)', marginLeft: 8 }} />
                 </div>
 
                 <div className="pl-grid">
-                  {items.map(product => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onOpenLightbox={openLightbox}
-                      cartQty={cart[product.id]?.qty || 0}
-                      onSetQty={setQty}
-                    />
+                  {items.map((product, pIdx) => (
+                    <div key={product.id} className="pl-card-animate" style={{ animationDelay: `${catIdx * 0.1 + pIdx * 0.06}s` }}>
+                      <ProductCard
+                        product={product}
+                        onOpenLightbox={openLightbox}
+                        cartQty={cart[product.id]?.qty || 0}
+                        onSetQty={setQty}
+                      />
+                    </div>
                   ))}
                 </div>
               </section>
@@ -675,10 +767,10 @@ export default function PriceListPage() {
 
         {/* ── FOOTER ── */}
         <footer style={{
-          borderTop: '1px solid #e2e8f0', padding: 'clamp(20px,3vw,32px) clamp(12px,4vw,40px)',
-          textAlign: 'center', background: 'white',
+          borderTop: '1px solid rgba(255,255,255,0.08)', padding: 'clamp(20px,3vw,32px) clamp(12px,4vw,40px)',
+          textAlign: 'center', background: 'rgba(0,0,0,0.2)', position: 'relative', zIndex: 1,
         }}>
-          <p style={{ fontSize: 13, color: '#94a3b8' }}>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
             Tap any product image to enlarge · Prices subject to change
           </p>
         </footer>
@@ -696,6 +788,7 @@ export default function PriceListPage() {
             display: 'flex', alignItems: 'center', gap: 10,
             boxShadow: '0 8px 28px rgba(99,102,241,0.45)',
             fontSize: 15, fontWeight: 700,
+            animation: 'cartBounce 2s ease-in-out infinite',
           }}
         >
           <span style={{
