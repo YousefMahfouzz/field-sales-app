@@ -146,18 +146,21 @@ export default function MapPage() {
     visible.forEach((customer) => {
       if (!customer.lat || !customer.lng) return
       const { color } = getCustomerColor(customer)
+      const hasSales = customer.sale_amount > 0
       const marker = new window.google.maps.Marker({
         position: { lat: customer.lat, lng: customer.lng },
         map: mapInstance.current,
         title: customer.full_name,
         icon: {
           path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 10,
+          scale: hasSales ? 12 : 10,
           fillColor: color,
           fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
+          strokeColor: hasSales ? '#f0d078' : '#ffffff',
+          strokeWeight: hasSales ? 3 : 2,
         },
+        label: hasSales ? { text: '💲', fontSize: '12px' } : undefined,
+        zIndex: hasSales ? 10 : 5,
       })
       marker.addListener('click', () => { setSelectedPoi(null); setSelectedCustomer(customer) })
       markersRef.current.push(marker)

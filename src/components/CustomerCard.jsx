@@ -49,7 +49,10 @@ export default function CustomerCard({ customer, onQuickAction, onQuickSale }) {
     >
       <div className="flex justify-between items-center" style={{ marginBottom: 6 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ fontSize: 15, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customer.full_name}</h3>
+          <h3 style={{ fontSize: 15, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {customer.sale_amount > 0 && <span style={{ marginRight: 4 }}>💲</span>}
+            {customer.full_name}
+          </h3>
           {customer.business_name && (
             <p className="text-muted" style={{ fontSize: 13 }}>{customer.business_name}</p>
           )}
