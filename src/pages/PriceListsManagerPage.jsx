@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useProducts } from '../hooks/useProducts'
+import { printOrderSheet } from '../lib/printOrderSheet'
 
 const NICHE_COLORS = {
   'Beauty Supply': '#ec4899',
@@ -141,6 +142,7 @@ function PriceListForm({ onSave, onCancel, existing }) {
 // ── Price list detail: manage products ────────────────────────────
 function PriceListDetail({ list, onBack }) {
   const { products } = useProducts()
+  const { profile } = useAuth()
   const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -212,6 +214,16 @@ function PriceListDetail({ list, onBack }) {
           <p style={{ fontSize:11, color:'var(--text-muted)' }}>{list.niche} · {items.length} products</p>
         </div>
         <button onClick={() => window.open(`/list/${list.slug}`, '_blank')} style={{ fontSize:12, color:'var(--blue)', fontWeight:700, background:'none', border:'none', cursor:'pointer' }}>Preview ↗</button>
+        <button onClick={() => {
+          // Build product list from this price list, applying custom prices
+          const listProducts = addedProducts.map(({ item, product }) => ({
+            ...product,
+            sell_price: item.custom_price ?? product.sell_price,
+            price_min: item.custom_price_min ?? product.price_min,
+            price_max: item.custom_price_max ?? product.price_max,
+          }))
+          printOrderSheet(listProducts, profile, { listName: list.name, listNiche: list.niche })
+        }} style={{ fontSize:12, color:'#b8860b', fontWeight:700, background:'none', border:'none', cursor:'pointer' }}>🖨️ Print</button>
         <button onClick={() => setEditing(true)} style={{ fontSize:12, color:'var(--text-muted)', background:'none', border:'none', cursor:'pointer' }}>Edit ✏️</button>
       </div>
 
