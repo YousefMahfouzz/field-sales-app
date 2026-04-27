@@ -20,6 +20,7 @@ export default function NicheLandingPage() {
   const [orderSubmitted, setOrderSubmitted] = useState(false)
   const [confirmedTotal, setConfirmedTotal] = useState(0)
   const [rewardChoices, setRewardChoices] = useState({}) // { rewardIdx: optionIdx }
+  const [showRewardsPopup, setShowRewardsPopup] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -173,6 +174,8 @@ export default function NicheLandingPage() {
         @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(185,90,58,0.6); } 70% { box-shadow: 0 0 0 12px rgba(185,90,58,0); } 100% { box-shadow: 0 0 0 0 rgba(185,90,58,0); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
         @keyframes cartBounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .niche-card { transition: all 0.3s ease; }
         .niche-card:hover { transform: translateY(-4px); border-color: ${color}55 !important; }
         .niche-card img { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; pointer-events: none; }
@@ -272,6 +275,140 @@ export default function NicheLandingPage() {
           </div>
         ))}
       </div>
+
+      {/* ── REWARDS PEEK BUTTON (left side, always visible if rewards exist) ── */}
+      {rewards.length > 0 && !showCart && !showOrderForm && !orderSubmitted && (
+        <button
+          onClick={() => setShowRewardsPopup(true)}
+          aria-label="Show rewards"
+          style={{
+            position: 'fixed', bottom: 28, left: 24, zIndex: 200,
+            background: `linear-gradient(135deg, ${color}, ${color}dd)`,
+            color: '#0e0b08', border: 'none', borderRadius: '50%',
+            width: 56, height: 56, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: `0 8px 28px ${color}66`,
+            fontSize: 24,
+            transition: 'transform 0.2s ease',
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          🎁
+          <span style={{
+            position: 'absolute', top: -2, right: -2,
+            background: '#0e0b08', color: color,
+            borderRadius: 10, fontSize: 10, fontWeight: 800,
+            padding: '2px 6px', minWidth: 18, lineHeight: 1,
+            border: `1.5px solid ${color}`,
+          }}>{rewards.length}</span>
+        </button>
+      )}
+
+      {/* ── REWARDS POPUP ── */}
+      {showRewardsPopup && (
+        <div
+          onClick={() => setShowRewardsPopup(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 400,
+            background: 'rgba(14,11,8,0.7)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start',
+            padding: 24,
+            animation: 'fadeIn 0.2s ease',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(135deg, #14100c, #1a1500)',
+              border: `1.5px solid ${color}55`,
+              borderRadius: 20,
+              padding: '24px 24px 20px',
+              maxWidth: 420, width: '100%',
+              maxHeight: '85vh', overflowY: 'auto',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              marginBottom: 88,
+              animation: 'slideUp 0.3s cubic-bezier(.2,.7,.2,1)',
+              color: '#f4ede0',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div>
+                <p style={{ fontSize: 11, color: color, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6, fontFamily: 'JetBrains Mono, monospace' }}>
+                  Spend & Save
+                </p>
+                <h2 style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
+                  Free gifts <span style={{ color: color, fontStyle: 'italic', fontFamily: 'Fraunces, serif', fontWeight: 300 }}>with your order</span>
+                </h2>
+              </div>
+              <button onClick={() => setShowRewardsPopup(false)} style={{
+                background: 'rgba(255,255,255,0.06)', border: 'none',
+                color: 'rgba(255,255,255,0.6)', width: 32, height: 32,
+                borderRadius: '50%', fontSize: 18, cursor: 'pointer',
+                flexShrink: 0,
+              }}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {rewards.map((r, idx) => {
+                const isEarned = cartTotal >= r.threshold
+                const distance = r.threshold - cartTotal
+                return (
+                  <div key={idx} style={{
+                    background: isEarned ? 'rgba(134,239,172,0.08)' : 'rgba(255,255,255,0.03)',
+                    border: `1.5px solid ${isEarned ? 'rgba(134,239,172,0.4)' : `${color}33`}`,
+                    borderRadius: 12, padding: '14px 16px',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, color: isEarned ? '#86efac' : color, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                        {isEarned ? '✓ Earned' : `Spend $${r.threshold}+`}
+                      </span>
+                      {r.value > 0 && (
+                        <span style={{ fontSize: 11, color: color, fontWeight: 600 }}>
+                          ${r.value.toFixed(2)} value
+                        </span>
+                      )}
+                    </div>
+                    {r.options && r.options.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                        {r.options.map((opt, i) => (
+                          <div key={i} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '8px 12px', background: 'rgba(0,0,0,0.3)',
+                            borderRadius: 8, border: `1px solid ${color}22`,
+                          }}>
+                            <span style={{ color: color, fontSize: 18 }}>🎁</span>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', flex: 1 }}>{opt.name}</span>
+                          </div>
+                        ))}
+                        {r.options.length > 1 && (
+                          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 4 }}>
+                            👆 Customer picks one
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+                        🎁 {r.name || 'Free gift'}
+                      </p>
+                    )}
+                    {!isEarned && cartTotal > 0 && (
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>
+                        ${distance.toFixed(2)} more to unlock
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 16 }}>
+              Tap anywhere to close
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Reward progress pill (above cart FAB) */}
       {cartCount > 0 && !showCart && !showOrderForm && !orderSubmitted && rewards.length > 0 && (

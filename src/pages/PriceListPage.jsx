@@ -424,6 +424,7 @@ export default function PriceListPage() {
   const [confirmedTotal, setConfirmedTotal] = useState(0)
   const [rewards, setRewards] = useState([])
   const [rewardChoices, setRewardChoices] = useState({}) // { rewardIdx: optionIdx } – which option customer picked when tier has 2+
+  const [showRewardsPopup, setShowRewardsPopup] = useState(false)
 
   // Fetch logo
   useEffect(() => {
@@ -666,6 +667,14 @@ export default function PriceListPage() {
           from { opacity: 0; transform: translateY(24px) scale(0.97); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @keyframes slideInLeft {
           from { opacity: 0; transform: translateX(-20px); }
           to { opacity: 1; transform: translateX(0); }
@@ -904,7 +913,142 @@ export default function PriceListPage() {
         </footer>
       </div>
 
-      {/* ── REWARD PROGRESS PILL (above FAB) ── */}
+      {/* ── REWARDS PEEK BUTTON (left side, always visible if rewards exist) ── */}
+      {rewards.length > 0 && !showCart && !showOrderForm && !orderSubmitted && (
+        <button
+          onClick={() => setShowRewardsPopup(true)}
+          aria-label="Show rewards"
+          style={{
+            position: 'fixed', bottom: 28, left: 24, zIndex: 200,
+            background: 'linear-gradient(135deg, #d4a843, #b8860b)',
+            color: '#0a0a0a', border: 'none', borderRadius: '50%',
+            width: 56, height: 56, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 8px 28px rgba(212,168,67,0.45)',
+            fontSize: 24,
+            transition: 'transform 0.2s ease',
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          🎁
+          <span style={{
+            position: 'absolute', top: -2, right: -2,
+            background: '#0a0a0a', color: '#f0d078',
+            borderRadius: 10, fontSize: 10, fontWeight: 800,
+            padding: '2px 6px', minWidth: 18, lineHeight: 1,
+            border: '1.5px solid #f0d078',
+          }}>{rewards.length}</span>
+        </button>
+      )}
+
+      {/* ── REWARDS POPUP (closes on click outside) ── */}
+      {showRewardsPopup && (
+        <div
+          onClick={() => setShowRewardsPopup(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 400,
+            background: 'rgba(10,10,10,0.7)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start',
+            padding: 24,
+            animation: 'fadeIn 0.2s ease',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(135deg, #14100c, #1a1500)',
+              border: '1.5px solid rgba(212,168,67,0.35)',
+              borderRadius: 20,
+              padding: '24px 24px 20px',
+              maxWidth: 420, width: '100%',
+              maxHeight: '85vh', overflowY: 'auto',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              marginBottom: 88,
+              animation: 'slideUp 0.3s cubic-bezier(.2,.7,.2,1)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div>
+                <p style={{ fontSize: 11, color: '#f0d078', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 }}>
+                  Spend & Save
+                </p>
+                <h2 style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
+                  Free gifts <span style={{ color: '#f0d078', fontStyle: 'italic', fontFamily: 'Fraunces, serif', fontWeight: 300 }}>with your order</span>
+                </h2>
+              </div>
+              <button onClick={() => setShowRewardsPopup(false)} style={{
+                background: 'rgba(255,255,255,0.06)', border: 'none',
+                color: 'rgba(255,255,255,0.6)', width: 32, height: 32,
+                borderRadius: '50%', fontSize: 18, cursor: 'pointer',
+                flexShrink: 0,
+              }}>✕</button>
+            </div>
+
+            {/* Tier cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {rewards.map((r, idx) => {
+                const isEarned = cartTotal >= r.threshold
+                const distance = r.threshold - cartTotal
+                return (
+                  <div key={idx} style={{
+                    background: isEarned ? 'rgba(134,239,172,0.08)' : 'rgba(255,255,255,0.03)',
+                    border: `1.5px solid ${isEarned ? 'rgba(134,239,172,0.4)' : 'rgba(212,168,67,0.2)'}`,
+                    borderRadius: 12, padding: '14px 16px',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, color: isEarned ? '#86efac' : '#f0d078', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase' }}>
+                        {isEarned ? '✓ Earned' : `Spend $${r.threshold}+`}
+                      </span>
+                      {r.value > 0 && (
+                        <span style={{ fontSize: 11, color: '#f0d078', fontWeight: 600 }}>
+                          ${r.value.toFixed(2)} value
+                        </span>
+                      )}
+                    </div>
+                    {/* Show product options */}
+                    {r.options && r.options.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                        {r.options.map((opt, i) => (
+                          <div key={i} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '8px 12px', background: 'rgba(0,0,0,0.3)',
+                            borderRadius: 8, border: '1px solid rgba(212,168,67,0.15)',
+                          }}>
+                            <span style={{ color: '#d4a843', fontSize: 18 }}>🎁</span>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', flex: 1 }}>{opt.name}</span>
+                          </div>
+                        ))}
+                        {r.options.length > 1 && (
+                          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 4 }}>
+                            👆 Customer picks one
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+                        🎁 {r.name || 'Free gift'}
+                      </p>
+                    )}
+                    {!isEarned && cartTotal > 0 && (
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>
+                        ${distance.toFixed(2)} more to unlock
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 16, lineHeight: 1.5 }}>
+              Tap anywhere to close
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── REWARD PROGRESS PILL (above FAB, only when cart has items) ── */}
       {cartCount > 0 && !showCart && !showOrderForm && !orderSubmitted && rewards.length > 0 && (
         <div style={{
           position: 'fixed', bottom: 96, right: 24, zIndex: 199,
