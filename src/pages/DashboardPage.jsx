@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import Icon from '../components/Icon'
 import SalesLogModal from '../components/SalesLogModal'
+import { parseLocalDate } from '../lib/dateUtils'
 
 // ── Reschedule Modal ──────────────────────────────────────────────
 function RescheduleModal({ overdue, onClose, onDone}) {
@@ -122,7 +123,7 @@ function RescheduleModal({ overdue, onClose, onDone}) {
           <div style={{ maxHeight: 280, overflowY: 'auto', marginBottom: 16 }}>
             {overdue.map(c => {
               const isSelected = selected.has(c.id)
-              const daysPast = Math.floor((new Date(today) - new Date(c.next_visit_date)) / (1000 * 60 * 60 * 24))
+              const daysPast = Math.floor((parseLocalDate(today) - parseLocalDate(c.next_visit_date)) / (1000 * 60 * 60 * 24))
               return (
                 <div key={c.id}
                   onClick={() => toggle(c.id)}

@@ -9,6 +9,7 @@ import { loadGoogleMaps, loadPlaces } from '../lib/mapsLoader'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import ProductSelector from '../components/ProductSelector'
+import { addDaysFromToday } from '../lib/dateUtils'
 
 // ─────────────────────────────────────────────
 // EDIT MODE — regular form, all fields visible
@@ -462,7 +463,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
       let next_visit_date = null
       if (callbackDate) next_visit_date = callbackDate
       else if (saleOutcome !== 'avoid') {
-        const d = new Date(); d.setDate(d.getDate()+30); next_visit_date = d.toISOString().split('T')[0]
+        next_visit_date = addDaysFromToday(30)
       }
       const payload = {
         business_name: form.business_name,

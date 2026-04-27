@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
 import { getCustomerColor } from '../lib/customerAvailability'
+import { parseLocalDate } from '../lib/dateUtils'
 
 const STATUS_LABELS = {
   active: 'Active',
@@ -36,9 +37,9 @@ export function AreaBadge({ area }) {
 
 export default function CustomerCard({ customer, onQuickAction, onQuickSale }) {
   const navigate = useNavigate()
-  const isOverdue = customer.next_visit_date && new Date(customer.next_visit_date) < new Date()
+  const isOverdue = customer.next_visit_date && parseLocalDate(customer.next_visit_date) < new Date(new Date().setHours(0,0,0,0))
   const isDueToday = customer.next_visit_date &&
-    new Date(customer.next_visit_date).toDateString() === new Date().toDateString()
+    parseLocalDate(customer.next_visit_date).toDateString() === new Date().toDateString()
 
   const { color: smartColor, label: availLabel } = getCustomerColor(customer)
   return (

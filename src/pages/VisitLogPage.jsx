@@ -9,6 +9,7 @@ import { showToast } from '../components/Toast'
 import InvoiceModal from '../components/InvoiceModal'
 import ProductSelector from '../components/ProductSelector'
 import { buildCalendarUrl } from '../lib/calendarUtils'
+import { addDaysFromToday } from '../lib/dateUtils'
 
 export default function VisitLogPage() {
   const { customerId } = useParams()
@@ -147,10 +148,8 @@ export default function VisitLogPage() {
       if (callbackDate) {
         customerUpdates.next_visit_date = callbackDate
       } else if (hasSale) {
-        // Sale: always schedule 30 days out automatically
-        const next = new Date()
-        next.setDate(next.getDate() + 30)
-        customerUpdates.next_visit_date = next.toISOString().split('T')[0]
+        // Sale: always schedule 30 days out automatically (local time, not UTC)
+        customerUpdates.next_visit_date = addDaysFromToday(30)
       }
       // No sale + no callback date: leave next_visit_date as-is (keep whatever was manually set)
       await updateCustomer(customerId, customerUpdates)
@@ -263,10 +262,7 @@ export default function VisitLogPage() {
       {/* Google Calendar reminder – shows when there's a next visit date */}
       {(() => {
         // Determine the next visit date: explicit callback date, or +30 days if sale
-        const nextDate = callbackDate || (saleItems.length > 0 ? (() => {
-          const d = new Date(); d.setDate(d.getDate() + 30)
-          return d.toISOString().split('T')[0]
-        })() : null)
+        const nextDate = callbackDate || (saleItems.length > 0 ? addDaysFromToday(30) : null)
         if (!nextDate) return null
         const calUrl = buildCalendarUrl(nextDate, customer?.business_name || customer?.full_name || 'Customer', {
           notes: notes || callbackNote || (saleItems.length > 0 ? `Last sale: $${totalSale.toFixed(2)}` : ''),
