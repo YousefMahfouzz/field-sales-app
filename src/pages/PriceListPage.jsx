@@ -408,15 +408,33 @@ export default function PriceListPage() {
   const [orderForm, setOrderForm] = useState({ name: '', phone: '', address: '', notes: '' })
   const [orderLoading, setOrderLoading] = useState(false)
   const [confirmedTotal, setConfirmedTotal] = useState(0)
+  const [rewards, setRewards] = useState([])
 
   // Fetch logo
   useEffect(() => {
     supabase.from('app_settings').select('value').eq('key', 'logo_url').single()
       .then(({ data }) => { if (data?.value) setLogoUrl(data.value) })
+    supabase.from('app_settings').select('value').eq('key', 'rewards').single()
+      .then(({ data }) => {
+        if (data?.value) {
+          try {
+            const parsed = JSON.parse(data.value)
+              .filter(r => r.name && r.threshold > 0)
+              .sort((a, b) => a.threshold - b.threshold)
+            setRewards(parsed)
+          } catch {}
+        }
+      })
   }, []) // snapshot before cart clears
 
   const cartCount = Object.values(cart).reduce((s, i) => s + i.qty, 0)
   const cartTotal = Object.values(cart).reduce((s, i) => s + i.qty * i.product.sell_price, 0)
+
+  // Reward progress based on cart total
+  const earnedRewards = rewards.filter(r => cartTotal >= r.threshold)
+  const nextReward = rewards.find(r => cartTotal < r.threshold)
+  const amountToNextReward = nextReward ? nextReward.threshold - cartTotal : 0
+  const rewardProgress = nextReward ? Math.min(100, (cartTotal / nextReward.threshold) * 100) : 100
 
   const setQty = (product, qty) => {
     if (qty <= 0) {
@@ -818,6 +836,48 @@ export default function PriceListPage() {
         </footer>
       </div>
 
+      {/* ── REWARD PROGRESS PILL (above FAB) ── */}
+      {cartCount > 0 && !showCart && !showOrderForm && !orderSubmitted && rewards.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 96, right: 24, zIndex: 199,
+          maxWidth: 320,
+          background: 'linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,21,0,0.95))',
+          border: '1px solid rgba(212,168,67,0.3)', borderRadius: 16,
+          padding: '12px 16px', boxShadow: '0 8px 28px rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(12px)',
+          animation: 'fadeUp 0.4s ease both',
+        }}>
+          {nextReward ? (
+            <>
+              <p style={{ fontSize: 11, color: '#f0d078', fontWeight: 700, marginBottom: 4, letterSpacing: 0.3 }}>
+                🎁 ${amountToNextReward.toFixed(2)} away from
+              </p>
+              <p style={{ fontSize: 13, color: '#fff', fontWeight: 800, marginBottom: 8, lineHeight: 1.3 }}>
+                {nextReward.name}
+                {nextReward.value > 0 && <span style={{ color: '#d4a843', fontSize: 11, fontWeight: 600 }}> (${nextReward.value.toFixed(2)} value)</span>}
+              </p>
+              <div style={{ height: 6, borderRadius: 6, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                <div style={{ width: `${rewardProgress}%`, height: '100%', background: 'linear-gradient(90deg, #d4a843, #f0d078)', transition: 'width 0.3s ease', borderRadius: 6 }} />
+              </div>
+              {earnedRewards.length > 0 && (
+                <p style={{ fontSize: 10, color: '#86efac', marginTop: 6, fontWeight: 600 }}>
+                  ✅ Earned: {earnedRewards.map(r => r.name).join(', ')}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: 11, color: '#86efac', fontWeight: 700, marginBottom: 4 }}>
+                🎉 All rewards unlocked!
+              </p>
+              <p style={{ fontSize: 12, color: '#fff', lineHeight: 1.4 }}>
+                You've earned: {earnedRewards.map(r => r.name).join(', ')}
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
       {/* ── CART FAB ── */}
       {cartCount > 0 && !showCart && !showOrderForm && !orderSubmitted && (
         <button
@@ -928,6 +988,47 @@ export default function PriceListPage() {
                 <span style={{ fontSize: 15, color: '#64748b' }}>Total ({cartCount} item{cartCount !== 1 ? 's' : ''})</span>
                 <span style={{ fontSize: 22, fontWeight: 900, color: '#6366f1' }}>${cartTotal.toFixed(2)}</span>
               </div>
+
+              {/* Rewards progress */}
+              {rewards.length > 0 && (
+                <div style={{
+                  padding: '14px 16px', borderRadius: 12, marginBottom: 16,
+                  background: 'linear-gradient(135deg, #fffbeb, #fef3c7)',
+                  border: '1.5px solid #fde68a',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <span style={{ fontSize: 18 }}>🎁</span>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>
+                      {nextReward
+                        ? `$${amountToNextReward.toFixed(2)} away from ${nextReward.name}`
+                        : `🎉 You've unlocked all rewards!`
+                      }
+                    </p>
+                  </div>
+                  {nextReward && (
+                    <>
+                      <div style={{ height: 8, borderRadius: 8, background: 'rgba(146,64,14,0.12)', overflow: 'hidden', marginBottom: 8 }}>
+                        <div style={{ width: `${rewardProgress}%`, height: '100%', background: 'linear-gradient(90deg, #d4a843, #b8860b)', transition: 'width 0.3s ease', borderRadius: 8 }} />
+                      </div>
+                      {nextReward.value > 0 && (
+                        <p style={{ fontSize: 11, color: '#78350f', fontWeight: 600 }}>
+                          Free gift value: ${nextReward.value.toFixed(2)}
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {earnedRewards.length > 0 && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed rgba(146,64,14,0.2)' }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>✅ Earned</p>
+                      {earnedRewards.map((r, i) => (
+                        <p key={i} style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
+                          🎁 {r.name}{r.value > 0 ? ` ($${r.value.toFixed(2)} value)` : ''}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Discount note */}
               <div style={{

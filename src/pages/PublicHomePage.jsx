@@ -12,6 +12,7 @@ export default function PublicHomePage() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [showInquiry, setShowInquiry] = useState(false)
   const [emailCopied, setEmailCopied] = useState(false)
+  const [rewards, setRewards] = useState([])
 
   useEffect(() => {
     document.body.classList.add('pricelist-page')
@@ -28,6 +29,13 @@ export default function PublicHomePage() {
       })
     supabase.from('app_settings').select('value').eq('key', 'logo_url').single()
       .then(({ data }) => { if (data?.value) setLogo(data.value) })
+    supabase.from('app_settings').select('value').eq('key', 'rewards').single()
+      .then(({ data }) => {
+        if (data?.value) {
+          try { setRewards(JSON.parse(data.value).filter(r => r.name && r.threshold > 0).sort((a,b) => a.threshold - b.threshold)) }
+          catch {}
+        }
+      })
   }, [])
 
   const copyEmail = () => {
@@ -296,6 +304,62 @@ export default function PublicHomePage() {
           })
         })()}
       </div>
+
+      {/* ── REWARDS / TIER GIFTS ── */}
+      {rewards.length > 0 && (
+        <div style={{ position:'relative', zIndex:1, padding:'80px clamp(16px,5vw,80px)', background:'rgba(212,168,67,0.03)', borderTop:'1px solid rgba(212,168,67,0.1)', borderBottom:'1px solid rgba(212,168,67,0.1)' }}>
+          <div style={{ maxWidth: 1100, margin:'0 auto', textAlign:'center' }}>
+            <div style={{ display:'inline-block', padding:'7px 18px', borderRadius:20, background:'rgba(212,168,67,0.12)', border:'1px solid rgba(212,168,67,0.3)', marginBottom:20, fontSize:12, color:GOLD_LIGHT, fontWeight:700, letterSpacing:'1.5px' }}>
+              🎁 SPEND & SAVE
+            </div>
+            <h2 style={{ fontSize:'clamp(28px,4vw,44px)', fontWeight:900, marginBottom:14, color:'white', letterSpacing:'-1px' }}>
+              Bigger Orders, Bigger Bonuses
+            </h2>
+            <p style={{ color:'rgba(255,255,255,0.5)', fontSize:16, marginBottom:48, maxWidth:560, margin:'0 auto 48px' }}>
+              Get free items added to your order based on how much you buy. The more you stock, the more you save.
+            </p>
+
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(260px,100%), 1fr))', gap:'clamp(14px,2vw,24px)' }}>
+              {rewards.map((r, i) => (
+                <div key={i} style={{
+                  background:'rgba(255,255,255,0.04)', border:'1px solid rgba(212,168,67,0.18)',
+                  borderRadius:20, padding:'28px 24px 24px', textAlign:'center',
+                  position:'relative', overflow:'hidden',
+                  animation:`fadeUp 0.5s ease ${i * 0.1}s both`,
+                }}>
+                  <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:`rgba(212,168,67,${0.05 + i*0.02})`, filter:'blur(30px)' }} />
+                  <div style={{ position:'relative' }}>
+                    <div style={{ fontSize:36, marginBottom:12 }}>
+                      {i === 0 ? '🥉' : i === 1 ? '🥈' : i === 2 ? '🥇' : '👑'}
+                    </div>
+                    <p style={{ fontSize:11, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'1.5px', fontWeight:700, marginBottom:6 }}>
+                      Spend ${r.threshold}+
+                    </p>
+                    <h3 style={{ fontSize:'clamp(18px,2.5vw,22px)', fontWeight:900, color:GOLD_LIGHT, marginBottom:10, lineHeight:1.3 }}>
+                      {r.name}
+                    </h3>
+                    {r.image_url && (
+                      <div className="kanz-img-wrap" style={{ width:'100%', height:140, marginBottom:14, borderRadius:12, overflow:'hidden', background:'rgba(0,0,0,0.3)' }}>
+                        <img src={r.image_url} alt={r.name} draggable="false" onContextMenu={e => e.preventDefault()} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      </div>
+                    )}
+                    {r.description && (
+                      <p style={{ fontSize:13, color:'rgba(255,255,255,0.55)', lineHeight:1.6, marginBottom:r.value ? 12 : 0 }}>
+                        {r.description}
+                      </p>
+                    )}
+                    {r.value > 0 && (
+                      <div style={{ display:'inline-block', padding:'4px 12px', borderRadius:12, background:'rgba(212,168,67,0.1)', border:'1px solid rgba(212,168,67,0.25)', fontSize:11, color:GOLD_LIGHT, fontWeight:700 }}>
+                        Value: ${r.value.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contact CTA */}
       <div id="contact" style={{ position: 'relative', zIndex: 1, borderTop: '1px solid rgba(212,168,67,0.1)', padding: '60px 24px 48px', textAlign: 'center', background: 'rgba(0,0,0,0.3)' }}>

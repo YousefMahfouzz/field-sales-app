@@ -14,7 +14,51 @@ export default function AdminHomepageManager() {
   const [toast, setToast] = useState('')
   const [search, setSearch] = useState('')
 
+  // ── Rewards / Tier gifts ──
+  // Each: { threshold (number), name, description, image_url }
+  const [rewards, setRewards] = useState([])
+  const [savingRewards, setSavingRewards] = useState(false)
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
+
+  // Load rewards from app_settings
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'rewards').single()
+      .then(({ data }) => {
+        if (data?.value) {
+          try { setRewards(JSON.parse(data.value)) }
+          catch { setRewards([]) }
+        }
+      })
+  }, [])
+
+  const saveRewards = async (newRewards) => {
+    setSavingRewards(true)
+    const { error } = await supabase.from('app_settings').upsert(
+      { key: 'rewards', value: JSON.stringify(newRewards) },
+      { onConflict: 'key' }
+    )
+    setSavingRewards(false)
+    if (error) { showToast('❌ ' + error.message); return false }
+    setRewards(newRewards)
+    showToast('✅ Rewards saved')
+    return true
+  }
+
+  const addReward = () => {
+    const newRewards = [...rewards, { threshold: 500, name: '', description: '', image_url: '' }]
+    setRewards(newRewards)
+  }
+  const updateReward = (idx, field, value) => {
+    const newRewards = [...rewards]
+    newRewards[idx] = { ...newRewards[idx], [field]: value }
+    setRewards(newRewards)
+  }
+  const removeReward = async (idx) => {
+    if (!window.confirm('Remove this reward tier?')) return
+    const newRewards = rewards.filter((_, i) => i !== idx)
+    await saveRewards(newRewards)
+  }
 
   const loadFeatured = useCallback(async () => {
     const { data } = await supabase
@@ -129,6 +173,51 @@ export default function AdminHomepageManager() {
             ))}
           </div>
         )}
+
+        {/* ── REWARDS / TIER GIFTS ── */}
+        <div style={{ background:'linear-gradient(135deg,#0a0a0a,#1a1500)', borderRadius:14, padding:'14px 16px', marginBottom:14, border:'1px solid rgba(212,168,67,0.3)' }}>
+          <p style={{ color:'#f0d078', fontWeight:800, fontSize:15, marginBottom:3 }}>🎁 Spend Rewards</p>
+          <p style={{ color:'rgba(255,255,255,0.6)', fontSize:12 }}>Customers see "$X away from getting Y" as they fill their cart on price lists. Set tier thresholds and bonus gifts.</p>
+        </div>
+
+        {rewards.map((r, idx) => (
+          <div key={idx} className="card" style={{ marginBottom:10, padding:14, border:'1.5px solid #fde68a', background:'#fffbeb' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+              <p style={{ fontWeight:800, fontSize:13, color:'#92400e' }}>🎁 Reward #{idx+1}</p>
+              <button onClick={() => removeReward(idx)} style={{ fontSize:11, color:'#dc2626', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>✕ Remove</button>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
+              <div>
+                <label style={{ fontSize:10, fontWeight:700, color:'#78350f', textTransform:'uppercase', letterSpacing:0.5 }}>Spend Threshold ($)</label>
+                <input type="number" min="1" value={r.threshold} onChange={e => updateReward(idx, 'threshold', parseInt(e.target.value) || 0)}
+                  style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #fde68a', borderRadius:8, fontSize:14, marginTop:3 }} placeholder="500" />
+              </div>
+              <div>
+                <label style={{ fontSize:10, fontWeight:700, color:'#78350f', textTransform:'uppercase', letterSpacing:0.5 }}>Approx. Value ($)</label>
+                <input type="number" min="0" step="0.01" value={r.value || ''} onChange={e => updateReward(idx, 'value', parseFloat(e.target.value) || 0)}
+                  style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #fde68a', borderRadius:8, fontSize:14, marginTop:3 }} placeholder="25.00" />
+              </div>
+            </div>
+            <input type="text" value={r.name} onChange={e => updateReward(idx, 'name', e.target.value)} placeholder="Gift name (e.g. Free 12-pack of incense)"
+              style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #fde68a', borderRadius:8, fontSize:14, marginBottom:8 }} />
+            <input type="text" value={r.description || ''} onChange={e => updateReward(idx, 'description', e.target.value)} placeholder="Description (optional)"
+              style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #fde68a', borderRadius:8, fontSize:13, marginBottom:8 }} />
+            <input type="text" value={r.image_url || ''} onChange={e => updateReward(idx, 'image_url', e.target.value)} placeholder="Image URL (optional)"
+              style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #fde68a', borderRadius:8, fontSize:12, fontFamily:'monospace' }} />
+          </div>
+        ))}
+
+        <div style={{ display:'flex', gap:8, marginBottom:24 }}>
+          <button onClick={addReward} style={{ flex:1, padding:'10px', borderRadius:10, border:'1.5px dashed #fde68a', background:'#fffbeb', color:'#92400e', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+            ＋ Add Reward Tier
+          </button>
+          {rewards.length > 0 && (
+            <button onClick={() => saveRewards(rewards)} disabled={savingRewards}
+              style={{ padding:'10px 18px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#d4a843,#b8860b)', color:'#0a0a0a', fontWeight:800, fontSize:13, cursor:'pointer' }}>
+              {savingRewards ? 'Saving...' : '💾 Save Rewards'}
+            </button>
+          )}
+        </div>
 
         {/* Product picker */}
         <p className="section-header">Add Products</p>
