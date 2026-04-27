@@ -21,7 +21,7 @@ export default function PublicHomePage() {
 
   useEffect(() => {
     supabase.from('homepage_featured')
-      .select('id, sort_order, product:products(id, name, description, image_url, images, brand, category)')
+      .select('id, sort_order, product:products(id, name, description, image_url, images, brand, category, is_best_seller)')
       .eq('is_active', true).order('sort_order')
       .then(({ data }) => {
         setFeatured((data || []).map(f => f.product).filter(Boolean))
@@ -273,12 +273,24 @@ export default function PublicHomePage() {
                       onClick={() => setSelected(product)}
                       onContextMenu={e => e.preventDefault()}
                       style={{
+                        position: 'relative',
                         background: 'rgba(255,255,255,0.04)', borderRadius: 20,
                         border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden',
                         cursor: 'pointer',
                         animation: `fadeUp 0.5s ease ${i * 0.06}s both`,
                       }}
                     >
+                      {product.is_best_seller && (
+                        <div style={{
+                          position: 'absolute', top: 12, right: 12, zIndex: 10,
+                          background: `linear-gradient(135deg, ${GOLD}, ${GOLD_DEEP})`, color: '#0a0a0a',
+                          padding: '4px 12px', borderRadius: 8,
+                          fontSize: 10, fontWeight: 900, letterSpacing: '0.8px', textTransform: 'uppercase',
+                          boxShadow: '0 4px 14px rgba(212,168,67,0.5)',
+                        }}>
+                          🔥 Best Seller
+                        </div>
+                      )}
                       <div className="kanz-img-wrap" style={{ width: '100%', paddingTop: '65%', position: 'relative', background: 'rgba(255,255,255,0.03)' }}>
                         {product.image_url
                           ? <img src={product.image_url} alt={product.name} draggable="false" onContextMenu={e => e.preventDefault()} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
