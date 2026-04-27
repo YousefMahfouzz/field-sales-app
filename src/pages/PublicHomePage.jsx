@@ -513,39 +513,30 @@ export default function PublicHomePage() {
       {/* ── 6. REWARDS (paper section) ── */}
       {rewards.length > 0 && (
         <section ref={rewardsRef} className="ks-rewards reveal-section" id="rewards">
-          <div className="ks-rewards-inner">
-            <div className="ks-sec-head">
-              <div>
-                <span className="ks-sec-eyebrow">
-                  <span className="dot" />
-                  Spend & Save
-                </span>
-                <h2 className="ks-rewards-title">
-                  Bigger orders, <em>bigger bonuses.</em>
-                </h2>
-              </div>
-              <p className="ks-rewards-sub" style={{ marginTop: 0 }}>
-                Free goods added to every order based on what you spend. The more you stock, the more you save — no codes, no fine print.
-              </p>
-            </div>
-
-            <div className="ks-rewards-grid">
-              {rewards.map((r, i) => (
-                <div key={i} className="ks-reward-card" style={{ animation: `fadeUp 0.6s ease ${i * 0.1}s both` }}>
-                  <span className="ks-reward-num">Tier 0{i + 1}</span>
-                  <div className="ks-reward-thresh">
-                    <em>Spend</em> ${r.threshold}
-                  </div>
-                  {r.image_url && (
-                    <div className="ks-reward-img">
-                      <img src={r.image_url} alt={r.name} draggable="false" onContextMenu={e => e.preventDefault()} />
-                    </div>
-                  )}
-                  <div className="ks-reward-name">{r.name}</div>
-                  {r.description && <div className="ks-reward-desc">{r.description}</div>}
-                  {r.value > 0 && <span className="ks-reward-value">${r.value.toFixed(2)} value</span>}
-                </div>
-              ))}
+          <div className="ks-rewards-inner" style={{ textAlign: 'center', maxWidth: 760, margin: '0 auto' }}>
+            <span className="ks-sec-eyebrow" style={{ display: 'inline-flex', justifyContent: 'center' }}>
+              <span className="dot" />
+              Spend & Save
+            </span>
+            <h2 className="ks-rewards-title" style={{ marginTop: 18 }}>
+              Bigger orders, <em>bigger bonuses.</em>
+            </h2>
+            <p className="ks-rewards-sub" style={{ margin: '32px auto 0' }}>
+              Stock up and we'll add free goods to your order. The more you spend, the better the bonus — across {rewards.length} reward tiers. Ask your rep or open an account to see the lineup and pricing.
+            </p>
+            <div style={{ marginTop: 44, display: 'inline-flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button onClick={() => setShowInquiry(true)} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 10, padding: '17px 28px',
+                background: 'var(--ink)', color: 'var(--paper)',
+                font: '600 12px/1 var(--sans)', letterSpacing: '0.18em', textTransform: 'uppercase',
+                border: 'none', borderRadius: 999, cursor: 'pointer', transition: 'all 0.2s',
+              }}>
+                Open an Account
+                <span style={{ fontSize: 14 }}>→</span>
+              </button>
+              <span style={{ font: '500 11px/1 var(--mono)', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>
+                {rewards.length} tier{rewards.length !== 1 ? 's' : ''} · Free goods · No codes
+              </span>
             </div>
           </div>
         </section>
