@@ -115,9 +115,115 @@ export default function AnalyticsPage() {
   const [summary, setSummary] = useState(null)
   const [loadingSummary, setLoadingSummary] = useState(true)
 
+  // ── Top Sellers ──
+  const [topSellersPeriod, setTopSellersPeriod] = useState('month') // 'week' | 'month' | 'year' | 'all'
+  const [topSellers, setTopSellers] = useState([])
+  const [loadingTopSellers, setLoadingTopSellers] = useState(false)
+  const [topSellersUpdating, setTopSellersUpdating] = useState(false)
+  const [topSellersFlag, setTopSellersFlag] = useState({}) // { productId: true } - which products are flagged best_seller
+
   // ── Today auto-load ──
   const [todayData, setTodayData] = useState(null)
   const [monthlyChart, setMonthlyChart] = useState([])
+
+  const loadTopSellers = useCallback(async (period = topSellersPeriod) => {
+    if (!user) return
+    setLoadingTopSellers(true)
+    try {
+      let fromDate
+      if (period === 'week') fromDate = startOf('week')
+      else if (period === 'month') fromDate = startOf('month')
+      else if (period === 'year') fromDate = startOf('year')
+      else fromDate = null
+
+      let q = supabase.from('sale_items')
+        .select('product_id, product_name, qty, total_price, total_profit')
+        .eq('user_id', user.id)
+      if (fromDate) q = q.gte('created_at', ctStart(fromDate))
+      const { data: items } = await q.limit(10000)
+
+      // Aggregate by product_id
+      const map = {}
+      for (const it of items || []) {
+        if (!it.product_id) continue
+        if (!map[it.product_id]) map[it.product_id] = { product_id: it.product_id, name: it.product_name, qty: 0, revenue: 0, profit: 0 }
+        map[it.product_id].qty += it.qty || 0
+        map[it.product_id].revenue += it.total_price || 0
+        map[it.product_id].profit += it.total_profit || 0
+      }
+
+      // Fetch product info (category, image)
+      const ids = Object.keys(map)
+      if (ids.length > 0) {
+        const { data: prods } = await supabase.from('products')
+          .select('id, name, category, image_url, brand, stock_qty, sell_price')
+          .in('id', ids)
+        const prodMap = Object.fromEntries((prods || []).map(p => [p.id, p]))
+        for (const id of ids) {
+          map[id].product = prodMap[id]
+          map[id].category = prodMap[id]?.category || 'Other'
+        }
+      }
+
+      const list = Object.values(map).filter(x => x.product).sort((a, b) => b.revenue - a.revenue)
+      setTopSellers(list)
+    } catch (e) { console.error(e) }
+    finally { setLoadingTopSellers(false) }
+  }, [user, topSellersPeriod])
+
+  // Load best_seller flags from products
+  const loadFlags = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase.from('products')
+      .select('id').eq('user_id', user.id).eq('is_best_seller', true)
+    const flags = {}
+    for (const p of data || []) flags[p.id] = true
+    setTopSellersFlag(flags)
+  }, [user])
+
+  // Toggle a product's best_seller flag (shows badge on price list)
+  const toggleBestSeller = async (productId) => {
+    setTopSellersUpdating(true)
+    const newVal = !topSellersFlag[productId]
+    const { error } = await supabase.from('products').update({ is_best_seller: newVal }).eq('id', productId)
+    if (!error) {
+      setTopSellersFlag(prev => ({ ...prev, [productId]: newVal }))
+    }
+    setTopSellersUpdating(false)
+  }
+
+  // Auto-flag top N best sellers
+  const autoFlagTop = async (n = 3) => {
+    if (!window.confirm(`Auto-flag the top ${n} sellers per category as 'Best Seller' on the price list? This will replace any existing flags.`)) return
+    setTopSellersUpdating(true)
+    try {
+      // Group by category, pick top N per category
+      const byCategory = {}
+      for (const ts of topSellers) {
+        if (!byCategory[ts.category]) byCategory[ts.category] = []
+        byCategory[ts.category].push(ts)
+      }
+      const newFlags = new Set()
+      for (const cat in byCategory) {
+        for (const ts of byCategory[cat].slice(0, n)) {
+          newFlags.add(ts.product_id)
+        }
+      }
+      // Clear all existing flags then set new ones
+      await supabase.from('products').update({ is_best_seller: false }).eq('user_id', user.id)
+      if (newFlags.size > 0) {
+        await supabase.from('products').update({ is_best_seller: true }).in('id', [...newFlags])
+      }
+      const flags = {}
+      for (const id of newFlags) flags[id] = true
+      setTopSellersFlag(flags)
+    } catch (e) {
+      console.error(e)
+      alert('❌ ' + e.message)
+    } finally {
+      setTopSellersUpdating(false)
+    }
+  }
 
   const loadRange = useCallback(async (fromDate, toDate) => {
     if (!user || !fromDate || !toDate) return
@@ -249,6 +355,8 @@ export default function AnalyticsPage() {
   useEffect(() => { loadSummary() }, [loadSummary])
   useEffect(() => { loadRange(today(), today()) }, [loadRange])
   useEffect(() => { loadStockCost() }, [loadStockCost])
+  useEffect(() => { loadTopSellers(topSellersPeriod) }, [loadTopSellers, topSellersPeriod])
+  useEffect(() => { loadFlags() }, [loadFlags])
 
   const prettyDate = (d) => {
     if (d === today()) return 'Today'
@@ -389,6 +497,113 @@ export default function AnalyticsPage() {
 
         {/* ── STOCK COST RANGE (hidden for drivers without profit access) ── */}
         {canSeeProfit && (<>
+        {/* ── TOP SELLERS ── */}
+        <SectionHeader title="🔥 Top Sellers (What to Reorder)" />
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+          {[
+            { key:'week', label:'This Week' },
+            { key:'month', label:'This Month' },
+            { key:'year', label:'This Year' },
+            { key:'all', label:'All Time' },
+          ].map(p => (
+            <button key={p.key} onClick={() => setTopSellersPeriod(p.key)}
+              style={{
+                padding:'6px 14px', borderRadius:20,
+                border: `1.5px solid ${topSellersPeriod === p.key ? '#d4a843' : 'var(--border)'}`,
+                background: topSellersPeriod === p.key ? '#d4a843' : 'white',
+                color: topSellersPeriod === p.key ? '#0a0a0a' : 'var(--text)',
+                fontSize:12, fontWeight: topSellersPeriod === p.key ? 800 : 600,
+                cursor:'pointer',
+              }}>
+              {p.label}
+            </button>
+          ))}
+          {topSellers.length > 0 && (
+            <button onClick={() => autoFlagTop(3)} disabled={topSellersUpdating}
+              style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid #b8860b', background:'#fffbeb', color:'#92400e', fontSize:12, fontWeight:700, cursor:'pointer', marginLeft:'auto' }}>
+              ⚡ Auto-flag Top 3/Category
+            </button>
+          )}
+        </div>
+
+        {loadingTopSellers && <p className="text-sm text-muted" style={{ textAlign:'center', padding:14 }}>Loading top sellers...</p>}
+
+        {!loadingTopSellers && topSellers.length === 0 && (
+          <div className="card" style={{ padding:24, textAlign:'center' }}>
+            <p style={{ fontSize:32, marginBottom:8 }}>📊</p>
+            <p className="text-sm text-muted">No sales data for this period yet.</p>
+          </div>
+        )}
+
+        {/* Group by category */}
+        {!loadingTopSellers && topSellers.length > 0 && (() => {
+          const byCategory = {}
+          for (const ts of topSellers) {
+            if (!byCategory[ts.category]) byCategory[ts.category] = []
+            byCategory[ts.category].push(ts)
+          }
+          const sortedCats = Object.keys(byCategory).sort((a,b) =>
+            byCategory[b].reduce((s,x) => s + x.revenue, 0) - byCategory[a].reduce((s,x) => s + x.revenue, 0)
+          )
+          return sortedCats.map(cat => {
+            const items = byCategory[cat]
+            const catRevenue = items.reduce((s,x) => s + x.revenue, 0)
+            const catUnits = items.reduce((s,x) => s + x.qty, 0)
+            return (
+              <div key={cat} style={{ marginBottom:18 }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', background:'linear-gradient(90deg, #1a1500, #0a0a0a)', borderRadius:'10px 10px 0 0', border:'1px solid rgba(212,168,67,0.25)', borderBottom:'none' }}>
+                  <p style={{ fontWeight:800, fontSize:13, color:'#f0d078', letterSpacing:0.3 }}>{cat}</p>
+                  <p style={{ fontSize:11, color:'rgba(212,168,67,0.7)', fontWeight:600 }}>{catUnits} units · ${catRevenue.toFixed(0)}</p>
+                </div>
+                {items.slice(0, 5).map((ts, i) => {
+                  const flagged = topSellersFlag[ts.product_id]
+                  const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`
+                  return (
+                    <div key={ts.product_id} className="card" style={{
+                      marginBottom: 0, borderRadius: i === items.slice(0,5).length-1 ? '0 0 10px 10px' : 0,
+                      borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                      padding:'10px 14px', display:'flex', alignItems:'center', gap:12,
+                    }}>
+                      <span style={{ fontSize:18, width:30, textAlign:'center', flexShrink:0 }}>{medal}</span>
+                      <div style={{ width:40, height:40, borderRadius:8, overflow:'hidden', flexShrink:0, background:'var(--gray-light)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {ts.product?.image_url ? <img src={ts.product.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '📦'}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ fontWeight:700, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ts.name}</p>
+                        <p style={{ fontSize:11, color:'var(--text-muted)' }}>
+                          {ts.qty} sold · ${ts.revenue.toFixed(0)} revenue
+                          {ts.product?.stock_qty != null && (
+                            <span style={{ color: ts.product.stock_qty <= 5 ? '#dc2626' : ts.product.stock_qty <= 20 ? '#d97706' : 'var(--text-muted)', fontWeight:600 }}>
+                              {' · '}{ts.product.stock_qty} in stock{ts.product.stock_qty <= 5 ? ' ⚠️' : ''}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <button onClick={() => toggleBestSeller(ts.product_id)} disabled={topSellersUpdating}
+                        title={flagged ? 'Remove Best Seller badge' : 'Show as Best Seller on price list'}
+                        style={{
+                          padding:'5px 10px', borderRadius:14, border:'1.5px solid',
+                          borderColor: flagged ? '#16a34a' : 'var(--border)',
+                          background: flagged ? '#dcfce7' : 'white',
+                          color: flagged ? '#16a34a' : 'var(--text-muted)',
+                          fontSize:10, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
+                        }}>
+                        {flagged ? '🔥 Featured' : '＋ Feature'}
+                      </button>
+                    </div>
+                  )
+                })}
+                {items.length > 5 && (
+                  <p style={{ fontSize:10, color:'var(--text-muted)', textAlign:'center', padding:'4px 0' }}>
+                    + {items.length - 5} more in {cat}
+                  </p>
+                )}
+              </div>
+            )
+          })
+        })()}
+
+        {/* ── STOCK PURCHASES ── */}
         <SectionHeader title="📦 Stock Purchases by Date Range" />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
           <div>

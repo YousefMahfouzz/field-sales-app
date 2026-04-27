@@ -206,6 +206,20 @@ function ProductCard({ product, onOpenLightbox, cartQty, onSetQty }) {
         </div>
       )}
 
+      {/* BEST SELLER badge – only when not sold out */}
+      {!isSoldOut && product.is_best_seller && (
+        <div style={{
+          position: 'absolute', top: 12, right: 12, zIndex: 10,
+          background: 'linear-gradient(135deg, #d4a843, #b8860b)', color: '#0a0a0a',
+          padding: '4px 12px', borderRadius: 8,
+          fontSize: 10, fontWeight: 900, letterSpacing: '0.8px', textTransform: 'uppercase',
+          boxShadow: '0 4px 14px rgba(212,168,67,0.5)',
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}>
+          🔥 Best Seller
+        </div>
+      )}
+
       {/* Image strip – protected */}
       {allImages.length > 0 ? (
         <div style={{ position: 'relative' }}>
@@ -462,7 +476,7 @@ export default function PriceListPage() {
           setNotFound(true); setLoading(false); return
         }
       }
-      let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id,stock_qty,pieces_per_unit,piece_name').eq('is_active', true).order('category').order('name')
+      let q = supabase.from('products').select('id,name,brand,sell_price,price_min,price_max,image_url,images,description,category,unit,user_id,stock_qty,pieces_per_unit,piece_name,is_best_seller').eq('is_active', true).order('category').order('name')
       if (userId) q = q.eq('user_id', userId)
       const { data } = await q
       if (username && !userId && (!data || data.length === 0)) {
