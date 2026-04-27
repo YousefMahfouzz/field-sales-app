@@ -76,8 +76,8 @@ export default function PublicHomePage() {
   // Marquee items for the announcement bar
   const announceItems = [
     'WHOLESALE DISTRIBUTION', 'LOUISIANA · MISSISSIPPI · ALABAMA · TEXAS · ARKANSAS · TENNESSEE',
-    'FREE DELIVERY ON LARGE ORDERS', 'FAMILY OWNED SINCE DAY ONE',
-    'BEAUTY · FRAGRANCE · INCENSE · HONEY', 'NEW DROPS WEEKLY',
+    'SAME-DAY DELIVERY IN GREATER NEW ORLEANS', 'FAMILY OWNED SINCE DAY ONE',
+    'BEAUTY · FRAGRANCE · INCENSE · HONEY', '24-48 HOUR DELIVERY ACROSS THE SOUTH',
   ]
 
   return (
@@ -264,6 +264,26 @@ export default function PublicHomePage() {
         .ks-footer-meta { font: 500 10px/1.6 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(244,237,224,0.4); }
         .ks-footer-meta em { color: var(--gold-2); font-family: var(--serif); }
         .ks-footer-r { text-align: right; font: 500 10px/1.6 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: rgba(244,237,224,0.4); }
+
+        /* ── DELIVERY ZONES ── */
+        .ks-delivery { background: var(--bg); padding: clamp(60px, 10vw, 130px) clamp(20px, 5vw, 80px); }
+        .ks-delivery-inner { max-width: 1500px; margin: 0 auto; }
+        .ks-zone-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; margin-top: 50px; }
+        .ks-zone { position: relative; border: 1px solid var(--line); background: var(--bg-2); padding: 32px 28px 28px; display: flex; flex-direction: column; gap: 14px; transition: border-color 0.3s, transform 0.3s; min-height: 280px; }
+        .ks-zone:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .ks-zone.featured { border-color: var(--terracotta); background: linear-gradient(135deg, rgba(185,90,58,0.1) 0%, transparent 60%), var(--bg-2); }
+        .ks-zone-tag { font: 500 10px/1 var(--mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-2); display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 6px 12px; border: 1px solid var(--line); border-radius: 2px; }
+        .ks-zone.featured .ks-zone-tag { color: var(--paper); background: var(--terracotta); border-color: var(--terracotta); }
+        .ks-zone-name { font-family: var(--serif); font-weight: 400; font-style: italic; font-size: 28px; color: var(--paper); line-height: 1.1; }
+        .ks-zone-cities { font-size: 13.5px; color: rgba(244,237,224,0.7); line-height: 1.6; }
+        .ks-zone-foot { margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line); display: flex; align-items: baseline; gap: 12px; }
+        .ks-zone-eta { font-family: var(--serif); font-style: italic; font-weight: 300; font-size: 36px; color: var(--gold-2); line-height: 1; letter-spacing: -0.02em; }
+        .ks-zone.featured .ks-zone-eta { color: var(--terracotta); }
+        .ks-zone-eta-lbl { font: 500 10px/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: rgba(244,237,224,0.55); }
+        @keyframes pinPulse { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(2.6); opacity: 0; } }
+        .ks-zone-pin { position: absolute; top: 16px; right: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+        .ks-zone.featured .ks-zone-pin { background: var(--terracotta); }
+        .ks-zone.featured .ks-zone-pin::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 1.5px solid var(--terracotta); animation: pinPulse 2s ease-out infinite; }
 
         /* Responsive */
         @media (max-width: 900px) {
@@ -526,6 +546,67 @@ export default function PublicHomePage() {
           </div>
         </section>
       )}
+
+      {/* ── DELIVERY ZONES ── */}
+      <section className="ks-delivery reveal-section">
+        <div className="ks-delivery-inner">
+          <div className="ks-sec-head">
+            <div>
+              <span className="ks-sec-eyebrow">
+                <span className="dot" />
+                Delivery Coverage
+              </span>
+              <h2 className="ks-sec-title-lg">
+                Stocked in <em>days,</em><br />not weeks.
+              </h2>
+            </div>
+            <p className="ks-sec-sub" style={{ marginTop: 0 }}>
+              We dispatch from New Orleans across the Gulf Coast and South. Greater New Orleans gets same-day delivery — everywhere else lands in 24–48 hours.
+            </p>
+          </div>
+
+          <div className="ks-zone-grid">
+            <div className="ks-zone featured">
+              <span className="ks-zone-pin" />
+              <span className="ks-zone-tag">★ Home Zone</span>
+              <h3 className="ks-zone-name">Greater New Orleans</h3>
+              <p className="ks-zone-cities">
+                New Orleans · Metairie · Kenner · Gretna · Marrero · Chalmette · Slidell · Covington · Mandeville · Westwego
+              </p>
+              <div className="ks-zone-foot">
+                <span className="ks-zone-eta">Same Day</span>
+                <span className="ks-zone-eta-lbl">Order by 2 PM</span>
+              </div>
+            </div>
+
+            <div className="ks-zone">
+              <span className="ks-zone-pin" />
+              <span className="ks-zone-tag">Zone 02</span>
+              <h3 className="ks-zone-name">Louisiana & Coastal South</h3>
+              <p className="ks-zone-cities">
+                Baton Rouge · Lafayette · Lake Charles · Houma · Shreveport · Mobile · Biloxi · Gulfport · Hattiesburg
+              </p>
+              <div className="ks-zone-foot">
+                <span className="ks-zone-eta">24 Hours</span>
+                <span className="ks-zone-eta-lbl">Next-day arrival</span>
+              </div>
+            </div>
+
+            <div className="ks-zone">
+              <span className="ks-zone-pin" />
+              <span className="ks-zone-tag">Zone 03</span>
+              <h3 className="ks-zone-name">Extended Gulf & South</h3>
+              <p className="ks-zone-cities">
+                Houston · Dallas · Birmingham · Montgomery · Jackson · Tupelo · Memphis · Nashville · Little Rock · Fayetteville
+              </p>
+              <div className="ks-zone-foot">
+                <span className="ks-zone-eta">24–48 Hrs</span>
+                <span className="ks-zone-eta-lbl">Most orders ship same day</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── 7. PRICELIST CTA ── */}
       <section ref={contactRef} className="ks-pricelist-cta reveal-section" id="contact">
