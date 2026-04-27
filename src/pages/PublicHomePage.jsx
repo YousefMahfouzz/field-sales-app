@@ -77,7 +77,7 @@ export default function PublicHomePage() {
   const announceItems = [
     'WHOLESALE DISTRIBUTION', 'LOUISIANA · MISSISSIPPI · ALABAMA · TEXAS · ARKANSAS · TENNESSEE',
     'SAME-DAY DELIVERY IN GREATER NEW ORLEANS', 'FAMILY OWNED SINCE DAY ONE',
-    'BEAUTY · FRAGRANCE · INCENSE · HONEY', '24-48 HOUR DELIVERY ACROSS THE SOUTH',
+    'BEAUTY · FRAGRANCE · INCENSE · LIGHTERS', '24-48 HOUR DELIVERY ACROSS THE SOUTH',
   ]
 
   return (
@@ -388,14 +388,14 @@ export default function PublicHomePage() {
       <div className="ks-ticker">
         <div className="ks-ticker-track">
           {[...Array(2)].flatMap(() => [
-            <span key={`a${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN BATON ROUGE</strong> ordered <em>Honey & Incense bundle</em><span className="ago">2m ago</span></span>,
+            <span key={`a${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN BATON ROUGE</strong> ordered <em>Fragrance & Incense bundle</em><span className="ago">2m ago</span></span>,
             <span key={`b${Math.random()}`} className="ks-ticker-item"><span className="dot">✦</span><strong>NEW DROP</strong> Premium Oud Incense — back in stock <span className="ago">today</span></span>,
             <span key={`c${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN HOUSTON</strong> reordered <em>Lighter case</em><span className="ago">14m ago</span></span>,
             <span key={`d${Math.random()}`} className="ks-ticker-item"><span className="dot">✦</span><strong>RESTOCKED</strong> Hair styling line — <em>13 units</em><span className="ago">1h ago</span></span>,
             <span key={`e${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN BIRMINGHAM</strong> ordered <em>Fragrance set</em><span className="ago">22m ago</span></span>,
             <span key={`f${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN MEMPHIS</strong> opened a new account<span className="ago">3h ago</span></span>,
             <span key={`g${Math.random()}`} className="ks-ticker-item"><span className="dot">✦</span><strong>NEW DROP</strong> Hair butter line — <em>now shipping</em><span className="ago">today</span></span>,
-            <span key={`h${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN LITTLE ROCK</strong> reordered <em>Honey 12-pack</em><span className="ago">42m ago</span></span>,
+            <span key={`h${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN LITTLE ROCK</strong> reordered <em>Incense 12-pack</em><span className="ago">42m ago</span></span>,
             <span key={`i${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN JACKSON</strong> ordered <em>Beauty supply mix</em><span className="ago">1h ago</span></span>,
             <span key={`j${Math.random()}`} className="ks-ticker-item"><span className="pulse" /><strong>SHOP IN MOBILE</strong> ordered <em>Lighter & incense</em><span className="ago">2h ago</span></span>,
           ])}
