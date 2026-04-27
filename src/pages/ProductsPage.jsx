@@ -91,7 +91,7 @@ export default function ProductsPage() {
           {isAdmin ? 'Shared' : 'Catalog'}
         </button>
         <button className="btn btn-ghost btn-sm" onClick={() => printOrderSheet(products, profile)} style={{ fontSize:11, padding:'5px 10px', color:'#b8860b', borderColor:'#b8860b' }}>🖨️ Print</button>
-        {isAdmin && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/homepage')} style={{ fontSize:11, padding:'5px 10px' }}>Featured</button>}
+        {isAdmin && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/homepage')} style={{ fontSize:11, padding:'5px 10px', color:'#d4a843', borderColor:'#d4a843' }}>🎁 Homepage & Rewards</button>}
         <button onClick={() => setShowArchived(v => !v)} style={{ fontSize:11, padding:'5px 10px', borderRadius:20, border:'1.5px solid', cursor:'pointer', fontWeight:600, borderColor: showArchived ? '#f59e0b' : 'var(--border)', background: showArchived ? '#fef3c7' : 'white', color: showArchived ? '#b45309' : 'var(--text-muted)' }}>
           {showArchived ? `Archived (${archivedProducts.length})` : `Archive`}
         </button>

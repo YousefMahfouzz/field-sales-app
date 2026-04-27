@@ -603,28 +603,38 @@ export default function PriceListPage() {
     <>
       {/* Global styles for this page */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        :root {
+          --pl-bg: #0e0b08;
+          --pl-bg-2: #14100c;
+          --pl-paper: #f4ede0;
+          --pl-ink: #1a140e;
+          --pl-gold: #c9a96a;
+          --pl-gold-2: #e6c989;
+          --pl-gold-deep: #8c6d3d;
+          --pl-terracotta: #b95a3a;
+          --pl-line: rgba(201, 169, 106, 0.22);
+          --pl-serif: 'Fraunces', 'Times New Roman', serif;
+          --pl-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          --pl-mono: 'JetBrains Mono', ui-monospace, monospace;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0a0a0a; }
+        body { background: var(--pl-bg); }
         .pl-page {
           min-height: 100vh;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family: var(--pl-sans);
           color: #0f172a;
-          background: linear-gradient(-45deg, #0a0a0a, #111108, #0d0b00, #0a0a0a);
-          background-size: 400% 400%;
-          animation: gradientShift 15s ease infinite;
+          background: var(--pl-bg);
           position: relative;
         }
+        .pl-page em { font-family: var(--pl-serif); font-style: italic; }
         .pl-page::before {
           content: '';
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
-          background: radial-gradient(ellipse at 20% 50%, rgba(212,168,67,0.06) 0%, transparent 50%),
-                      radial-gradient(ellipse at 80% 20%, rgba(184,134,11,0.05) 0%, transparent 50%),
-                      radial-gradient(ellipse at 50% 80%, rgba(240,208,120,0.03) 0%, transparent 50%);
-        }
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+          background: radial-gradient(ellipse at 20% 50%, rgba(201,169,106,0.05) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 20%, rgba(140,109,61,0.04) 0%, transparent 50%);
         }
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(24px) scale(0.97); }
@@ -634,23 +644,16 @@ export default function PriceListPage() {
           from { opacity: 0; transform: translateX(-20px); }
           to { opacity: 1; transform: translateX(0); }
         }
-        @keyframes floatBlob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -20px) scale(1.1); }
-          66% { transform: translate(-20px, 15px) scale(0.95); }
-        }
         @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(212,168,67,0.4); }
-          50% { box-shadow: 0 0 24px 10px rgba(212,168,67,0.12); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(201,169,106,0.4); }
+          50% { box-shadow: 0 0 24px 10px rgba(201,169,106,0.12); }
         }
         @keyframes cartBounce {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.06); }
         }
+        @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(185,90,58,0.6); } 70% { box-shadow: 0 0 0 12px rgba(185,90,58,0); } 100% { box-shadow: 0 0 0 0 rgba(185,90,58,0); } }
+        @keyframes tickL { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         .pl-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -658,7 +661,7 @@ export default function PriceListPage() {
         }
         @media (max-width: 500px) { .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
         @media (max-width: 320px) { .pl-grid { grid-template-columns: 1fr; } }
-        .pl-search:focus { outline: none; border-color: #d4a843 !important; box-shadow: 0 0 0 3px rgba(212,168,67,0.2); }
+        .pl-search:focus { outline: none; border-color: var(--pl-gold) !important; box-shadow: 0 0 0 3px rgba(201,169,106,0.2); }
         .pl-pill { white-space: nowrap; border: none; cursor: pointer; transition: all 0.2s ease; }
         .pl-pill:hover { transform: translateY(-1px); }
         .pl-pill:active { transform: scale(0.95); }
@@ -691,55 +694,87 @@ export default function PriceListPage() {
       `}</style>
 
       <div className="pl-page" style={{ position: 'relative', zIndex: 1 }}>
-        {/* ── HERO ── */}
-        <div style={{
-          background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1500 40%, #0d0b00 70%, #111108 100%)',
-          padding: 'clamp(36px, 6vw, 72px) clamp(16px, 5vw, 80px) clamp(28px, 4vw, 56px)',
-          position: 'relative', overflow: 'hidden',
-        }}>
-          {/* Animated floating blobs – gold tones */}
-          <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(212,168,67,0.15)', filter: 'blur(40px)', animation: 'floatBlob 8s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', bottom: -40, left: '30%', width: 200, height: 200, borderRadius: '50%', background: 'rgba(184,134,11,0.12)', filter: 'blur(50px)', animation: 'floatBlob 10s ease-in-out infinite reverse' }} />
-          <div style={{ position: 'absolute', top: '40%', left: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(240,208,120,0.08)', filter: 'blur(35px)', animation: 'floatBlob 12s ease-in-out infinite 2s' }} />
+        {/* ── ANNOUNCEMENT MARQUEE ── */}
+        <div style={{ background: 'var(--pl-bg-2)', borderBottom: '1px solid var(--pl-line)', overflow: 'hidden', position: 'relative', zIndex: 60 }}>
+          <div style={{ display: 'flex', gap: 50, whiteSpace: 'nowrap', animation: 'tickL 60s linear infinite', padding: '9px 0' }}>
+            {[...Array(2)].flatMap((_, k) => ['CURATED PRODUCT CATALOGUE', 'SAME-DAY DELIVERY · NEW ORLEANS', 'BEAUTY · FRAGRANCE · INCENSE · LIGHTERS', '24-48 HOUR DELIVERY ACROSS THE SOUTH', 'WHOLESALE PRICING ON REQUEST'].map((t, i) => (
+              <span key={`${k}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 14, font: '500 10.5px/1 var(--pl-mono)', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--pl-gold-2)', flexShrink: 0 }}>
+                <span style={{ color: 'var(--pl-gold)' }}>✦</span>
+                {t}
+              </span>
+            )))}
+          </div>
+        </div>
 
-          <div style={{ position: 'relative', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-            {/* Logo */}
+        {/* ── HERO (editorial style) ── */}
+        <div style={{
+          background: 'var(--pl-bg)',
+          padding: 'clamp(60px, 9vw, 110px) clamp(20px, 5vw, 80px) clamp(36px, 5vw, 60px)',
+          position: 'relative', overflow: 'hidden',
+          borderBottom: '1px solid var(--pl-line)',
+        }}>
+          {/* Background watermark */}
+          <div style={{ position: 'absolute', bottom: '-3vw', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--pl-serif)', fontStyle: 'italic', fontWeight: 300, fontSize: '24vw', lineHeight: 0.85, color: 'rgba(244,237,224,0.04)', letterSpacing: '-0.05em', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 1 }}>
+            catalogue
+          </div>
+
+          <div style={{ position: 'relative', maxWidth: 1100, margin: '0 auto', textAlign: 'center', zIndex: 2 }}>
+            {/* Logo / avatar */}
             {logoUrl ? (
               <div style={{
-                width: 72, height: 72, borderRadius: 16, margin: '0 auto 16px',
-                overflow: 'hidden', border: '2px solid rgba(212,168,67,0.3)',
-                boxShadow: '0 0 24px rgba(212,168,67,0.2)',
-                animation: 'pulseGlow 3s ease-in-out infinite',
+                width: 64, height: 64, borderRadius: '50%', margin: '0 auto 32px',
+                overflow: 'hidden', border: '1.5px solid var(--pl-gold)',
+                boxShadow: '0 0 0 4px rgba(201,169,106,0.1)',
               }}>
-                <img src={logoUrl} alt="Kanz Supply" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#0a0a0a' }} draggable="false" onContextMenu={e => e.preventDefault()} />
+                <img src={logoUrl} alt="Kanz Supply" style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'var(--pl-bg)' }} draggable="false" onContextMenu={e => e.preventDefault()} />
               </div>
             ) : profile && (
               <div style={{
-                width: 64, height: 64, borderRadius: '50%', margin: '0 auto 16px',
-                background: 'linear-gradient(135deg, #d4a843, #b8860b)',
+                width: 56, height: 56, borderRadius: '50%', margin: '0 auto 32px',
+                background: 'transparent', border: '1.5px solid var(--pl-gold)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, fontWeight: 700, color: '#0a0a0a',
-                boxShadow: '0 0 0 4px rgba(212,168,67,0.2)',
-                animation: 'pulseGlow 3s ease-in-out infinite',
+                fontSize: 24, fontWeight: 300, color: 'var(--pl-gold)',
+                fontFamily: 'var(--pl-serif)', fontStyle: 'italic',
               }}>
-                {displayName[0]?.toUpperCase() || '?'}
+                {displayName[0]?.toUpperCase() || 'K'}
               </div>
             )}
+
+            {/* Eyebrow */}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, font: '500 11px/1 var(--pl-mono)', letterSpacing: '0.32em', textTransform: 'uppercase', color: 'var(--pl-gold-2)', marginBottom: 28 }}>
+              <span style={{ width: 7, height: 7, background: 'var(--pl-terracotta)', borderRadius: '50%', display: 'inline-block', animation: 'pulseDot 2s infinite' }} />
+              {username ? `@${username} · ` : ''}Live Catalogue
+            </span>
+
+            {/* Editorial title */}
             <h1 style={{
-              fontSize: 'clamp(24px, 4vw, 42px)', fontWeight: 900, lineHeight: 1.15,
-              background: 'linear-gradient(90deg, #f0d078 0%, #d4a843 25%, #fff 50%, #d4a843 75%, #f0d078 100%)',
-              backgroundSize: '200% auto',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              marginBottom: 8, letterSpacing: '-0.5px',
-              animation: 'shimmer 4s linear infinite',
+              fontFamily: 'var(--pl-serif)', fontWeight: 300,
+              fontSize: 'clamp(42px, 7vw, 96px)', lineHeight: 0.95,
+              letterSpacing: '-0.025em', color: 'var(--pl-paper)',
+              marginBottom: 28, maxWidth: 900, margin: '0 auto 28px',
             }}>
-              {displayName ? `${displayName}'s Products` : 'Product Catalogue'}
+              {displayName ? <>{displayName}'s <em style={{ color: 'var(--pl-gold-2)' }}>collection.</em></> : <>Goods <em style={{ color: 'var(--pl-gold-2)' }}>worth selling.</em></>}
             </h1>
-            {username && <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>@{username}</p>}
+
+            <p style={{
+              fontFamily: 'var(--pl-serif)', fontWeight: 300, fontSize: 'clamp(15px, 1.4vw, 18px)',
+              lineHeight: 1.55, color: 'rgba(244,237,224,0.72)',
+              maxWidth: 540, margin: '0 auto 36px',
+            }}>
+              Browse the full lineup, add to your order, and we'll come back with wholesale pricing tailored for you.
+            </p>
+
+            {/* Stats strip */}
             {products.length > 0 && (
-              <div style={{ marginTop: 18, display: 'inline-flex', gap: 24, background: 'rgba(212,168,67,0.1)', backdropFilter: 'blur(8px)', borderRadius: 40, padding: '10px 28px', border: '1px solid rgba(212,168,67,0.2)' }}>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}><span style={{ color: '#f0d078', fontWeight: 800, fontSize: 18 }}>{products.length}</span> items</span>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}><span style={{ color: '#f0d078', fontWeight: 800, fontSize: 18 }}>{categories.length - 1}</span> categories</span>
+              <div style={{ display: 'inline-flex', gap: 0, border: '1px solid var(--pl-line)', borderRadius: 999, padding: '8px 4px', background: 'rgba(201,169,106,0.04)' }}>
+                <div style={{ padding: '8px 24px', borderRight: '1px solid var(--pl-line)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: 'var(--pl-gold-2)', fontFamily: 'var(--pl-serif)', fontStyle: 'italic', fontSize: 22, fontWeight: 300 }}>{products.length}</span>
+                  <span style={{ color: 'rgba(244,237,224,0.6)', font: '500 10px/1 var(--pl-mono)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Items</span>
+                </div>
+                <div style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: 'var(--pl-gold-2)', fontFamily: 'var(--pl-serif)', fontStyle: 'italic', fontSize: 22, fontWeight: 300 }}>{categories.length - 1}</span>
+                  <span style={{ color: 'rgba(244,237,224,0.6)', font: '500 10px/1 var(--pl-mono)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Categories</span>
+                </div>
               </div>
             )}
           </div>
@@ -808,17 +843,10 @@ export default function PriceListPage() {
             return (
               <section key={cat} style={{ marginBottom: 48 }}>
                 {/* Category heading */}
-                <div className="pl-cat-animate" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, animationDelay: `${catIdx * 0.1}s` }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 10, background: color + '25',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
-                    boxShadow: `0 0 12px ${color}20, 0 0 4px rgba(212,168,67,0.1)`,
-                  }}>{icon}</div>
-                  <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{cat}</h2>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{items.length} product{items.length !== 1 ? 's' : ''}</p>
-                  </div>
-                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)', marginLeft: 8 }} />
+                <div className="pl-cat-animate" style={{ display: 'flex', alignItems: 'baseline', gap: 18, marginBottom: 24, paddingTop: 16, borderTop: '1px solid var(--pl-line)', animationDelay: `${catIdx * 0.1}s` }}>
+                  <span style={{ font: '500 11px/1 var(--pl-mono)', letterSpacing: '0.22em', color: 'var(--pl-gold-2)', flexShrink: 0 }}>№ 0{catIdx + 1}</span>
+                  <h2 style={{ fontFamily: 'var(--pl-serif)', fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(22px, 3vw, 32px)', color: 'var(--pl-paper)', flex: 1, lineHeight: 1.1 }}>{cat}</h2>
+                  <span style={{ font: '500 10px/1 var(--pl-mono)', letterSpacing: '0.18em', color: 'rgba(244,237,224,0.4)', flexShrink: 0 }}>{items.length} {items.length === 1 ? 'item' : 'items'}</span>
                 </div>
 
                 <div className="pl-grid">
