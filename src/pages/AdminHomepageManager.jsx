@@ -90,7 +90,7 @@ export default function AdminHomepageManager() {
     const product = products.find(p => p.id === productId)
     if (!product) return
     const options = [...(newRewards[rewardIdx].options || [])]
-    options[optionIdx] = { product_id: product.id, name: product.name }
+    options[optionIdx] = { product_id: product.id, name: product.name, image_url: product.image_url || null }
     newRewards[rewardIdx] = { ...newRewards[rewardIdx], options }
     setRewards(newRewards)
   }

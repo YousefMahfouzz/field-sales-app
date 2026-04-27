@@ -371,26 +371,84 @@ export default function NicheLandingPage() {
                       )}
                     </div>
                     {r.options && r.options.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-                        {r.options.map((opt, i) => (
-                          <div key={i} style={{
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            padding: '8px 12px', background: 'rgba(0,0,0,0.3)',
-                            borderRadius: 8, border: `1px solid ${color}22`,
-                          }}>
-                            <span style={{ color: color, fontSize: 18 }}>🎁</span>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', flex: 1 }}>{opt.name}</span>
-                          </div>
-                        ))}
-                        {r.options.length > 1 && (
-                          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 4 }}>
-                            👆 Customer picks one
-                          </p>
-                        )}
+                      <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        {r.options.map((opt, i) => {
+                          const imgUrl = opt.image_url
+                          return (
+                            <div key={i} style={{
+                              flex: '1 1 140px', maxWidth: 180,
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                            }}>
+                              <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1' }}>
+                                <div style={{
+                                  position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden',
+                                  background: imgUrl ? '#000' : 'linear-gradient(135deg, #1a1500, #2a2010)',
+                                  border: `1.5px solid ${color}40`,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                  {imgUrl ? (
+                                    <img src={imgUrl} alt={opt.name} draggable="false" onContextMenu={e => e.preventDefault()}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none', pointerEvents: 'none' }} />
+                                  ) : (
+                                    <span style={{ fontSize: 38, opacity: 0.3 }}>📦</span>
+                                  )}
+                                </div>
+                                <div style={{
+                                  position: 'absolute', top: 0, bottom: 0, left: '50%',
+                                  width: 'clamp(14px, 14%, 22px)', transform: 'translateX(-50%)',
+                                  background: `linear-gradient(180deg, ${color}, ${color}cc 50%, ${color}88 100%)`,
+                                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.25), 0 2px 6px rgba(0,0,0,0.4)',
+                                  pointerEvents: 'none',
+                                }} />
+                                <div style={{
+                                  position: 'absolute', left: 0, right: 0, top: '50%',
+                                  height: 'clamp(14px, 14%, 22px)', transform: 'translateY(-50%)',
+                                  background: `linear-gradient(90deg, ${color}, ${color}cc 50%, ${color}88 100%)`,
+                                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.25), 0 2px 6px rgba(0,0,0,0.4)',
+                                  pointerEvents: 'none',
+                                }} />
+                                <svg viewBox="0 0 80 56" style={{
+                                  position: 'absolute', top: '-18%', left: '50%', transform: 'translateX(-50%)',
+                                  width: '60%', height: 'auto', filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.4))',
+                                  pointerEvents: 'none',
+                                }}>
+                                  <defs>
+                                    <linearGradient id={`niche-bow-${idx}-${i}`} x1="0" x2="0" y1="0" y2="1">
+                                      <stop offset="0%" stopColor={color} stopOpacity="1" />
+                                      <stop offset="100%" stopColor={color} stopOpacity="0.6" />
+                                    </linearGradient>
+                                  </defs>
+                                  <path d="M 40 30 Q 8 6, 6 28 Q 4 46, 38 34 Z" fill={`url(#niche-bow-${idx}-${i})`} stroke="rgba(0,0,0,0.4)" strokeWidth="0.8" />
+                                  <path d="M 40 30 Q 72 6, 74 28 Q 76 46, 42 34 Z" fill={`url(#niche-bow-${idx}-${i})`} stroke="rgba(0,0,0,0.4)" strokeWidth="0.8" />
+                                  <ellipse cx="40" cy="30" rx="7" ry="9" fill={`url(#niche-bow-${idx}-${i})`} stroke="rgba(0,0,0,0.4)" strokeWidth="0.8" />
+                                  <ellipse cx="38" cy="27" rx="2" ry="3" fill="rgba(255,255,255,0.4)" />
+                                </svg>
+                                {isEarned && (
+                                  <div style={{
+                                    position: 'absolute', top: 6, right: 6, zIndex: 5,
+                                    width: 24, height: 24, borderRadius: '50%',
+                                    background: '#16a34a', color: 'white',
+                                    display: 'grid', placeItems: 'center',
+                                    fontSize: 14, fontWeight: 800,
+                                    boxShadow: '0 2px 8px rgba(22,163,74,0.5)',
+                                  }}>✓</div>
+                                )}
+                              </div>
+                              <p style={{ fontSize: 12, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.3 }}>
+                                {opt.name}
+                              </p>
+                            </div>
+                          )
+                        })}
                       </div>
                     ) : (
-                      <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginTop: 8 }}>
                         🎁 {r.name || 'Free gift'}
+                      </p>
+                    )}
+                    {r.options && r.options.length > 1 && (
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 10, textAlign: 'center' }}>
+                        👆 Customer picks one
                       </p>
                     )}
                     {!isEarned && cartTotal > 0 && (
