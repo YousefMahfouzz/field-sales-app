@@ -423,6 +423,7 @@ export default function PriceListPage() {
   const [orderLoading, setOrderLoading] = useState(false)
   const [confirmedTotal, setConfirmedTotal] = useState(0)
   const [rewards, setRewards] = useState([])
+  const [rewardChoices, setRewardChoices] = useState({}) // { rewardIdx: optionIdx } – which option customer picked when tier has 2+
 
   // Fetch logo
   useEffect(() => {
@@ -433,7 +434,7 @@ export default function PriceListPage() {
         if (data?.value) {
           try {
             const parsed = JSON.parse(data.value)
-              .filter(r => r.name && r.threshold > 0)
+              .filter(r => r.threshold > 0 && (r.name || (r.options && r.options.length > 0)))
               .sort((a, b) => a.threshold - b.threshold)
             setRewards(parsed)
           } catch {}
@@ -441,12 +442,27 @@ export default function PriceListPage() {
       })
   }, []) // snapshot before cart clears
 
+  // Helper: get display name for a reward (new shape: pick from options, legacy: r.name)
+  const rewardDisplay = (r, idx) => {
+    if (r.options && r.options.length > 0) {
+      if (r.options.length === 1) return r.options[0].name
+      const chosen = rewardChoices[idx]
+      if (chosen != null && r.options[chosen]) return r.options[chosen].name
+      return `${r.options.map(o => o.name).join(' OR ')}`
+    }
+    return r.name || 'Free gift'
+  }
+  const rewardNeedsChoice = (r, idx) => {
+    return r.options && r.options.length > 1 && rewardChoices[idx] == null
+  }
+
   const cartCount = Object.values(cart).reduce((s, i) => s + i.qty, 0)
   const cartTotal = Object.values(cart).reduce((s, i) => s + i.qty * i.product.sell_price, 0)
 
   // Reward progress based on cart total
   const earnedRewards = rewards.filter(r => cartTotal >= r.threshold)
   const nextReward = rewards.find(r => cartTotal < r.threshold)
+  const nextRewardIdx = nextReward ? rewards.indexOf(nextReward) : -1
   const amountToNextReward = nextReward ? nextReward.threshold - cartTotal : 0
   const rewardProgress = nextReward ? Math.min(100, (cartTotal / nextReward.threshold) * 100) : 100
 
@@ -504,11 +520,21 @@ export default function PriceListPage() {
       // seller_user_id: prefer from product, fallback to profile lookup
       const sellerUserId = products[0]?.user_id || profile?.id || null
 
+      // Append earned rewards (with chosen option) to notes so admin sees it
+      let rewardNote = ''
+      if (earnedRewards.length > 0) {
+        const rewardLines = earnedRewards.map(r => {
+          const rIdx = rewards.indexOf(r)
+          return `• ${rewardDisplay(r, rIdx)}${r.value > 0 ? ` ($${r.value.toFixed(2)} value)` : ''}`
+        }).join('\n')
+        rewardNote = `\n\n🎁 FREE GIFTS EARNED:\n${rewardLines}`
+      }
+
       const { error } = await supabase.from('orders').insert([{
         customer_name: orderForm.name.trim(),
         phone: orderForm.phone.trim(),
         address: orderForm.address.trim(),
-        notes: orderForm.notes.trim(),
+        notes: orderForm.notes.trim() + rewardNote,
         items,
         total_amount: cartTotal,
         seller_user_id: sellerUserId,
@@ -895,7 +921,7 @@ export default function PriceListPage() {
                 🎁 ${amountToNextReward.toFixed(2)} away from
               </p>
               <p style={{ fontSize: 13, color: '#fff', fontWeight: 800, marginBottom: 8, lineHeight: 1.3 }}>
-                {nextReward.name}
+                {rewardDisplay(nextReward, nextRewardIdx)}
                 {nextReward.value > 0 && <span style={{ color: '#d4a843', fontSize: 11, fontWeight: 600 }}> (${nextReward.value.toFixed(2)} value)</span>}
               </p>
               <div style={{ height: 6, borderRadius: 6, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
@@ -903,7 +929,7 @@ export default function PriceListPage() {
               </div>
               {earnedRewards.length > 0 && (
                 <p style={{ fontSize: 10, color: '#86efac', marginTop: 6, fontWeight: 600 }}>
-                  ✅ Earned: {earnedRewards.map(r => r.name).join(', ')}
+                  ✅ Earned: {earnedRewards.map((r, i) => rewardDisplay(r, rewards.indexOf(r))).join(', ')}
                 </p>
               )}
             </>
@@ -913,7 +939,7 @@ export default function PriceListPage() {
                 🎉 All rewards unlocked!
               </p>
               <p style={{ fontSize: 12, color: '#fff', lineHeight: 1.4 }}>
-                You've earned: {earnedRewards.map(r => r.name).join(', ')}
+                You've earned: {earnedRewards.map((r, i) => rewardDisplay(r, rewards.indexOf(r))).join(', ')}
               </p>
             </>
           )}
@@ -1042,7 +1068,7 @@ export default function PriceListPage() {
                     <span style={{ fontSize: 18 }}>🎁</span>
                     <p style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>
                       {nextReward
-                        ? `$${amountToNextReward.toFixed(2)} away from ${nextReward.name}`
+                        ? `$${amountToNextReward.toFixed(2)} away from ${rewardDisplay(nextReward, nextRewardIdx)}`
                         : `🎉 You've unlocked all rewards!`
                       }
                     </p>
@@ -1061,12 +1087,37 @@ export default function PriceListPage() {
                   )}
                   {earnedRewards.length > 0 && (
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed rgba(146,64,14,0.2)' }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>✅ Earned</p>
-                      {earnedRewards.map((r, i) => (
-                        <p key={i} style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
-                          🎁 {r.name}{r.value > 0 ? ` ($${r.value.toFixed(2)} value)` : ''}
-                        </p>
-                      ))}
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>✅ Earned</p>
+                      {earnedRewards.map((r, i) => {
+                        const rIdx = rewards.indexOf(r)
+                        const needsChoice = rewardNeedsChoice(r, rIdx)
+                        return (
+                          <div key={i} style={{ marginBottom: 8 }}>
+                            <p style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
+                              🎁 {rewardDisplay(r, rIdx)}{r.value > 0 ? ` ($${r.value.toFixed(2)} value)` : ''}
+                            </p>
+                            {needsChoice && (
+                              <div style={{ marginTop: 6, padding: '8px 10px', background: 'white', border: '1.5px solid #fbbf24', borderRadius: 8 }}>
+                                <p style={{ fontSize: 11, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>👇 Choose your free gift:</p>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  {r.options.map((opt, optIdx) => (
+                                    <button key={optIdx} onClick={() => setRewardChoices(p => ({ ...p, [rIdx]: optIdx }))}
+                                      style={{
+                                        flex: '1 1 auto', padding: '8px 12px', borderRadius: 8,
+                                        border: `1.5px solid ${rewardChoices[rIdx] === optIdx ? '#16a34a' : '#fbbf24'}`,
+                                        background: rewardChoices[rIdx] === optIdx ? '#dcfce7' : 'white',
+                                        color: rewardChoices[rIdx] === optIdx ? '#166534' : '#92400e',
+                                        fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                                      }}>
+                                      {rewardChoices[rIdx] === optIdx ? '✓ ' : ''}{opt.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>

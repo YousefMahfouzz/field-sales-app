@@ -37,7 +37,7 @@ export default function PublicHomePage() {
     supabase.from('app_settings').select('value').eq('key', 'rewards').single()
       .then(({ data }) => {
         if (data?.value) {
-          try { setRewards(JSON.parse(data.value).filter(r => r.name && r.threshold > 0).sort((a,b) => a.threshold - b.threshold)) }
+          try { setRewards(JSON.parse(data.value).filter(r => r.threshold > 0 && (r.name || (r.options && r.options.length > 0))).sort((a,b) => a.threshold - b.threshold)) }
           catch {}
         }
       })

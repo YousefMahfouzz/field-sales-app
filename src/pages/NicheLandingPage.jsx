@@ -19,6 +19,7 @@ export default function NicheLandingPage() {
   const [orderLoading, setOrderLoading] = useState(false)
   const [orderSubmitted, setOrderSubmitted] = useState(false)
   const [confirmedTotal, setConfirmedTotal] = useState(0)
+  const [rewardChoices, setRewardChoices] = useState({}) // { rewardIdx: optionIdx }
 
   useEffect(() => {
     const load = async () => {
@@ -41,13 +42,13 @@ export default function NicheLandingPage() {
         .eq('price_list_id', listData.id).eq('is_active', true).order('display_order')
       setItems((itemData || []).filter(i => i.product))
 
-      // Load rewards
+      // Load rewards SCOPED to this list (rewards_list_<id>) – fall back to none if not set
       const { data: rewardsData } = await supabase
-        .from('app_settings').select('value').eq('key', 'rewards').single()
+        .from('app_settings').select('value').eq('key', `rewards_list_${listData.id}`).single()
       if (rewardsData?.value) {
         try {
           setRewards(JSON.parse(rewardsData.value)
-            .filter(r => r.name && r.threshold > 0)
+            .filter(r => r.threshold > 0 && (r.name || (r.options && r.options.length > 0)))
             .sort((a, b) => a.threshold - b.threshold))
         } catch {}
       }
@@ -76,8 +77,21 @@ export default function NicheLandingPage() {
 
   const earnedRewards = rewards.filter(r => cartTotal >= r.threshold)
   const nextReward = rewards.find(r => cartTotal < r.threshold)
+  const nextRewardIdx = nextReward ? rewards.indexOf(nextReward) : -1
   const amountToNext = nextReward ? nextReward.threshold - cartTotal : 0
   const rewardProgress = nextReward ? Math.min(100, (cartTotal / nextReward.threshold) * 100) : 100
+
+  // Helper: get display name for a reward
+  const rewardDisplay = (r, idx) => {
+    if (r.options && r.options.length > 0) {
+      if (r.options.length === 1) return r.options[0].name
+      const chosen = rewardChoices[idx]
+      if (chosen != null && r.options[chosen]) return r.options[chosen].name
+      return r.options.map(o => o.name).join(' OR ')
+    }
+    return r.name || 'Free gift'
+  }
+  const rewardNeedsChoice = (r, idx) => r.options && r.options.length > 1 && rewardChoices[idx] == null
 
   const submitOrder = async () => {
     if (!orderForm.name.trim() || !orderForm.phone.trim() || !orderForm.address.trim()) {
@@ -95,11 +109,21 @@ export default function NicheLandingPage() {
         subtotal: qty * priceFor(item, product),
       }))
 
+      // Append earned rewards (with chosen option) to notes
+      let rewardNote = ''
+      if (earnedRewards.length > 0) {
+        const rewardLines = earnedRewards.map(r => {
+          const rIdx = rewards.indexOf(r)
+          return `• ${rewardDisplay(r, rIdx)}${r.value > 0 ? ` ($${r.value.toFixed(2)} value)` : ''}`
+        }).join('\n')
+        rewardNote = `\n\n🎁 FREE GIFTS EARNED:\n${rewardLines}`
+      }
+
       const { error } = await supabase.from('orders').insert([{
         customer_name: orderForm.name.trim(),
         phone: orderForm.phone.trim(),
         address: orderForm.address.trim(),
-        notes: (orderForm.notes.trim() || '') + (list.name ? `\n[List: ${list.name}]` : ''),
+        notes: (orderForm.notes.trim() || '') + (list.name ? `\n[List: ${list.name}]` : '') + rewardNote,
         items: orderItems,
         total_amount: cartTotal,
         seller_user_id: seller?.id || list.user_id || null,
@@ -262,18 +286,18 @@ export default function NicheLandingPage() {
             <>
               <p style={{ fontSize: 11, color: '#e6c989', fontWeight: 700, marginBottom: 4 }}>🎁 ${amountToNext.toFixed(2)} away from</p>
               <p style={{ fontSize: 13, color: '#fff', fontWeight: 800, marginBottom: 8, lineHeight: 1.3 }}>
-                {nextReward.name}
+                {rewardDisplay(nextReward, nextRewardIdx)}
                 {nextReward.value > 0 && <span style={{ color: color, fontSize: 11, fontWeight: 600 }}> (${nextReward.value.toFixed(2)} value)</span>}
               </p>
               <div style={{ height: 6, borderRadius: 6, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
                 <div style={{ width: `${rewardProgress}%`, height: '100%', background: `linear-gradient(90deg, ${color}, #e6c989)`, transition: 'width 0.3s ease', borderRadius: 6 }} />
               </div>
-              {earnedRewards.length > 0 && <p style={{ fontSize: 10, color: '#86efac', marginTop: 6, fontWeight: 600 }}>✅ Earned: {earnedRewards.map(r => r.name).join(', ')}</p>}
+              {earnedRewards.length > 0 && <p style={{ fontSize: 10, color: '#86efac', marginTop: 6, fontWeight: 600 }}>✅ Earned: {earnedRewards.map(r => rewardDisplay(r, rewards.indexOf(r))).join(', ')}</p>}
             </>
           ) : (
             <>
               <p style={{ fontSize: 11, color: '#86efac', fontWeight: 700, marginBottom: 4 }}>🎉 All rewards unlocked!</p>
-              <p style={{ fontSize: 12, color: '#fff', lineHeight: 1.4 }}>You've earned: {earnedRewards.map(r => r.name).join(', ')}</p>
+              <p style={{ fontSize: 12, color: '#fff', lineHeight: 1.4 }}>You've earned: {earnedRewards.map(r => rewardDisplay(r, rewards.indexOf(r))).join(', ')}</p>
             </>
           )}
         </div>
@@ -332,7 +356,7 @@ export default function NicheLandingPage() {
               {rewards.length > 0 && (
                 <div style={{ padding: '14px 16px', borderRadius: 12, marginBottom: 14, background: 'linear-gradient(135deg, rgba(201,169,106,0.08), rgba(140,109,61,0.05))', border: '1px solid rgba(201,169,106,0.22)' }}>
                   <p style={{ fontSize: 13, fontWeight: 800, color: '#e6c989', marginBottom: 8 }}>
-                    {nextReward ? `🎁 $${amountToNext.toFixed(2)} away from ${nextReward.name}` : `🎉 All rewards unlocked!`}
+                    {nextReward ? `🎁 $${amountToNext.toFixed(2)} away from ${rewardDisplay(nextReward, nextRewardIdx)}` : `🎉 All rewards unlocked!`}
                   </p>
                   {nextReward && (
                     <div style={{ height: 8, borderRadius: 8, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 6 }}>
@@ -341,8 +365,37 @@ export default function NicheLandingPage() {
                   )}
                   {earnedRewards.length > 0 && (
                     <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed rgba(201,169,106,0.25)' }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#86efac', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>✅ Earned</p>
-                      {earnedRewards.map((r, i) => (<p key={i} style={{ fontSize: 12, color: '#a7f3d0', fontWeight: 600 }}>🎁 {r.name}{r.value > 0 ? ` ($${r.value.toFixed(2)})` : ''}</p>))}
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#86efac', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>✅ Earned</p>
+                      {earnedRewards.map((r, i) => {
+                        const rIdx = rewards.indexOf(r)
+                        const needsChoice = rewardNeedsChoice(r, rIdx)
+                        return (
+                          <div key={i} style={{ marginBottom: 8 }}>
+                            <p style={{ fontSize: 12, color: '#a7f3d0', fontWeight: 600 }}>
+                              🎁 {rewardDisplay(r, rIdx)}{r.value > 0 ? ` ($${r.value.toFixed(2)})` : ''}
+                            </p>
+                            {needsChoice && (
+                              <div style={{ marginTop: 6, padding: '8px 10px', background: 'rgba(0,0,0,0.3)', border: `1.5px solid ${color}55`, borderRadius: 8 }}>
+                                <p style={{ fontSize: 11, fontWeight: 700, color: '#e6c989', marginBottom: 6 }}>👇 Choose your free gift:</p>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  {r.options.map((opt, optIdx) => (
+                                    <button key={optIdx} onClick={() => setRewardChoices(p => ({ ...p, [rIdx]: optIdx }))}
+                                      style={{
+                                        flex: '1 1 auto', padding: '8px 12px', borderRadius: 8,
+                                        border: `1.5px solid ${rewardChoices[rIdx] === optIdx ? '#86efac' : 'rgba(201,169,106,0.4)'}`,
+                                        background: rewardChoices[rIdx] === optIdx ? 'rgba(134,239,172,0.15)' : 'transparent',
+                                        color: rewardChoices[rIdx] === optIdx ? '#a7f3d0' : '#e6c989',
+                                        fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                                      }}>
+                                      {rewardChoices[rIdx] === optIdx ? '✓ ' : ''}{opt.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
