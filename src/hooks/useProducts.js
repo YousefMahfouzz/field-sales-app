@@ -108,6 +108,81 @@ export function useProducts() {
     return newAvgCost
   }
 
+  /**
+   * Delete a stock movement (purchase) and recompute avg_cost from remaining purchases.
+   * If type='in', the qty is also subtracted from current stock.
+   * Recompute formula: replay all 'in' movements in chronological order with weighted avg.
+   */
+  const deleteStockMovement = async (movementId) => {
+    // 1. Fetch the movement to know what to undo
+    const { data: mv, error: mErr } = await supabase
+      .from('stock_movements').select('*').eq('id', movementId).single()
+    if (mErr || !mv) throw new Error('Movement not found')
+    const productId = mv.product_id
+    const product = products.find(p => p.id === productId)
+
+    // 2. Delete the movement
+    await supabase.from('stock_movements').delete().eq('id', movementId)
+
+    // 3. Fetch ALL remaining 'in' movements for this product, in chronological order
+    const { data: ins } = await supabase.from('stock_movements')
+      .select('qty, cost_per_unit, created_at')
+      .eq('product_id', productId).eq('type', 'in')
+      .order('created_at', { ascending: true })
+
+    // 4. Replay weighted average from scratch
+    let runningQty = 0
+    let runningAvg = 0
+    for (const m of ins || []) {
+      const qty = m.qty || 0
+      const cost = m.cost_per_unit ?? null
+      if (cost === null || cost < 0) continue
+      const newQty = runningQty + qty
+      if (newQty > 0) {
+        runningAvg = ((runningQty * runningAvg) + (qty * cost)) / newQty
+      }
+      runningQty = newQty
+    }
+    runningAvg = Math.round(runningAvg * 100) / 100
+
+    // 5. Adjust current stock: subtract qty if it was an 'in' movement
+    let newStockQty = product?.stock_qty || 0
+    if (mv.type === 'in') newStockQty = Math.max(0, newStockQty - (mv.qty || 0))
+
+    // 6. Save updated product
+    const updates = { avg_cost: runningAvg, cost: runningAvg, stock_qty: newStockQty }
+    await updateProduct(productId, updates)
+
+    return { newAvgCost: runningAvg, newStockQty }
+  }
+
+  /**
+   * Recompute avg_cost from scratch using all current 'in' stock movements.
+   * Useful to fix corrupted avg_cost without deleting anything.
+   */
+  const recomputeAvgCost = async (productId) => {
+    const { data: ins } = await supabase.from('stock_movements')
+      .select('qty, cost_per_unit, created_at')
+      .eq('product_id', productId).eq('type', 'in')
+      .order('created_at', { ascending: true })
+
+    let runningQty = 0
+    let runningAvg = 0
+    for (const m of ins || []) {
+      const qty = m.qty || 0
+      const cost = m.cost_per_unit ?? null
+      if (cost === null || cost < 0) continue
+      const newQty = runningQty + qty
+      if (newQty > 0) {
+        runningAvg = ((runningQty * runningAvg) + (qty * cost)) / newQty
+      }
+      runningQty = newQty
+    }
+    runningAvg = Math.round(runningAvg * 100) / 100
+    await updateProduct(productId, { avg_cost: runningAvg, cost: runningAvg })
+    return runningAvg
+  }
+
   const uploadProductImage = async (productId, file) => {
     // Use effectiveUserId for storage path so all images are under the owner's folder
     const ext = 'webp'
@@ -133,7 +208,7 @@ export function useProducts() {
   return {
     products, loading, fetchProducts,
     addProduct, updateProduct, deleteProduct,
-    addStock,
+    addStock, deleteStockMovement, recomputeAvgCost,
     uploadProductImage, uploadAdditionalImage,
     isDriver,
   }

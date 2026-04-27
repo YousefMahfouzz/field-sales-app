@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { products, addStock, deleteProduct, isDriver } = useProducts()
+  const { products, addStock, deleteProduct, deleteStockMovement, recomputeAvgCost, isDriver } = useProducts()
   const { canSeeProfit } = useAuth()
   const product = products.find(p => p.id === id)
 
@@ -151,7 +151,24 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Stock history */}
-        <p className="section-header">Stock History</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <p className="section-header" style={{ margin: 0 }}>Stock History</p>
+          {!isDriver && movements.length > 0 && (
+            <button
+              onClick={async () => {
+                if (!window.confirm('Recompute average cost from all purchases? This fixes corrupted cost data.')) return
+                try {
+                  const newAvg = await recomputeAvgCost(id)
+                  alert(`✅ Recomputed. New avg cost: $${newAvg.toFixed(2)}`)
+                  window.location.reload()
+                } catch (e) { alert('❌ ' + e.message) }
+              }}
+              style={{ fontSize: 11, padding: '4px 10px', borderRadius: 14, border: '1.5px solid var(--blue)', background: 'var(--blue-light)', color: 'var(--blue)', cursor: 'pointer', fontWeight: 700 }}
+            >
+              🔄 Recompute Avg Cost
+            </button>
+          )}
+        </div>
         {movements.length === 0 && <p className="text-sm text-muted" style={{ marginBottom:16 }}>No stock movements yet.</p>}
         {movements.map(m => {
           const isIn = m.type === 'in'
@@ -181,10 +198,30 @@ export default function ProductDetailPage() {
                   {m.source && <p style={{ fontSize:12, color:'var(--text-muted)' }}>📦 {m.source}</p>}
                   {m.note && <p style={{ fontSize:12, color:'var(--text-muted)' }}>{m.note}</p>}
                 </div>
-                <p style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right', flexShrink:0, marginLeft:8 }}>
-                  {new Date(m.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}<br/>
-                  {new Date(m.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}
-                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                  <p style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right', flexShrink:0 }}>
+                    {new Date(m.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}<br/>
+                    {new Date(m.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}
+                  </p>
+                  {!isDriver && isIn && (
+                    <button
+                      onClick={async () => {
+                        const msg = `Delete this purchase of ${m.qty} ${product.unit}s${m.cost_per_unit ? ` at $${m.cost_per_unit.toFixed(2)}/unit` : ''}?\n\nThis will:\n• Subtract ${m.qty} from current stock\n• Recompute average cost from remaining purchases`
+                        if (!window.confirm(msg)) return
+                        try {
+                          await deleteStockMovement(m.id)
+                          setMovements(prev => prev.filter(x => x.id !== m.id))
+                          alert('✅ Deleted. Avg cost recomputed.')
+                          setTimeout(() => window.location.reload(), 600)
+                        } catch (e) { alert('❌ ' + e.message) }
+                      }}
+                      style={{ fontSize: 10, padding: '3px 8px', borderRadius: 12, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontWeight: 700 }}
+                      title="Delete this purchase"
+                    >
+                      🗑️ Delete
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )
