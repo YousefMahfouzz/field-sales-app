@@ -48,9 +48,11 @@ export default function NicheLandingPage() {
   const color = list.banner_color || '#2563eb'
   const grouped = {}
   items.forEach(item => {
-    const cat = item.product.category || 'Products'
+    const product = item.product
+    if (!product) return
+    const cat = product.category || 'Products'
     if (!grouped[cat]) grouped[cat] = []
-    grouped[cat].push(item)
+    grouped[cat].push({ item, product })
   })
 
   return (
