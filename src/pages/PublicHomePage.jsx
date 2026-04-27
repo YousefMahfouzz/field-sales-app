@@ -146,17 +146,53 @@ export default function PublicHomePage() {
 
         /* ── 3. HERO ── */
         .ks-hero { position: relative; height: calc(100vh - 90px); min-height: 640px; overflow: hidden; background: var(--bg); }
-        .ks-hero-img { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s ease, transform 8s ease-out; transform: scale(1.05); }
-        .ks-hero-img.on { opacity: 1; transform: scale(1.1); }
-        .ks-hero-grain { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E"); opacity: 0.18; mix-blend-mode: overlay; pointer-events: none; }
-        .ks-hero-vignette { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,11,8,0.55) 0%, rgba(14,11,8,0.25) 30%, rgba(14,11,8,0.4) 60%, rgba(14,11,8,0.94) 100%), radial-gradient(ellipse at 30% 50%, transparent 30%, rgba(14,11,8,0.5) 90%); }
-        .ks-hero-bgmark { position: absolute; bottom: -3vw; left: 50%; transform: translateX(-50%); font-family: var(--serif); font-style: italic; font-weight: 300; font-size: 28vw; line-height: 0.85; color: rgba(244,237,224,0.06); letter-spacing: -0.05em; pointer-events: none; white-space: nowrap; z-index: 1; }
-        .ks-hero-copy { position: absolute; inset: 0; z-index: 2; padding: 8vh 80px 60px 80px; display: flex; flex-direction: column; justify-content: flex-end; max-width: 1500px; margin: 0 auto; }
-        .ks-hero-eyebrow { font: 500 11px/1 var(--mono); letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold-2); margin-bottom: 28px; display: inline-flex; align-items: center; gap: 12px; }
-        .ks-hero-eyebrow .dot { width: 7px; height: 7px; background: var(--terracotta); border-radius: 50%; display: inline-block; animation: pulseDot 2s infinite; }
-        .ks-hero-title { font-family: var(--serif); font-weight: 300; font-size: clamp(48px, 9vw, 132px); line-height: 0.92; letter-spacing: -0.025em; color: var(--paper); margin-bottom: 32px; max-width: 1100px; }
+        .ks-hero-img { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 2.5s ease; transform-origin: center; will-change: transform, opacity; }
+        .ks-hero-img.on { opacity: 0.7; animation: kenBurns 12s ease-out forwards; }
+        @keyframes kenBurns {
+          0% { transform: scale(1.0) translate(0, 0); }
+          100% { transform: scale(1.15) translate(-2%, -1.5%); }
+        }
+        /* Heavy dark overlay for text readability */
+        .ks-hero-base { position: absolute; inset: 0; background: rgba(14,11,8,0.55); pointer-events: none; }
+        .ks-hero-grain { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E"); opacity: 0.15; mix-blend-mode: overlay; pointer-events: none; }
+        .ks-hero-vignette {
+          position: absolute; inset: 0; pointer-events: none;
+          background:
+            linear-gradient(180deg, rgba(14,11,8,0.6) 0%, rgba(14,11,8,0.4) 25%, rgba(14,11,8,0.55) 55%, rgba(14,11,8,0.96) 100%),
+            radial-gradient(ellipse at 25% 60%, rgba(14,11,8,0.0) 0%, rgba(14,11,8,0.65) 75%);
+        }
+        /* Animated gold gradient sweep across the hero */
+        @keyframes goldSweep {
+          0% { transform: translateX(-100%) skewX(-12deg); opacity: 0; }
+          25% { opacity: 0.4; }
+          50% { transform: translateX(0%) skewX(-12deg); opacity: 0.6; }
+          75% { opacity: 0.4; }
+          100% { transform: translateX(100%) skewX(-12deg); opacity: 0; }
+        }
+        .ks-hero-sweep {
+          position: absolute; top: 0; bottom: 0; left: 0; width: 50%;
+          background: linear-gradient(90deg, transparent 0%, rgba(201,169,106,0.05) 30%, rgba(230,201,137,0.12) 50%, rgba(201,169,106,0.05) 70%, transparent 100%);
+          animation: goldSweep 14s ease-in-out infinite;
+          pointer-events: none; mix-blend-mode: screen;
+        }
+        /* Floating particles */
+        @keyframes float1 { 0%,100% { transform: translate(0, 0); } 50% { transform: translate(40px, -30px); } }
+        @keyframes float2 { 0%,100% { transform: translate(0, 0); } 50% { transform: translate(-30px, 40px); } }
+        @keyframes float3 { 0%,100% { transform: translate(0, 0); } 50% { transform: translate(50px, 50px); } }
+        .ks-hero-orb { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(80px); }
+        .ks-hero-orb-1 { width: 380px; height: 380px; top: 10%; right: 5%; background: rgba(201,169,106,0.15); animation: float1 16s ease-in-out infinite; }
+        .ks-hero-orb-2 { width: 280px; height: 280px; top: 50%; left: -8%; background: rgba(185,90,58,0.1); animation: float2 22s ease-in-out infinite; }
+        .ks-hero-orb-3 { width: 200px; height: 200px; bottom: 15%; right: 30%; background: rgba(230,201,137,0.08); animation: float3 18s ease-in-out infinite; }
+
+        .ks-hero-bgmark { position: absolute; bottom: -3vw; left: 50%; transform: translateX(-50%); font-family: var(--serif); font-style: italic; font-weight: 300; font-size: 28vw; line-height: 0.85; color: rgba(244,237,224,0.04); letter-spacing: -0.05em; pointer-events: none; white-space: nowrap; z-index: 1; }
+        .ks-hero-copy { position: absolute; inset: 0; z-index: 3; padding: 8vh 80px 60px 80px; display: flex; flex-direction: column; justify-content: flex-end; max-width: 1500px; margin: 0 auto; }
+        /* Subtle dark panel behind text for guaranteed readability */
+        .ks-hero-textbg { position: absolute; left: 0; right: 0; bottom: 0; height: 70%; background: linear-gradient(180deg, transparent 0%, rgba(14,11,8,0.4) 30%, rgba(14,11,8,0.85) 80%, rgba(14,11,8,0.96) 100%); z-index: 2; pointer-events: none; }
+        .ks-hero-eyebrow { font: 500 11px/1 var(--mono); letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold-2); margin-bottom: 28px; display: inline-flex; align-items: center; gap: 12px; text-shadow: 0 2px 12px rgba(0,0,0,0.7); }
+        .ks-hero-eyebrow .dot { width: 7px; height: 7px; background: var(--terracotta); border-radius: 50%; display: inline-block; animation: pulseDot 2s infinite; box-shadow: 0 0 8px rgba(185,90,58,0.5); }
+        .ks-hero-title { font-family: var(--serif); font-weight: 300; font-size: clamp(48px, 9vw, 132px); line-height: 0.92; letter-spacing: -0.025em; color: var(--paper); margin-bottom: 32px; max-width: 1100px; text-shadow: 0 4px 30px rgba(0,0,0,0.8), 0 2px 12px rgba(0,0,0,0.5); }
         .ks-hero-title em { font-style: italic; color: var(--gold-2); font-weight: 300; }
-        .ks-hero-sub { font-family: var(--serif); font-weight: 300; font-size: clamp(15px, 1.4vw, 18px); line-height: 1.5; color: rgba(244,237,224,0.78); max-width: 580px; margin-bottom: 44px; }
+        .ks-hero-sub { font-family: var(--serif); font-weight: 300; font-size: clamp(15px, 1.4vw, 18px); line-height: 1.5; color: rgba(244,237,224,0.92); max-width: 580px; margin-bottom: 44px; text-shadow: 0 2px 14px rgba(0,0,0,0.85), 0 1px 4px rgba(0,0,0,0.6); }
         .ks-hero-cta { display: flex; gap: 14px; margin-bottom: 60px; flex-wrap: wrap; }
         .ks-btn-prime { display: inline-flex; align-items: center; gap: 10px; padding: 17px 26px; background: var(--gold); color: var(--bg); border-radius: 999px; font: 600 13px/1 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; transition: background 0.2s, transform 0.2s; cursor: pointer; border: none; }
         .ks-btn-prime:hover { background: var(--gold-2); transform: translateY(-1px); }
@@ -336,11 +372,17 @@ export default function PublicHomePage() {
       {/* ── 3. HERO ── */}
       <section className="ks-hero">
         {heroImages.map((img, i) => (
-          <div key={i} className={`ks-hero-img${i === heroIdx ? ' on' : ''}`} style={{ backgroundImage: `url(${img.url})` }} />
+          <div key={`${i}-${heroIdx}`} className={`ks-hero-img${i === heroIdx ? ' on' : ''}`} style={{ backgroundImage: `url(${img.url})` }} />
         ))}
+        <div className="ks-hero-base" />
+        <div className="ks-hero-orb ks-hero-orb-1" />
+        <div className="ks-hero-orb ks-hero-orb-2" />
+        <div className="ks-hero-orb ks-hero-orb-3" />
+        <div className="ks-hero-sweep" />
         <div className="ks-hero-grain" />
         <div className="ks-hero-vignette" />
         <div className="ks-hero-bgmark">Kanz</div>
+        <div className="ks-hero-textbg" />
 
         <div className="ks-hero-side">
           <span>EST. NEW ORLEANS</span>
