@@ -147,7 +147,7 @@ export default function LandingPage() {
           fontSize: 18, color: 'rgba(245,245,240,0.55)', lineHeight: 1.7,
           maxWidth: 520, marginBottom: 44,
         }}>
-          Your trusted wholesale partner for beauty supply, convenience, and specialty products across Louisiana, Mississippi & Alabama.
+          Your trusted wholesale partner for beauty supply, convenience, and specialty products across Louisiana, Mississippi, Alabama, Texas, Arkansas, and Tennessee.
         </p>
 
         {/* CTAs */}
