@@ -7,12 +7,15 @@ import { supabase } from '../lib/supabase'
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { products, addStock, deleteProduct, deleteStockMovement, recomputeAvgCost, isDriver } = useProducts()
+  const { products, addStock, deleteProduct, deleteStockMovement, recomputeAvgCost, returnStock, isDriver } = useProducts()
   const { canSeeProfit } = useAuth()
   const product = products.find(p => p.id === id)
 
   const [movements, setMovements] = useState([])
   const [showAddStock, setShowAddStock] = useState(false)
+  const [showReturnStock, setShowReturnStock] = useState(false)
+  const [returnForm, setReturnForm] = useState({ qty: '', pricePerUnit: '', note: '' })
+  const [returnLoading, setReturnLoading] = useState(false)
   const [form, setForm] = useState({ qty: '', costPerUnit: '', source: '', note: '' })
   const [loading, setLoading] = useState(false)
   const [previewAvg, setPreviewAvg] = useState(null)
@@ -146,7 +149,16 @@ export default function ProductDetailPage() {
                 )}
               </div>
             </div>
-            {!isDriver && <button className="btn btn-primary" onClick={() => setShowAddStock(true)}>+ Add Stock</button>}
+            {!isDriver && (
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                <button className="btn btn-primary" onClick={() => setShowAddStock(true)}>+ Add Stock</button>
+                {(product.stock_qty || 0) > 0 && (
+                  <button onClick={() => setShowReturnStock(true)} style={{ padding:'8px 14px', fontSize:12, fontWeight:700, borderRadius:8, border:'1.5px solid #f59e0b', background:'#fffbeb', color:'#b45309', cursor:'pointer' }}>
+                    ↩️ Return Stock
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -173,6 +185,7 @@ export default function ProductDetailPage() {
         {movements.map(m => {
           const isIn = m.type === 'in'
           const isSold = m.type === 'sold' || m.type === 'out'
+          const isReturn = m.type === 'return'
           return (
             <div key={m.id} className="card" style={{ marginBottom:8, padding:'10px 14px' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
@@ -180,19 +193,19 @@ export default function ProductDetailPage() {
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
                     <span style={{
                       fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20,
-                      background: isIn ? 'var(--green-light)' : isSold ? 'var(--red-light)' : 'var(--gray-light)',
-                      color: isIn ? 'var(--green)' : isSold ? 'var(--red)' : 'var(--gray)',
+                      background: isIn ? 'var(--green-light)' : isSold ? 'var(--red-light)' : isReturn ? '#fef3c7' : 'var(--gray-light)',
+                      color: isIn ? 'var(--green)' : isSold ? 'var(--red)' : isReturn ? '#b45309' : 'var(--gray)',
                     }}>
-                      {isIn ? '📥 In' : isSold ? '🛒 Sold' : '🔄 Adj'}
+                      {isIn ? '📥 In' : isSold ? '🛒 Sold' : isReturn ? '↩️ Return' : '🔄 Adj'}
                     </span>
-                    <span style={{ fontWeight:700, fontSize:16, color: isIn ? 'var(--green)' : 'var(--red)' }}>
+                    <span style={{ fontWeight:700, fontSize:16, color: isIn ? 'var(--green)' : isReturn ? '#b45309' : 'var(--red)' }}>
                       {isIn ? '+' : '-'}{Math.abs(m.qty)} {product.unit}s
                     </span>
                   </div>
                   {m.cost_per_unit != null && (
                     <p style={{ fontSize:12, color:'var(--text-muted)' }}>
                       💵 ${m.cost_per_unit.toFixed(2)}/unit
-                      {m.total_cost != null && ` · $${m.total_cost.toFixed(2)} total`}
+                      {m.total_cost != null && ` · $${m.total_cost.toFixed(2)} ${isReturn ? 'refunded' : 'total'}`}
                     </p>
                   )}
                   {m.source && <p style={{ fontSize:12, color:'var(--text-muted)' }}>📦 {m.source}</p>}
@@ -327,6 +340,103 @@ export default function ProductDetailPage() {
             <button className="btn btn-success btn-full" onClick={handleAddStock}
               disabled={loading || !form.qty}>
               {loading ? 'Saving...' : `Add ${form.qty||0} ${product.unit}s to stock`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Return Stock Modal */}
+      {showReturnStock && (
+        <div className="modal-overlay" onClick={() => setShowReturnStock(false)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <h2 style={{ marginBottom:4 }}>↩️ Return Stock</h2>
+            <p className="text-sm text-muted" style={{ marginBottom:14 }}>
+              Returning <strong>{product.name}</strong>. Stock will be deducted and a refund value will be recorded.
+            </p>
+
+            <div style={{ background:'#fffbeb', border:'1.5px solid #fde68a', borderRadius:10, padding:'10px 12px', marginBottom:14 }}>
+              <p style={{ fontSize:11, color:'#78350f', textTransform:'uppercase', letterSpacing:0.5, fontWeight:700, marginBottom:3 }}>Current Stock</p>
+              <p style={{ fontWeight:800, fontSize:18, color:'#92400e' }}>{product.stock_qty || 0} {product.unit}{product.stock_qty !== 1 ? 's' : ''}</p>
+            </div>
+
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5 }}>
+                Quantity to Return *
+              </label>
+              <input type="number" min="1" max={product.stock_qty || 0}
+                value={returnForm.qty}
+                onChange={e => setReturnForm(f => ({ ...f, qty: e.target.value }))}
+                placeholder={`Up to ${product.stock_qty || 0}`}
+                style={{ width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:16, marginTop:6 }} />
+            </div>
+
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5 }}>
+                Return Price per {product.unit} ($) *
+              </label>
+              <input type="number" min="0" step="0.01"
+                value={returnForm.pricePerUnit}
+                onChange={e => setReturnForm(f => ({ ...f, pricePerUnit: e.target.value }))}
+                placeholder={`e.g. ${(product.avg_cost ?? product.cost ?? 0).toFixed(2)}`}
+                style={{ width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:16, marginTop:6 }} />
+              <p className="text-xs text-muted" style={{ marginTop:4 }}>
+                Whatever the supplier or buyer is refunding per unit.
+              </p>
+            </div>
+
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5 }}>
+                Reason / Note
+              </label>
+              <input type="text"
+                value={returnForm.note}
+                onChange={e => setReturnForm(f => ({ ...f, note: e.target.value }))}
+                placeholder="e.g. Damaged, expired, customer return..."
+                style={{ width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:15, marginTop:6 }} />
+            </div>
+
+            {/* Refund preview */}
+            {returnForm.qty && returnForm.pricePerUnit && (
+              <div style={{ background:'#ecfdf5', border:'1.5px solid #86efac', borderRadius:10, padding:'12px 14px', marginBottom:14 }}>
+                <p style={{ fontSize:11, color:'#15803d', textTransform:'uppercase', letterSpacing:0.5, fontWeight:700, marginBottom:3 }}>Refund Value</p>
+                <p style={{ fontWeight:900, fontSize:22, color:'#16a34a' }}>
+                  ${(parseInt(returnForm.qty||0) * parseFloat(returnForm.pricePerUnit||0)).toFixed(2)}
+                </p>
+                <p className="text-xs" style={{ color:'#15803d', marginTop:3 }}>
+                  Stock after return: <strong>{(product.stock_qty || 0) - parseInt(returnForm.qty || 0)} {product.unit}s</strong>
+                </p>
+              </div>
+            )}
+
+            <button onClick={async () => {
+              const qty = parseInt(returnForm.qty || 0)
+              const price = parseFloat(returnForm.pricePerUnit || 0)
+              if (qty <= 0) { alert('Enter quantity'); return }
+              if (qty > (product.stock_qty || 0)) { alert(`Only ${product.stock_qty || 0} in stock`); return }
+              if (isNaN(price) || price < 0) { alert('Enter return price'); return }
+              setReturnLoading(true)
+              try {
+                await returnStock(product.id, qty, price, returnForm.note)
+                // Refresh movements
+                const { data: m } = await supabase.from('stock_movements').select('*').eq('product_id', product.id).order('created_at', { ascending: false }).limit(50)
+                setMovements(m || [])
+                setReturnForm({ qty: '', pricePerUnit: '', note: '' })
+                setShowReturnStock(false)
+              } catch (e) {
+                alert('❌ ' + e.message)
+              } finally {
+                setReturnLoading(false)
+              }
+            }}
+              disabled={returnLoading || !returnForm.qty || !returnForm.pricePerUnit}
+              style={{
+                width: '100%', padding: '14px', borderRadius: 10, border: 'none',
+                background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white',
+                fontWeight: 800, fontSize: 15, cursor: returnLoading ? 'not-allowed' : 'pointer',
+                opacity: returnLoading || !returnForm.qty || !returnForm.pricePerUnit ? 0.6 : 1,
+              }}>
+              {returnLoading ? 'Returning...' : `↩️ Return ${returnForm.qty || 0} ${product.unit}s`}
             </button>
           </div>
         </div>

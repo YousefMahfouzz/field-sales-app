@@ -183,6 +183,44 @@ export function useProducts() {
     return runningAvg
   }
 
+  /**
+   * Return stock to supplier (or accept a customer return).
+   * Decrements stock_qty by qty. Records a 'return' movement with the
+   * per-unit price the user is returning at. Does NOT change avg_cost
+   * (returns remove value from inventory but don't reprice what stays).
+   */
+  const returnStock = async (productId, qty, returnPricePerUnit, note = '') => {
+    const product = products.find(p => p.id === productId)
+    if (!product) throw new Error('Product not found')
+
+    const currentQty = product.stock_qty || 0
+    if (qty > currentQty) {
+      throw new Error(`Cannot return ${qty} – only ${currentQty} in stock`)
+    }
+
+    const totalRefund = returnPricePerUnit != null ? qty * returnPricePerUnit : null
+
+    const { error: mvError } = await supabase.from('stock_movements').insert([{
+      user_id: user.id,
+      product_id: productId,
+      type: 'return',
+      qty,
+      note,
+      cost_per_unit: returnPricePerUnit,
+      total_cost: totalRefund,
+    }])
+    if (mvError) throw mvError
+
+    // Decrement stock
+    const { error: updErr } = await supabase.from('products')
+      .update({ stock_qty: currentQty - qty })
+      .eq('id', productId)
+    if (updErr) throw updErr
+
+    await fetchProducts()
+    return { newStock: currentQty - qty, totalRefund }
+  }
+
   const uploadProductImage = async (productId, file) => {
     // Use effectiveUserId for storage path so all images are under the owner's folder
     const ext = 'webp'
@@ -208,7 +246,7 @@ export function useProducts() {
   return {
     products, loading, fetchProducts,
     addProduct, updateProduct, deleteProduct,
-    addStock, deleteStockMovement, recomputeAvgCost,
+    addStock, deleteStockMovement, recomputeAvgCost, returnStock,
     uploadProductImage, uploadAdditionalImage,
     isDriver,
   }
