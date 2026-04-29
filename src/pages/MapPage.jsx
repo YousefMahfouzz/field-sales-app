@@ -86,6 +86,9 @@ export default function MapPage() {
   const poiMarkersRef = useRef([])
   const [mapError, setMapError] = useState('')
   const currentLocMarker = useRef(null)
+  const currentAccuracyRing = useRef(null)
+  const watchIdRef = useRef(null)
+  const locationPollRef = useRef(null)
   const activeInfoWindow = useRef(null) // track open info window to auto-close
   const [selectedPoi, setSelectedPoi] = useState(null) // tapped POI store
   const [selectedPois, setSelectedPois] = useState([]) // stores selected for route
@@ -112,26 +115,84 @@ export default function MapPage() {
       setMapReady(true)
       // Trigger resize so map knows its actual pixel dimensions
       window.google.maps.event.trigger(mapInstance.current, 'resize')
-      navigator.geolocation?.getCurrentPosition((pos) => {
+
+      // Live location: update marker every time the device reports a new position
+      let initialCenter = false
+      const updateMyLocation = (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords
-        mapInstance.current.setCenter({ lat, lng })
-        // Blue dot for current location
-        currentLocMarker.current = new window.google.maps.Marker({
-          position: { lat, lng },
-          map: mapInstance.current,
-          title: 'You are here',
-          zIndex: 999,
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: '#2563eb',
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 3,
-          },
-        })
-      })
+        const point = { lat, lng }
+        if (!initialCenter) {
+          mapInstance.current.setCenter(point)
+          initialCenter = true
+        }
+        if (currentLocMarker.current) {
+          // Just move the existing marker
+          currentLocMarker.current.setPosition(point)
+        } else {
+          // Outer pulsing ring (live indicator)
+          currentAccuracyRing.current = new window.google.maps.Marker({
+            position: point,
+            map: mapInstance.current,
+            zIndex: 998,
+            clickable: false,
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 18,
+              fillColor: '#2563eb',
+              fillOpacity: 0.18,
+              strokeColor: '#2563eb',
+              strokeOpacity: 0.4,
+              strokeWeight: 1,
+            },
+          })
+          // Inner solid blue dot
+          currentLocMarker.current = new window.google.maps.Marker({
+            position: point,
+            map: mapInstance.current,
+            title: 'You are here (live)',
+            zIndex: 999,
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 9,
+              fillColor: '#2563eb',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 3,
+            },
+          })
+        }
+        if (currentAccuracyRing.current) currentAccuracyRing.current.setPosition(point)
+      }
+
+      // Use watchPosition for continuous updates from the OS (more efficient than polling)
+      if (navigator.geolocation) {
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          updateMyLocation,
+          (err) => console.warn('Geolocation watch error:', err.message),
+          { enableHighAccuracy: true, maximumAge: 4000, timeout: 10000 }
+        )
+
+        // Also poll every 5 seconds as a fallback to ensure the marker keeps moving
+        // even if watchPosition stalls (some browsers throttle when the page is mostly static)
+        locationPollRef.current = setInterval(() => {
+          navigator.geolocation.getCurrentPosition(
+            updateMyLocation,
+            () => {},
+            { enableHighAccuracy: true, maximumAge: 4000, timeout: 8000 }
+          )
+        }, 5000)
+      }
     }).catch(() => setMapError('Failed to load Google Maps.'))
+  }, [])
+
+  // Cleanup location watchers on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+      }
+      if (locationPollRef.current) clearInterval(locationPollRef.current)
+    }
   }, [])
 
   // Re-draw markers when customers or filter changes

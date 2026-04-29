@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useProducts } from '../hooks/useProducts'
 
 const fmt = (n) => n >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(2)}`
 
@@ -97,6 +98,7 @@ function SectionHeader({ title }) {
 
 export default function AnalyticsPage() {
   const { user, canSeeProfit } = useAuth()
+  const { products } = useProducts()
   const navigate = useNavigate()
 
   // ── Sales lookup (date range) ──
@@ -121,6 +123,12 @@ export default function AnalyticsPage() {
   const [loadingTopSellers, setLoadingTopSellers] = useState(false)
   const [topSellersUpdating, setTopSellersUpdating] = useState(false)
   const [topSellersFlag, setTopSellersFlag] = useState({}) // { productId: true } - which products are flagged best_seller
+
+  // ── Top Buyers (by product) ──
+  const [topBuyersProduct, setTopBuyersProduct] = useState(null) // selected product id
+  const [topBuyersSearch, setTopBuyersSearch] = useState('')
+  const [topBuyers, setTopBuyers] = useState([])
+  const [loadingTopBuyers, setLoadingTopBuyers] = useState(false)
 
   // ── Today auto-load ──
   const [todayData, setTodayData] = useState(null)
@@ -357,6 +365,71 @@ export default function AnalyticsPage() {
   useEffect(() => { loadStockCost() }, [loadStockCost])
   useEffect(() => { loadTopSellers(topSellersPeriod) }, [loadTopSellers, topSellersPeriod])
   useEffect(() => { loadFlags() }, [loadFlags])
+
+  // ── Load Top Buyers for a selected product ──
+  const loadTopBuyers = useCallback(async (productId) => {
+    if (!user || !productId) { setTopBuyers([]); return }
+    setLoadingTopBuyers(true)
+    try {
+      // 1. Get all sale_items for this product (across all visits)
+      const { data: saleItems } = await supabase
+        .from('sale_items')
+        .select('qty, unit_price, visit_id')
+        .eq('user_id', user.id)
+        .eq('product_id', productId)
+
+      if (!saleItems || saleItems.length === 0) {
+        setTopBuyers([]); setLoadingTopBuyers(false); return
+      }
+
+      // 2. Fetch visits to map visit_id → customer_id (and last_visit_date)
+      const visitIds = [...new Set(saleItems.map(s => s.visit_id).filter(Boolean))]
+      const { data: visits } = await supabase
+        .from('visits')
+        .select('id, customer_id, created_at')
+        .in('id', visitIds)
+      const visitMap = new Map((visits || []).map(v => [v.id, v]))
+
+      // 3. Aggregate by customer
+      const byCustomer = {} // customer_id → { qty, revenue, lastVisit, visits }
+      saleItems.forEach(si => {
+        const visit = visitMap.get(si.visit_id)
+        if (!visit?.customer_id) return
+        const cid = visit.customer_id
+        if (!byCustomer[cid]) byCustomer[cid] = { qty: 0, revenue: 0, lastVisit: null, visitCount: 0 }
+        byCustomer[cid].qty += si.qty
+        byCustomer[cid].revenue += si.qty * (si.unit_price || 0)
+        byCustomer[cid].visitCount += 1
+        if (!byCustomer[cid].lastVisit || visit.created_at > byCustomer[cid].lastVisit) {
+          byCustomer[cid].lastVisit = visit.created_at
+        }
+      })
+
+      // 4. Fetch customer details
+      const customerIds = Object.keys(byCustomer)
+      if (customerIds.length === 0) { setTopBuyers([]); setLoadingTopBuyers(false); return }
+      const { data: customers } = await supabase
+        .from('customers')
+        .select('id, business_name, full_name, phone, area, address, status')
+        .in('id', customerIds)
+      const customerMap = new Map((customers || []).map(c => [c.id, c]))
+
+      // 5. Build sorted list
+      const result = customerIds
+        .map(cid => ({ customer: customerMap.get(cid), ...byCustomer[cid] }))
+        .filter(r => r.customer)
+        .sort((a, b) => b.qty - a.qty)
+
+      setTopBuyers(result)
+    } catch (err) {
+      console.error('Top buyers load error:', err)
+      setTopBuyers([])
+    } finally {
+      setLoadingTopBuyers(false)
+    }
+  }, [user])
+
+  useEffect(() => { loadTopBuyers(topBuyersProduct) }, [loadTopBuyers, topBuyersProduct])
 
   const prettyDate = (d) => {
     if (d === today()) return 'Today'
@@ -602,6 +675,124 @@ export default function AnalyticsPage() {
             )
           })
         })()}
+
+        {/* ── TOP BUYERS PER PRODUCT ── */}
+        <SectionHeader title="👥 Top Buyers (Who Buys What)" />
+        <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:10, lineHeight:1.5 }}>
+          Pick a product to see customers ranked by total quantity purchased — most loyal buyers at the top.
+        </p>
+
+        <div style={{ position:'relative', marginBottom:12 }}>
+          <input
+            type="search"
+            placeholder="🔎 Search a product…"
+            value={topBuyersSearch}
+            onChange={e => setTopBuyersSearch(e.target.value)}
+            style={{ width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:14, background:'var(--surface-2)' }}
+          />
+        </div>
+
+        {/* Show product list filtered by search */}
+        {topBuyersSearch.trim() !== '' && !topBuyersProduct && products.length > 0 && (
+          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, marginBottom:12, maxHeight:220, overflowY:'auto' }}>
+            {products
+              .filter(p => p.is_active !== false &&
+                (p.name?.toLowerCase().includes(topBuyersSearch.toLowerCase()) ||
+                 p.brand?.toLowerCase().includes(topBuyersSearch.toLowerCase()) ||
+                 p.category?.toLowerCase().includes(topBuyersSearch.toLowerCase())))
+              .slice(0, 20)
+              .map(p => (
+                <div key={p.id}
+                  onClick={() => { setTopBuyersProduct(p.id); setTopBuyersSearch('') }}
+                  style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderBottom:'1px solid var(--border)', cursor:'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div style={{ width:34, height:34, borderRadius:6, background:'var(--surface-2)', flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>
+                    {p.image_url ? <img src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '📦'}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontWeight:600, fontSize:13, marginBottom:1 }}>{p.name}</p>
+                    <p style={{ fontSize:11, color:'var(--text-muted)' }}>{p.brand ? `${p.brand} · ` : ''}{p.category || '—'}</p>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+
+        {/* Selected product header */}
+        {topBuyersProduct && (() => {
+          const p = products.find(x => x.id === topBuyersProduct)
+          if (!p) return null
+          const totalQty = topBuyers.reduce((s, b) => s + b.qty, 0)
+          const totalRev = topBuyers.reduce((s, b) => s + b.revenue, 0)
+          return (
+            <div className="card" style={{ marginBottom:12, padding:14, border:'1.5px solid #d4a843', background:'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
+                <div style={{ width:46, height:46, borderRadius:8, background:'white', flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, border:'1px solid #fde68a' }}>
+                  {p.image_url ? <img src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '📦'}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:11, color:'#78350f', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Selected Product</p>
+                  <p style={{ fontWeight:800, fontSize:15, color:'#0f172a' }}>{p.name}</p>
+                  {p.brand && <p style={{ fontSize:11, color:'#78350f' }}>{p.brand}</p>}
+                </div>
+                <button onClick={() => setTopBuyersProduct(null)} style={{ background:'rgba(146,64,14,0.1)', border:'none', color:'#92400e', borderRadius:6, padding:'6px 12px', fontSize:11, fontWeight:700, cursor:'pointer' }}>✕ Clear</button>
+              </div>
+              {topBuyers.length > 0 && (
+                <div style={{ display:'flex', gap:14, paddingTop:10, borderTop:'1px dashed #fbbf24', fontSize:12 }}>
+                  <span><strong style={{ color:'#92400e', fontSize:14 }}>{topBuyers.length}</strong> <span style={{ color:'#78350f' }}>buyer{topBuyers.length !== 1 ? 's' : ''}</span></span>
+                  <span><strong style={{ color:'#92400e', fontSize:14 }}>{totalQty}</strong> <span style={{ color:'#78350f' }}>units sold</span></span>
+                  <span><strong style={{ color:'#92400e', fontSize:14 }}>${totalRev.toFixed(2)}</strong> <span style={{ color:'#78350f' }}>revenue</span></span>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
+        {/* Loading */}
+        {loadingTopBuyers && (
+          <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text-muted)', fontSize:13 }}>Loading buyers…</div>
+        )}
+
+        {/* Buyer list */}
+        {!loadingTopBuyers && topBuyersProduct && topBuyers.length === 0 && (
+          <div className="card" style={{ textAlign:'center', padding:'24px 14px', color:'var(--text-muted)' }}>
+            <p style={{ fontSize:32, marginBottom:8 }}>—</p>
+            <p style={{ fontSize:13 }}>No sales of this product yet.</p>
+          </div>
+        )}
+
+        {!loadingTopBuyers && topBuyers.length > 0 && (
+          <div style={{ marginBottom:24 }}>
+            {topBuyers.map((b, i) => {
+              const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`
+              return (
+                <div key={b.customer.id} className="card" style={{ marginBottom:8, padding:12, display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ fontSize:22, fontWeight:900, width:38, textAlign:'center', flexShrink:0, color: i < 3 ? '#d4a843' : 'var(--text-muted)' }}>
+                    {medal}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontWeight:700, fontSize:14, marginBottom:2 }}>{b.customer.business_name || b.customer.full_name}</p>
+                    <p style={{ fontSize:11, color:'var(--text-muted)' }}>
+                      {b.customer.area && `📍 ${b.customer.area} · `}
+                      {b.customer.phone && `📞 ${b.customer.phone}`}
+                    </p>
+                    <p style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>
+                      Last bought: {b.lastVisit ? new Date(b.lastVisit).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—'}
+                      {' · '}{b.visitCount} order{b.visitCount !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <div style={{ textAlign:'right', flexShrink:0 }}>
+                    <p style={{ fontWeight:900, fontSize:16, color:'#16a34a' }}>{b.qty}</p>
+                    <p style={{ fontSize:10, color:'var(--text-muted)' }}>units</p>
+                    <p style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>${b.revenue.toFixed(2)}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* ── STOCK PURCHASES ── */}
         <SectionHeader title="📦 Stock Purchases by Date Range" />
