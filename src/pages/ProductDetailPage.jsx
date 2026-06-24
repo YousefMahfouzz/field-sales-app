@@ -12,6 +12,7 @@ export default function ProductDetailPage() {
   const product = products.find(p => p.id === id)
 
   const [movements, setMovements] = useState([])
+  const [buyers, setBuyers] = useState([])  // [{ customer, qty, revenue, lastBoughtAt, orderCount }]
   const [showAddStock, setShowAddStock] = useState(false)
   const [showReturnStock, setShowReturnStock] = useState(false)
   const [returnForm, setReturnForm] = useState({ qty: '', pricePerUnit: '', note: '' })
@@ -25,6 +26,46 @@ export default function ProductDetailPage() {
     supabase.from('stock_movements').select('*')
       .eq('product_id', id).order('created_at', { ascending: false }).limit(30)
       .then(({ data }) => setMovements(data || []))
+
+    // Load buyers for this product
+    ;(async () => {
+      try {
+        const { data: saleItems } = await supabase
+          .from('sale_items').select('qty, unit_price, visit_id').eq('product_id', id)
+        if (!saleItems?.length) { setBuyers([]); return }
+
+        const visitIds = [...new Set(saleItems.map(s => s.visit_id).filter(Boolean))]
+        const { data: visits } = await supabase
+          .from('visits').select('id, customer_id, created_at').in('id', visitIds)
+        const visitMap = new Map((visits || []).map(v => [v.id, v]))
+
+        const byCustomer = {}
+        saleItems.forEach(si => {
+          const v = visitMap.get(si.visit_id)
+          if (!v?.customer_id) return
+          const cid = v.customer_id
+          if (!byCustomer[cid]) byCustomer[cid] = { qty: 0, revenue: 0, lastBoughtAt: null, orderCount: 0 }
+          byCustomer[cid].qty += si.qty
+          byCustomer[cid].revenue += si.qty * (si.unit_price || 0)
+          byCustomer[cid].orderCount += 1
+          if (!byCustomer[cid].lastBoughtAt || v.created_at > byCustomer[cid].lastBoughtAt) {
+            byCustomer[cid].lastBoughtAt = v.created_at
+          }
+        })
+
+        const customerIds = Object.keys(byCustomer)
+        if (!customerIds.length) { setBuyers([]); return }
+        const { data: customers } = await supabase
+          .from('customers').select('id, business_name, full_name, phone, area').in('id', customerIds)
+        const customerMap = new Map((customers || []).map(c => [c.id, c]))
+
+        const result = customerIds
+          .map(cid => ({ customer: customerMap.get(cid), ...byCustomer[cid] }))
+          .filter(r => r.customer)
+          .sort((a, b) => b.qty - a.qty)
+        setBuyers(result)
+      } catch (e) { console.error('Buyers load failed', e) }
+    })()
   }, [id])
 
   // Live preview of new avg cost as user types
@@ -161,6 +202,48 @@ export default function ProductDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Who buys this */}
+        {buyers.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <p className="section-header" style={{ marginBottom: 8 }}>👥 Who Buys This ({buyers.length})</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, fontStyle: 'italic' }}>
+              Customers ranked by total quantity purchased — most loyal at the top.
+            </p>
+            {buyers.slice(0, 10).map((b, i) => {
+              const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`
+              return (
+                <div key={b.customer.id} className="card"
+                  onClick={() => navigate(`/customers/${b.customer.id}`)}
+                  style={{ marginBottom: 6, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <div style={{ fontSize: 18, fontWeight: 900, width: 32, textAlign: 'center', flexShrink: 0, color: i < 3 ? '#d4a843' : 'var(--text-muted)' }}>
+                    {medal}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 1 }}>
+                      {b.customer.business_name || b.customer.full_name}
+                    </p>
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                      {b.customer.area && `📍 ${b.customer.area}`}
+                      {b.lastBoughtAt && ` · last: ${new Date(b.lastBoughtAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                      {b.orderCount > 1 && ` · ${b.orderCount} orders`}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontWeight: 900, fontSize: 14, color: '#16a34a' }}>{b.qty}</p>
+                    <p style={{ fontSize: 9, color: 'var(--text-muted)' }}>{product.unit}s</p>
+                    {canSeeProfit && <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>${b.revenue.toFixed(0)}</p>}
+                  </div>
+                </div>
+              )
+            })}
+            {buyers.length > 10 && (
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 6 }}>
+                + {buyers.length - 10} more
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Stock history */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>

@@ -457,7 +457,7 @@ export default function AnalyticsPage() {
       <div className="page-header">
         <button onClick={() => navigate(-1)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer' }}>←</button>
         <h1>{'Analytics'}</h1>
-        <div style={{ width:36 }} />
+        <button onClick={() => navigate('/expenses')} style={{ background:'#fef3c7', color:'#b45309', border:'1.5px solid #fde68a', borderRadius:20, padding:'6px 12px', fontSize:11, fontWeight:700, cursor:'pointer' }}>⛽ Expenses</button>
       </div>
 
       <div className="page" style={{ paddingTop:12 }}>

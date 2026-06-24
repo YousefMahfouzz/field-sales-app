@@ -44,6 +44,7 @@ const EMPTY = {
 export default function AddEditProductPage() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const { user } = useAuth()
   const { products, addProduct, updateProduct, uploadProductImage, uploadAdditionalImage, isDriver } = useProducts()
   const isEdit = Boolean(id)
 

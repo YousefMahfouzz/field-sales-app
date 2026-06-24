@@ -849,7 +849,7 @@ function NewCustomerWizard({ searchParams, navigate, addCustomer, products, upda
     return (
       <div>
         <Header title="What did you sell?" />
-        <div style={{ padding:'0 20px' }}>
+        <div className="page" style={{ paddingTop: 12 }}>
           {saleItems.length === 0 && <div style={{ textAlign:'center',padding:'20px 0' }}><div style={{ fontSize:36,marginBottom:8 }}>📦</div><p className="text-sm text-muted">No products added</p></div>}
           {saleItems.map((item,idx) => (
             <div key={idx} style={{ border:'1px solid var(--border)',borderRadius:10,padding:'10px 12px',marginBottom:8 }}>

@@ -1,4 +1,6 @@
 // Haversine formula: distance in meters between two GPS coords
+import { getLastKnownPosition } from '../hooks/useLiveLocation'
+
 export function getDistance(lat1, lng1, lat2, lng2) {
   const R = 6371000 // Earth radius in meters
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -22,11 +24,23 @@ export function findNearbyCustomers(customers, lat, lng, radiusMeters = 20000) {
   })
 }
 
-// Get current GPS position as a promise
+// Get current GPS position as a promise.
+// Prefers the live-location cache (updated every ~5s) when it's fresh enough,
+// so call sites get an instant answer instead of waiting for a fresh GPS fix.
 export function getCurrentPosition(options = {}) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error('Geolocation not supported'))
+      return
+    }
+    // Try the live store first (synchronous, no GPS prompt)
+    const cached = getLastKnownPosition()
+    const maxAge = options.maximumAge ?? 8000
+    if (cached && Date.now() - cached.updatedAt < maxAge) {
+      resolve({
+        coords: { latitude: cached.lat, longitude: cached.lng, accuracy: cached.accuracy },
+        timestamp: cached.updatedAt,
+      })
       return
     }
     navigator.geolocation.getCurrentPosition(resolve, reject, {

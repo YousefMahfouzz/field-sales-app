@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 import { SettingsProvider } from './hooks/useSettings'
 import { ToastProvider, showToast } from './components/Toast'
 import { useState, useEffect, useRef } from 'react'
+import { startLiveLocation } from './hooks/useLiveLocation'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import CustomersPage from './pages/CustomersPage'
@@ -22,6 +23,7 @@ import BackupPage from './pages/BackupPage'
 import SharedCatalogPage from './pages/SharedCatalogPage'
 import AdminInventoryPage from './pages/AdminInventoryPage'
 import AnalyticsPage from './pages/AnalyticsPage'
+import ExpensesPage from './pages/ExpensesPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import PublicHomePage from './pages/PublicHomePage'
 import AdminHomepageManager from './pages/AdminHomepageManager'
@@ -130,6 +132,7 @@ function AppRoutes() {
           <Route path="/shared-catalog" element={<PrivateRoute><SharedCatalogPage /></PrivateRoute>} />
           <Route path="/admin/inventory" element={<PrivateRoute><AdminInventoryPage /></PrivateRoute>} />
         <Route path="/analytics" element={<PrivateRoute><AnalyticsPage /></PrivateRoute>} />
+        <Route path="/expenses" element={<PrivateRoute><ExpensesPage /></PrivateRoute>} />
         <Route path="/admin/settings" element={<PrivateRoute><AdminSettingsPage /></PrivateRoute>} />
           <Route path="/admin/homepage" element={<PrivateRoute><AdminHomepageManager /></PrivateRoute>} />
           <Route path="/admin/price-lists" element={<PrivateRoute><PriceListsManagerPage /></PrivateRoute>} />
@@ -145,6 +148,7 @@ function AppRoutes() {
 }
 
 export default function App() {
+  useEffect(() => { startLiveLocation() }, [])
   return (
     <SettingsProvider>
     <ToastProvider>
