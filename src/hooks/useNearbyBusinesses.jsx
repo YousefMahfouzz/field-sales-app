@@ -39,18 +39,26 @@ async function searchNearbyViaPlacesService(lat, lng, radius = 300) {
     const tempMap = new window.google.maps.Map(mapDiv, { center: { lat, lng }, zoom: 15 })
     const service = new window.google.maps.places.PlacesService(tempMap)
 
-    const types = ['convenience_store', 'gas_station', 'beauty_salon']
+    const searches = [
+      { type: 'convenience_store' },
+      { type: 'grocery_or_supermarket' },
+      { keyword: 'grocery store', typeTag: 'grocery_or_supermarket' },
+      { keyword: 'smoke shop', typeTag: 'smoke_shop' },
+      { keyword: 'vape shop', typeTag: 'smoke_shop' },
+      { keyword: 'beauty supply store', typeTag: 'beauty_salon' },
+      { type: 'gas_station' },
+    ]
     const results = []
-    let remaining = types.length
+    let remaining = searches.length
 
-    types.forEach(type => {
-      service.nearbySearch({
-        location: { lat, lng },
-        radius,
-        type,
-      }, (places, status) => {
+    searches.forEach(({ type, keyword, typeTag }) => {
+      const req = { location: { lat, lng }, radius }
+      if (keyword) req.keyword = keyword
+      else req.type = type
+      const tag = typeTag || type
+      service.nearbySearch(req, (places, status) => {
         if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
-          for (const p of places.slice(0, 5)) {
+          for (const p of places.slice(0, 10)) {
             if (isBrandExcluded(p.name)) continue
             if (results.find(r => r.name === p.name)) continue
 
@@ -61,7 +69,7 @@ async function searchNearbyViaPlacesService(lat, lng, radius = 300) {
             results.push({
               name: p.name,
               address: p.vicinity,
-              type,
+              type: tag,
               rating: p.rating,
               distance: getDistance(lat, lng, p.geometry.location.lat(), p.geometry.location.lng()),
               placeId: p.place_id,
@@ -72,9 +80,9 @@ async function searchNearbyViaPlacesService(lat, lng, radius = 300) {
         }
         remaining--
         if (remaining === 0) {
-          const ORDER = { convenience_store: 0, gas_station: 1, beauty_salon: 2 }
+          const ORDER = { convenience_store: 0, grocery_or_supermarket: 1, smoke_shop: 2, beauty_salon: 3, gas_station: 4 }
           results.sort((a, b) => (ORDER[a.type] - ORDER[b.type]) || (a.distance - b.distance))
-          resolve(results.slice(0, 5))
+          resolve(results.slice(0, 12))
         }
       })
     })
@@ -105,6 +113,8 @@ export function useNearbyBusinesses() {
 const TYPE_LABELS = {
   gas_station: '⛽ Gas Station',
   convenience_store: '🏪 Convenience Store',
+  grocery_or_supermarket: '🛒 Grocery',
+  smoke_shop: '💨 Smoke / Vape Shop',
   beauty_salon: '💄 Beauty Supply',
 }
 

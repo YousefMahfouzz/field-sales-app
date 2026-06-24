@@ -289,7 +289,17 @@ export default function MapPage() {
       const types = [
         { type: 'convenience_store', label: '🏪', color: '#7c3aed' },
         { type: 'grocery_or_supermarket', label: '🛒', color: '#16a34a' },
+        { type: 'supermarket',       label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
         { type: 'liquor_store',      label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
+        // Keyword searches catch independent stores that Google mistypes as generic 'store'/'food'
+        { keyword: 'grocery store',  label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
+        { keyword: 'supermarket',    label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
+        { keyword: 'corner store',   label: '🏪', color: '#7c3aed', typeTag: 'convenience_store' },
+        { keyword: 'mini market',    label: '🏪', color: '#7c3aed', typeTag: 'convenience_store' },
+        // Smoke / vape shops
+        { keyword: 'smoke shop',     label: '💨', color: '#0891b2', typeTag: 'smoke_shop' },
+        { keyword: 'vape shop',      label: '💨', color: '#0891b2', typeTag: 'smoke_shop' },
+        { keyword: 'tobacco store',  label: '💨', color: '#0891b2', typeTag: 'smoke_shop' },
         // Use keyword search for beauty supply stores (not salons/dermatologists)
         { keyword: 'beauty supply store', label: '💄', color: '#ec4899', typeTag: 'beauty_supply' },
       ]
@@ -311,65 +321,80 @@ export default function MapPage() {
           const req = { location: { lat, lng }, radius: searchRadius }
           if (keyword) req.keyword = keyword
           else req.type = type
-          service.nearbySearch(req, (places, status) => {
-            if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
-              for (const place of places.slice(0, 20)) {
-                if (isExcluded(place.name)) continue
 
-                // Skip stores that are explicitly closed right now
-                // opening_hours.open_now is a boolean from nearbySearch (not a function)
-                // Only skip if we KNOW it's closed (open_now === false)
-                // If no opening_hours data, show the store (benefit of the doubt)
-                if (place.opening_hours && place.opening_hours.open_now === false) continue
+          const processPlaces = (places) => {
+            for (const place of places) {
+              if (isExcluded(place.name)) continue
 
-                const plat = place.geometry.location.lat()
-                const plng = place.geometry.location.lng()
+              // Skip stores that are explicitly closed right now
+              // opening_hours.open_now is a boolean from nearbySearch (not a function)
+              // Only skip if we KNOW it's closed (open_now === false)
+              // If no opening_hours data, show the store (benefit of the doubt)
+              if (place.opening_hours && place.opening_hours.open_now === false) continue
 
-                // Skip if duplicate (within 50m of already-added POI)
-                if (newMarkers.some(m => metersApart(plat, plng, m.lat, m.lng) < 50)) continue
+              const plat = place.geometry.location.lat()
+              const plng = place.geometry.location.lng()
 
-                // Check if already one of your customers (within 80m)
-                const existingCust = customers.find(c =>
-                  c.lat && c.lng && metersApart(plat, plng, c.lat, c.lng) < 80
-                )
+              // Skip if duplicate (within 50m of already-added POI)
+              if (newMarkers.some(m => metersApart(plat, plng, m.lat, m.lng) < 50)) continue
 
-                const poiData = {
-                  name: place.name,
-                  type: typeTag || type,
-                  label,
-                  lat: plat,
-                  lng: plng,
-                  vicinity: place.vicinity || '',
-                  rating: place.rating || null,
-                  isExisting: !!existingCust,
-                  existingCustomer: existingCust || null,
-                }
+              // Check if already one of your customers (within 80m)
+              const existingCust = customers.find(c =>
+                c.lat && c.lng && metersApart(plat, plng, c.lat, c.lng) < 80
+              )
 
-                const mColor = existingCust ? '#16a34a' : color
-                const marker = new window.google.maps.Marker({
-                  position: place.geometry.location,
-                  map: mapInstance.current,
-                  title: existingCust ? `\u2705 ${place.name} (your customer)` : place.name,
-                  icon: {
-                    path: window.google.maps.SymbolPath.CIRCLE,
-                    scale: 11,
-                    fillColor: mColor, fillOpacity: existingCust ? 0.4 : 0.95,
-                    strokeColor: existingCust ? '#16a34a' : 'white',
-                    strokeWeight: existingCust ? 3 : 2.5,
-                  },
-                  label: { text: existingCust ? '\u2705' : label, fontSize: '13px' },
-                  zIndex: existingCust ? 5 : 10,
-                })
-                marker.addListener('click', () => {
-                  setSelectedCustomer(null)
-                  setSelectedPoi(poiData)
-                })
-                poiMarkersRef.current.push(marker)
-                newMarkers.push(poiData)
+              const poiData = {
+                name: place.name,
+                type: typeTag || type,
+                label,
+                lat: plat,
+                lng: plng,
+                vicinity: place.vicinity || '',
+                rating: place.rating || null,
+                isExisting: !!existingCust,
+                existingCustomer: existingCust || null,
               }
+
+              const mColor = existingCust ? '#16a34a' : color
+              const marker = new window.google.maps.Marker({
+                position: place.geometry.location,
+                map: mapInstance.current,
+                title: existingCust ? `\u2705 ${place.name} (your customer)` : place.name,
+                icon: {
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 11,
+                  fillColor: mColor, fillOpacity: existingCust ? 0.4 : 0.95,
+                  strokeColor: existingCust ? '#16a34a' : 'white',
+                  strokeWeight: existingCust ? 3 : 2.5,
+                },
+                label: { text: existingCust ? '\u2705' : label, fontSize: '13px' },
+                zIndex: existingCust ? 5 : 10,
+              })
+              marker.addListener('click', () => {
+                setSelectedCustomer(null)
+                setSelectedPoi(poiData)
+              })
+              poiMarkersRef.current.push(marker)
+              newMarkers.push(poiData)
             }
-            resolve()
-          })
+          }
+
+          // Google returns up to 20 results per page, up to 3 pages (60 total).
+          // Walk all pages so dense areas (lots of groceries) aren't cut off at 20.
+          let pagesFetched = 0
+          const handler = (places, status, pagination) => {
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && places) {
+              processPlaces(places)
+            }
+            pagesFetched++
+            if (pagination && pagination.hasNextPage && pagesFetched < 3) {
+              // Google requires a short delay before nextPage() is valid
+              setTimeout(() => pagination.nextPage(), 400)
+            } else {
+              resolve()
+            }
+          }
+          service.nearbySearch(req, handler)
         })
       ))
 
@@ -464,6 +489,7 @@ export default function MapPage() {
             <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
               <span>🏪 {poiMarkers.filter(p=>p.type==='convenience_store').length} convenience</span>
               <span>🛒 {poiMarkers.filter(p=>p.type==='grocery_or_supermarket').length} grocery/liquor</span>
+              <span>💨 {poiMarkers.filter(p=>p.type==='smoke_shop').length} smoke/vape</span>
               <span>💄 {poiMarkers.filter(p=>p.type==='beauty_supply').length} beauty</span>
               <span style={{ color: 'var(--text-muted)' }}>({poiMarkers.length} total)</span>
             </div>
@@ -780,7 +806,7 @@ export default function MapPage() {
             <div style={{ maxHeight: 'calc(85vh - 220px)', overflowY: 'auto', marginBottom: 14 }}>
               {poiMarkers.filter(p => !p.isExisting).map((poi, i) => {
                 const isSelected = selectedPois.some(p => p.name === poi.name && p.lat === poi.lat)
-                const TYPE_LABELS = { convenience_store: '🏪', gas_station: '⛽', beauty_supply: '💄', grocery_or_supermarket: '🛒', beauty_salon: '💄' }
+                const TYPE_LABELS = { convenience_store: '🏪', gas_station: '⛽', beauty_supply: '💄', grocery_or_supermarket: '🛒', beauty_salon: '💄', smoke_shop: '💨' }
                 return (
                   <div key={i} onClick={() => {
                     if (isSelected) {
