@@ -32,6 +32,17 @@ const EXCLUDED_NAMES = [
   'urgent care', 'hospital', 'surgery center', 'medspa', 'med spa',
   // Pharmacy chains
   'cvs', 'walgreens', 'rite aid',
+  // Big-box hardware / home improvement (not retail we sell to)
+  'home depot', 'lowe\'s', 'lowes home', 'menards', 'ace hardware',
+  'harbor freight', 'tractor supply', 'best buy', 'autozone', "o'reilly",
+  'advance auto', 'napa auto', 'pep boys',
+  // Restaurants / food service (should never appear)
+  'restaurant', 'cafe', 'café', 'coffee', 'starbucks', 'mcdonald',
+  'burger king', 'wendy', 'taco bell', 'subway', 'popeyes', 'chick-fil',
+  'chipotle', 'pizza', 'sushi', 'grill', 'kitchen', 'diner', 'bistro',
+  'bakery', 'donut', 'doughnut', 'ice cream', 'smoothie', 'juice bar',
+  'bar & grill', 'sports bar', 'pub', 'eatery', 'taqueria', 'cantina',
+  'buffet', 'steakhouse', 'seafood', 'chicken', 'wings', 'deli ',
   // Wine stores
   'wine bar', 'wine shop', 'wine cellar', 'wine merchant', 'wine house',
   'wine & spirits', 'wine and spirits', 'wine boutique', 'wine store',
@@ -45,6 +56,24 @@ const EXCLUDED_NAMES = [
   'bottling', 'packaging', 'factory', 'plant ', 'processing',
   'wholesale only', 'trade only',
 ]
+
+// Google Place types that mean "this is NOT a store we sell to" – reject
+// regardless of how the result matched (keyword searches are loose and pull
+// in restaurants, bars, etc. that merely sit near a smoke shop).
+const REJECT_TYPES = [
+  'restaurant', 'food', 'meal_takeaway', 'meal_delivery', 'cafe', 'bar',
+  'bakery', 'lodging', 'hotel', 'gym', 'spa', 'hair_care', 'beauty_salon',
+  'doctor', 'dentist', 'hospital', 'pharmacy', 'school', 'church',
+  'car_repair', 'car_dealer', 'hardware_store', 'home_goods_store',
+  'furniture_store', 'electronics_store', 'bank', 'gas_station',
+  'park', 'church', 'place_of_worship', 'real_estate_agency',
+]
+function hasRejectedType(place) {
+  const t = place.types || []
+  // gas_station is rejected ONLY when searching non-gas categories;
+  // handled per-search below, so don't blanket-reject here.
+  return t.some(x => REJECT_TYPES.includes(x) && x !== 'gas_station')
+}
 function isExcluded(name) {
   const n = (name || '').toLowerCase()
   return EXCLUDED_NAMES.some(b => n.includes(b))
@@ -286,22 +315,32 @@ export default function MapPage() {
       // Auto-zoom to fit the circle
       mapInstance.current.fitBounds(searchCircleRef.current.getBounds())
 
+      // mustMatch: for keyword searches, the result name must contain one of
+      // these words (otherwise Google's loose keyword match pulls in unrelated
+      // nearby places). requireStoreType: result must carry the 'store' Google
+      // type so we don't show services/restaurants.
+      const SMOKE_WORDS = ['smoke', 'vape', 'tobacco', 'cigar', 'hookah', 'puff', 'vapor', 'kratom', 'cbd']
+      const GROCERY_WORDS = ['grocery', 'market', 'supermarket', 'mart', 'foods', 'food store', 'produce', 'mercado', 'grocer']
+      const CORNER_WORDS = ['store', 'mart', 'market', 'corner', 'mini', 'deli', 'stop', 'food', 'grocery']
+      const BEAUTY_WORDS = ['beauty', 'cosmetic', 'hair', 'nail', 'salon supply']
+
       const types = [
         { type: 'convenience_store', label: '🏪', color: '#7c3aed' },
         { type: 'grocery_or_supermarket', label: '🛒', color: '#16a34a' },
         { type: 'supermarket',       label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
         { type: 'liquor_store',      label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
-        // Keyword searches catch independent stores that Google mistypes as generic 'store'/'food'
-        { keyword: 'grocery store',  label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
-        { keyword: 'supermarket',    label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket' },
-        { keyword: 'corner store',   label: '🏪', color: '#7c3aed', typeTag: 'convenience_store' },
-        { keyword: 'mini market',    label: '🏪', color: '#7c3aed', typeTag: 'convenience_store' },
+        // Keyword searches catch independent stores that Google mistypes as generic 'store'
+        { keyword: 'grocery store',  label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket', mustMatch: GROCERY_WORDS, requireStoreType: true },
+        { keyword: 'supermarket',    label: '🛒', color: '#16a34a', typeTag: 'grocery_or_supermarket', mustMatch: GROCERY_WORDS, requireStoreType: true },
+        { keyword: 'corner store',   label: '🏪', color: '#7c3aed', typeTag: 'convenience_store', mustMatch: CORNER_WORDS, requireStoreType: true },
+        { keyword: 'mini market',    label: '🏪', color: '#7c3aed', typeTag: 'convenience_store', mustMatch: CORNER_WORDS, requireStoreType: true },
         // Smoke / vape shops
-        { keyword: 'smoke shop',     label: '💨', color: '#0891b2', typeTag: 'smoke_shop' },
-        { keyword: 'vape shop',      label: '💨', color: '#0891b2', typeTag: 'smoke_shop' },
-        { keyword: 'tobacco store',  label: '💨', color: '#0891b2', typeTag: 'smoke_shop' },
-        // Use keyword search for beauty supply stores (not salons/dermatologists)
-        { keyword: 'beauty supply store', label: '💄', color: '#ec4899', typeTag: 'beauty_supply' },
+        { keyword: 'smoke shop',     label: '💨', color: '#0891b2', typeTag: 'smoke_shop', mustMatch: SMOKE_WORDS },
+        { keyword: 'vape shop',      label: '💨', color: '#0891b2', typeTag: 'smoke_shop', mustMatch: SMOKE_WORDS },
+        { keyword: 'tobacco store',  label: '💨', color: '#0891b2', typeTag: 'smoke_shop', mustMatch: SMOKE_WORDS },
+        { keyword: 'hookah',         label: '💨', color: '#0891b2', typeTag: 'smoke_shop', mustMatch: SMOKE_WORDS },
+        // Beauty supply stores (not salons/dermatologists)
+        { keyword: 'beauty supply store', label: '💄', color: '#ec4899', typeTag: 'beauty_supply', mustMatch: BEAUTY_WORDS, requireStoreType: true },
       ]
 
       const mapDiv = document.createElement('div')
@@ -316,7 +355,7 @@ export default function MapPage() {
         return Math.sqrt(dlat * dlat + dlng * dlng)
       }
 
-      await Promise.all(types.map(({ type, keyword, label, color, typeTag }) =>
+      await Promise.all(types.map(({ type, keyword, label, color, typeTag, mustMatch, requireStoreType }) =>
         new Promise(resolve => {
           const req = { location: { lat, lng }, radius: searchRadius }
           if (keyword) req.keyword = keyword
@@ -326,10 +365,27 @@ export default function MapPage() {
             for (const place of places) {
               if (isExcluded(place.name)) continue
 
+              // Reject anything Google tags as a restaurant/bar/service/etc.
+              // regardless of how it matched the search
+              if (hasRejectedType(place)) continue
+
+              // For keyword searches: require the name to actually contain a
+              // relevant word so we don't show unrelated nearby businesses
+              if (mustMatch) {
+                const n = (place.name || '').toLowerCase()
+                if (!mustMatch.some(w => n.includes(w))) continue
+              }
+
+              // For keyword searches that should be retail: require the 'store' type
+              if (requireStoreType) {
+                const t = place.types || []
+                if (!t.includes('store') && !t.includes('convenience_store') &&
+                    !t.includes('grocery_or_supermarket') && !t.includes('supermarket')) continue
+              }
+
               // Skip stores that are explicitly closed right now
               // opening_hours.open_now is a boolean from nearbySearch (not a function)
               // Only skip if we KNOW it's closed (open_now === false)
-              // If no opening_hours data, show the store (benefit of the doubt)
               if (place.opening_hours && place.opening_hours.open_now === false) continue
 
               const plat = place.geometry.location.lat()
