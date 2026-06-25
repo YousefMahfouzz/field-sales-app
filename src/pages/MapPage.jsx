@@ -57,35 +57,18 @@ const EXCLUDED_NAMES = [
   'wholesale only', 'trade only',
 ]
 
-// Google Place types that clearly mean "restaurant / service / not retail".
-// NOTE: we do NOT list 'food' here — Google tags almost every grocery and
-// convenience store as 'food', so rejecting it would wipe out real stores.
-// We also only reject when the place is NOT also tagged as a store type,
-// because many corner stores are dual-tagged (e.g. convenience_store + food).
+// Reject ONLY clear restaurants / eateries / services that should never show.
+// Everything else (any kind of store, even loosely typed) is allowed through;
+// the name blocklist (EXCLUDED_NAMES) handles big-box chains like Home Depot.
+// We deliberately keep this list short so we don't accidentally hide real
+// independent stores that Google mistypes.
 const REJECT_TYPES = [
   'restaurant', 'meal_takeaway', 'meal_delivery', 'cafe', 'bar',
-  'lodging', 'gym', 'spa', 'hair_care', 'beauty_salon',
-  'doctor', 'dentist', 'hospital', 'school',
-  'car_repair', 'car_dealer', 'hardware_store', 'home_goods_store',
-  'furniture_store', 'bank', 'place_of_worship', 'real_estate_agency',
-  'lawyer', 'insurance_agency', 'gym', 'night_club',
-]
-// Store types that, if present, mean "this is retail – keep it" even if it
-// also carries something from REJECT_TYPES.
-const STORE_TYPES = [
-  'store', 'convenience_store', 'grocery_or_supermarket', 'supermarket',
-  'liquor_store', 'gas_station', 'point_of_interest',
+  'lodging', 'doctor', 'dentist', 'hospital', 'school', 'bank',
+  'car_repair', 'car_dealer', 'place_of_worship', 'night_club', 'lawyer',
 ]
 function hasRejectedType(place) {
   const t = place.types || []
-  // Hard rejects: even if also tagged 'store', these are never a retail
-  // store we sell to (a restaurant with a gift shop is still a restaurant).
-  const HARD = ['restaurant', 'meal_takeaway', 'meal_delivery', 'cafe', 'bar',
-    'lodging', 'doctor', 'dentist', 'hospital', 'school', 'bank',
-    'car_repair', 'car_dealer', 'place_of_worship', 'night_club', 'lawyer']
-  if (t.some(x => HARD.includes(x))) return true
-  // Soft rejects: only if NOT also a real store type.
-  if (t.some(x => STORE_TYPES.includes(x) && x !== 'point_of_interest')) return false
   return t.some(x => REJECT_TYPES.includes(x))
 }
 function isExcluded(name) {
