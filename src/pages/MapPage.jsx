@@ -55,6 +55,23 @@ const EXCLUDED_NAMES = [
   'production', 'manufacturing', 'warehouse', 'distribution center',
   'bottling', 'packaging', 'factory', 'plant ', 'processing',
   'wholesale only', 'trade only',
+  // Produce markets / food-product suppliers / malls (not our product fit)
+  'produce market', 'produce stand', 'farmers market', 'farmer market',
+  'fruit market', 'fruit stand', 'food products supplier', 'food product supplier',
+  'food supplier', 'food distributor', 'food service', 'food bank',
+  'shopping mall', 'shopping center', 'shopping centre', 'mall ', ' mall',
+  'outlet mall', 'plaza mall',
+  // Specialty ethnic markets (own supply chains – not a fit for our line)
+  'mercado', 'carniceria', 'carnicería', 'tienda', 'supermercado',
+  'latino market', 'latina market', 'latin market', 'hispanic market',
+  'mexican market', 'mexican store', 'mexican grocery',
+  'asian market', 'asian grocery', 'asian food', 'oriental market',
+  'oriental food', 'oriental grocery', 'chinese market', 'chinese grocery',
+  'korean market', 'korean grocery', 'japanese market', 'japanese grocery',
+  'vietnamese market', 'vietnamese grocery', 'thai market', 'thai grocery',
+  'filipino market', 'filipino store', 'indian grocery', 'indian market',
+  'india bazaar', 'halal market', 'halal grocery', 'h mart', 'hmart',
+  'international market', 'international grocery', 'international foods',
 ]
 
 // Reject ONLY clear restaurants / eateries / services that should never show.
@@ -66,6 +83,7 @@ const REJECT_TYPES = [
   'restaurant', 'meal_takeaway', 'meal_delivery', 'cafe', 'bar',
   'lodging', 'doctor', 'dentist', 'hospital', 'school', 'bank',
   'car_repair', 'car_dealer', 'place_of_worship', 'night_club', 'lawyer',
+  'shopping_mall', 'department_store',
 ]
 function hasRejectedType(place) {
   const t = place.types || []
